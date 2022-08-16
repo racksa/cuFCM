@@ -7,10 +7,10 @@
 #include "CUFCM_FCM.hpp"
 
 void cufcm_force_distribution_loop(cufftReal* fx, cufftReal* fy, cufftReal* fz){
-    for(int i=0; i<NX; i++){
+    for(int k=0; k<NZ; k++){
         for(int j=0; j<NY; j++){
-            for(int k=0; k<NZ; k++){
-                const int index = index_3to1(i, j, k);
+            for(int i=0; k<NX; i++){
+                const int index = i + j*NX + k*NX*NY;
 
                 fx[index] = 1 + 3*(i+j*k) + 7*(j+2) + 3*(k+2);
                 fy[index] = 1 + 2*(i+j+k) + 3*(j*j) + 2*(k*i);
@@ -21,7 +21,7 @@ void cufcm_force_distribution_loop(cufftReal* fx, cufftReal* fy, cufftReal* fz){
 }
 
 __global__
-void cufcm_force_distribution(cufftReal* fx, cufftReal* fy, cufftReal* fz){
+void cufcm_test_force(cufftReal* fx, cufftReal* fy, cufftReal* fz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -31,10 +31,6 @@ void cufcm_force_distribution(cufftReal* fx, cufftReal* fy, cufftReal* fz){
         const int indj = (i - indk*(NY*NX))/(NX);
         const int indi = i - indk*(NY*NX) - indj*(NX);
 
-        // const int indi = (i)/(NY*NZ);
-        // const int indj = (i - indi*(NY*NZ))/(NZ);
-        // const int indk = i - indi*(NY*NZ) - indj*(NZ);
-
         fx[i] = 1 + 3*(indi+indj*indk) + 7*(indj+2) + 3*(indk+2);
         fy[i] = 1 + 2*(indi+indj+indk) + 3*(indj*indj) + 2*(indk*indi);
         fz[i] = 1 + 3*(indi*indj) + 7*(indj*indi) + 4*(indk*indj);
@@ -42,7 +38,6 @@ void cufcm_force_distribution(cufftReal* fx, cufftReal* fy, cufftReal* fz){
 
     __syncthreads();
 }
-
 
 __global__
 void cufcm_flow_solve(cufftComplex* fk_x, cufftComplex* fk_y, cufftComplex* fk_z,
@@ -61,11 +56,6 @@ void cufcm_flow_solve(cufftComplex* fk_x, cufftComplex* fk_y, cufftComplex* fk_z
         const int indj = (i - indk*(NY*(NX/2+1)))/(NX/2+1);
         const int indi = i - indk*(NY*(NX/2+1)) - indj*(NX/2+1);
 
-        printf("(%d %d %d) %d\n", indi, indj, indk, i);
-
-        // const int indi = (i)/(NY*((NZ/2+1)));
-        // const int indj = (i - indi*(NY*(NZ/2+1)))/(NZ/2+1);
-        // const int indk = i - indi*(NY*(NZ/2+1)) - indj*(NZ/2+1);
         q1 = q[indi];
         q2 = q[indj];
         q3 = q[indk];
@@ -113,9 +103,12 @@ void cufcm_flow_solve(cufftComplex* fk_x, cufftComplex* fk_y, cufftComplex* fk_z
             uk_z[0].x = 0;
             uk_z[0].y = 0;
         }
-    }// End of striding loop over filament segment velocities.
 
-    __syncthreads();
+        if(i<NX){
+            printf("%d %.8f\n", i, uk_x[i].x);
+        }
+    }// End of striding loop over filament segment velocities.
+    // __syncthreads();
 }
 
 __global__
@@ -126,15 +119,182 @@ void normalise_array(cufftReal* ux, cufftReal* uy, cufftReal* uz){
 
     // Stay in the loop as long as any thread in the block still needs to compute velocities.
     for(int i = index; i < GRID_SIZE; i += stride){
-        ux[index] *= temp;
-        uy[index] *= temp;
-        uz[index] *= temp;
+        ux[i] *= temp;
+        uy[i] *= temp;
+        uz[i] *= temp;
 
     }// End of striding loop over filament segment velocities.
 
     __syncthreads();
 }
 
-int index_3to1(int i, int j, int k){
-	return i*NY*NZ + j*NZ + k;
+void cufcm_gaussian_setup(int N, int ngd, double* Y,
+                    double* gaussx, double* gaussy, double* gaussz,
+                    double* grad_gaussx_dip, double* grad_gaussy_dip, double* grad_gaussz_dip,
+                    double* gaussgrid,
+                    double* xdis, double* ydis, double* zdis,
+                    int* indx, int* indy, int* indz,
+                    double sigmadipsq, double anorm, double anorm2, double dx){
+    int np, i, xc, yc, zc;
+    int xg, yg, zg;
+    int ngdh = ngd/2;
+
+    double xx;
+    double xxc, yyc, zzc;
+    double E2x, E2y, E2z, E3;
+    double anorm3, dxanorm2;
+
+    anorm3 = anorm*anorm*anorm;
+    dxanorm2 = dx/anorm2;
+
+    // part1
+    for(i = 0; i < ngd; i++){
+        gaussgrid[i] = exp(-(i+1-ngdh)*(i+1-ngdh)*dx*dxanorm2);
+    }
+
+    for(np = 0; np < N; np++){
+        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = (int) (Y[3*np + 1]/dx);
+        zc = (int) (Y[3*np + 2]/dx);
+
+        xxc = (double)xc*dx - Y[3*np + 0]; // distance to the nearest point (ksi-Y)
+        yyc = (double)yc*dx - Y[3*np + 1];
+        zzc = (double)zc*dx - Y[3*np + 2];
+
+        // part2
+        E2x = exp(-2*xxc*dxanorm2);
+        E2y = exp(-2*yyc*dxanorm2);
+        E2z = exp(-2*zzc*dxanorm2);
+
+        // part3
+        E3 = anorm3*exp(-(xxc*xxc + yyc*yyc + zzc*zzc)/anorm2);
+
+        // old function
+        for(i = 0; i < ngd; i++){
+            xg = xc - ngdh + (i+1); 
+            indx[ngd*np + i] = xg - NPTS * ((int) floor( ((double) xg) / ((double) NPTS)));
+            xx = ((double) xg)*dx-Y[3*np + 0];
+            gaussx[ngd*np + i] = E3*int_pow(E2x,i+1-ngdh)*gaussgrid[i];
+            grad_gaussx_dip[ngd*np + i] = - xx / sigmadipsq;
+            xdis[ngd*np + i] = xx*xx;
+
+            yg = yc - ngdh + (i+1);
+            indy[ngd*np + i] = yg - NPTS * ((int) floor( ((double) yg) / ((double) NPTS)));
+            xx = ((double) yg)*dx - Y[3*np + 1];
+            gaussy[ngd*np + i] = int_pow(E2y,i+1-ngdh)*gaussgrid[i];
+            grad_gaussy_dip[ngd*np + i] = - xx / sigmadipsq;
+            ydis[ngd*np + i] = xx*xx;
+
+            zg = zc - ngdh + (i+1);
+            indz[ngd*np + i] = zg - NPTS * ((int) floor( ((double) zg) / ((double) NPTS)));
+            xx = ((double) zg)*dx-Y[3*np + 2];
+            gaussz[ngd*np + i] = int_pow(E2z,i+1-ngdh)*gaussgrid[i];
+            grad_gaussz_dip[ngd*np + i] = - xx / sigmadipsq;
+            zdis[ngd*np + i] = xx*xx;
+        }
+    }
+    return;
+}
+
+void GA_setup(double *GA, double *T, int N){
+    for(int i = 0; i < N; i++){
+        GA[6*i + 0] = 0.0;
+        GA[6*i + 1] = 0.0;
+        GA[6*i + 2] = 0.0;
+        GA[6*i + 3] = 0.5*T[3*i + 2];
+        GA[6*i + 4] = -0.5*T[3*i + 1];
+        GA[6*i + 5] = 0.5*T[3*i + 0];
+    }
+    return;
+}
+
+void cufcm_mono_dipole_distribution(cufftReal *fx, cufftReal *fy, cufftReal *fz, double N,
+              double *GA, double *F, double pdmag, double sigmasq, 
+              double *gaussx, double *gaussy, double *gaussz,
+              double *grad_gaussx_dip, double *grad_gaussy_dip, double *grad_gaussz_dip,
+              double *xdis, double *ydis, double *zdis,
+              int *indx, int *indy, int *indz,
+              int ngd){
+    int np, i, j, k, ii, jj, kk;
+    double xx, yy, zz, r2, temp;
+    double xx2, yy2, zz2;
+    double g11, g22, g33, g12, g21, g13, g31, g23, g32;
+    double gx, gy, gz, Fx, Fy, Fz;
+    double g11xx, g22yy, g33zz, g12yy, g21xx, g13zz, g31xx, g23zz, g32yy;
+    double smallx = 1e-18;
+    int index;
+    double temp2 = 0.5 * pdmag / sigmasq;
+    double temp3 = temp2 /sigmasq;
+    double temp4 = 3.0*temp2;
+    double temp5;
+
+    for(np = 0; np < N; np++){
+        Fx = F[3*np + 0];
+        Fy = F[3*np + 1];
+        Fz = F[3*np + 2];
+        g11 = + GA[6*np + 0];
+        g22 = + GA[6*np + 1];
+        g33 = + GA[6*np + 2];
+        g12 = + GA[6*np + 3];
+        g21 = - GA[6*np + 3];
+        g13 = + GA[6*np + 4];
+        g31 = - GA[6*np + 4];
+        g23 = + GA[6*np + 5];
+        g32 = - GA[6*np + 5];
+        for(i = 0; i < ngd; i++){
+            ii = indx[ngd*np + i];
+            xx = grad_gaussx_dip[ngd*np + i];
+            xx2 = xdis[ngd*np + i];
+            gx = gaussx[ngd*np + i];
+            g11xx = g11*xx;
+            g21xx = g21*xx;
+            g31xx = g31*xx;
+            for(j = 0; j < ngd; j++){
+                jj = indy[ngd*np + j];
+                yy = grad_gaussy_dip[ngd*np + j];
+                yy2 = ydis[ngd*np + j];
+                gy = gaussy[ngd*np + j];
+                g12yy = g12*yy;
+                g22yy = g22*yy;
+                g32yy = g32*yy;
+                for(k = 0; k < ngd; k++){
+                    kk = indz[ngd*np + k];
+                    zz = grad_gaussz_dip[ngd*np + k];
+                    zz2 = zdis[ngd*np + k];
+                    gz = gaussz[ngd*np + k];
+                    g13zz = g13*zz;
+                    g23zz = g23*zz;
+                    g33zz = g33*zz;
+
+                    index = ii + jj*NX + kk*NX*NY;
+
+                    r2 = xx2 + yy2 + zz2;
+                    temp = gx*gy*gz;
+                    temp5 = temp*( 1 + temp3*r2 - temp4);
+                    // printf("(%d %d %d) %lf\n", ii, jj, kk, temp);
+
+                    fx[index] += Fx*temp5 + (g11xx + g12yy + g13zz)*temp + smallx;
+                    fy[index] += Fy*temp5 + (g21xx + g22yy + g23zz)*temp + smallx;
+                    fz[index] += Fz*temp5 + (g31xx + g32yy + g33zz)*temp + smallx;
+                }
+            }
+        }
+    }
+}
+
+double int_pow(double base, int power){
+    /* fast power function for integer powers */
+    double result = 1;
+    if(power>=0){
+        for(int i = 0; i < power; i++){
+            result = result * base;
+    }
+    }
+    if(power<0){
+        for(int i = 0; i < -power; i++){
+            result = result * base;
+    }
+        result = (double) 1/result;
+    }
+    return result;
 }
