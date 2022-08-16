@@ -124,7 +124,6 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Wave vector initialisation
 	///////////////////////////////////////////////////////////////////////////////
-
 	int pad = (NX/2 + 1);
 	int nptsh = (NX/2);
 	double* q_host = malloc_host<double>(NX);			double* q_device = malloc_device<double>(NX);
@@ -158,46 +157,34 @@ int main(int argc, char** argv) {
 	read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
 	read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
 
+	copy_to_device<double>(Y_host, Y_device, 3*N);
+	copy_to_device<double>(F_host, F_device, 3*N);
+	copy_to_device<double>(T_host, T_device, 3*N);
+
+
 	///////////////////////////////////////////////////////////////////////////////
 	// Gaussian initialisation
 	///////////////////////////////////////////////////////////////////////////////
-	cufcm_gaussian_setup(N, ngd, Y_host,
-				   gaussx_host, gaussy_host, gaussz_host,
-				   grad_gaussx_dip_host, grad_gaussy_dip_host, grad_gaussz_dip_host,
-				   gaussgrid_host,
-				   xdis_host, ydis_host, zdis_host,
-				   indx_host, indy_host, indz_host,
+	GA_setup<<<num_thread_blocks, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
+
+	cufcm_gaussian_setup<<<num_thread_blocks, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
+				   gaussx_device, gaussy_device, gaussz_device,
+				   grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
+				   gaussgrid_device,
+				   xdis_device, ydis_device, zdis_device,
+				   indx_device, indy_device, indz_device,
 				   sigmaGRIDdipsq, anormGRID, anormGRID2, dx);
-
-	GA_setup(GA_host, T_host, N);
-
-	// print_host_data_real_3D_flat<double>(Y_host, N, 3);
-	// print_host_data_real_3D_flat<double>(xdis_host, N, ngd);
-	// print_host_data_real_3D_flat<double>(gaussgrid_host, 1, ngd);
-
+				   
 	///////////////////////////////////////////////////////////////////////////////
 	// Spreading
 	///////////////////////////////////////////////////////////////////////////////
-	// cufcm_force_distribution<<<num_thread_blocks, THREADS_PER_BLOCK>>>(fx_host, fy_host, fz_host);
-	// print_host_data_real_3D_indexstyle<cufftReal>(fx_host, fy_host, fz_host);
-	// /* Copy data to device */
-	cufcm_mono_dipole_distribution(fx_host, fy_host, fz_host, N,
-								   GA_host, F_host, pdmag, sigmaGRIDsq,
-								   gaussx_host, gaussy_host, gaussz_host,
-								   grad_gaussx_dip_host, grad_gaussy_dip_host, grad_gaussz_dip_host,
-								   xdis_host, ydis_host, zdis_host,
-								   indx_host, indy_host, indz_host,
-								   ngd);
-	copy_to_device<cufftReal>(fx_host, fx_device, GRID_SIZE);
-	copy_to_device<cufftReal>(fy_host, fy_device, GRID_SIZE);
-	copy_to_device<cufftReal>(fz_host, fz_device, GRID_SIZE);
-	
-	// copy_to_host<cufftReal>(fx_device, fx_host, GRID_SIZE);
-	// copy_to_host<cufftReal>(fy_device, fy_host, GRID_SIZE);
-	// copy_to_host<cufftReal>(fz_device, fz_host, GRID_SIZE);
-	// print_host_data_real_3D_indexstyle(fx_host, fy_host, fz_host);
-
-	// print_host_data_real_3D_flat<cufftReal>(fx_host, NX, 1);
+	cufcm_mono_dipole_distribution<<<num_thread_blocks, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
+										GA_device, F_device, pdmag, sigmaGRIDsq,
+										gaussx_device, gaussy_device, gaussz_device,
+										grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
+										xdis_device, ydis_device, zdis_device,
+										indx_device, indy_device, indz_device,
+										ngd);
 
 	///////////////////////////////////////////////////////////////////////////////
 	// FFT
@@ -215,29 +202,12 @@ int main(int argc, char** argv) {
 		return 0;	
 	}
 
-	/* Print FFT result */
-	// copy_to_host<cufftComplex>(fk_x_device, fk_x_host, FFT_GRID_SIZE);
-	// copy_to_host<cufftComplex>(fk_y_device, fk_y_host, FFT_GRID_SIZE);
-	// copy_to_host<cufftComplex>(fk_z_device, fk_z_host, FFT_GRID_SIZE);
-	// print_host_data_complex_3D_flat(fk_x_host, NX, 1);
-	// print_host_data_complex_3D_indexstyle(fk_x_host, fk_y_host, fk_z_host);
-
-
-
 	///////////////////////////////////////////////////////////////////////////////
 	// Solve for the flow
 	///////////////////////////////////////////////////////////////////////////////
 	cufcm_flow_solve<<<num_thread_blocks, THREADS_PER_BLOCK>>>(fk_x_device, fk_y_device, fk_z_device,
 															   uk_x_device, uk_y_device, uk_z_device,
 															   q_device, qpad_device, qsq_device, qpadsq_device);
-															   
-	/* Print Fourier flow result */
-	// copy_to_host<cufftComplex>(uk_x_device, uk_x_host, FFT_GRID_SIZE);
-	// copy_to_host<cufftComplex>(uk_y_device, uk_y_host, FFT_GRID_SIZE);
-	// copy_to_host<cufftComplex>(uk_z_device, uk_z_host, FFT_GRID_SIZE);
-	// print_host_data_complex_3D_flat(uk_x_host, NX, 1);
-	// print_host_data_complex_3D_indexstyle(uk_x_host, uk_y_host, uk_z_host);
-
 
 	///////////////////////////////////////////////////////////////////////////////
 	// IFFT
@@ -255,24 +225,25 @@ int main(int argc, char** argv) {
 		return 0;	
 	}
 
-	/* Normalise the result after IFFT */
-	// normalise_array<<<num_thread_blocks, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device);
-
-	/* Print IFFT result */
-	copy_to_host<cufftReal>(ux_device, ux_host, GRID_SIZE);
-	copy_to_host<cufftReal>(uy_device, uy_host, GRID_SIZE);
-	copy_to_host<cufftReal>(uz_device, uz_host, GRID_SIZE);
-	print_host_data_real_3D_flat<cufftReal>(ux_host, NX, 1);
-	// print_host_data_real_3D_indexstyle(ux_host, uy_host, uz_host);
-
-
-
 	///////////////////////////////////////////////////////////////////////////////
 	// Gathering
 	///////////////////////////////////////////////////////////////////////////////
+	cufcm_particle_velocities<<<num_thread_blocks, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
+								   V_device, W_device,
+								   pdmag, sigmaGRIDsq,
+								   gaussx_device, gaussy_device, gaussz_device,
+								   grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
+								   xdis_device, ydis_device, zdis_device,
+								   indx_device, indy_device, indz_device,
+								   ngd, dx);
 
+	copy_to_host<double>(V_device, V_host, 3*N);
+	copy_to_host<double>(W_device, W_host, 3*N);
+	print_host_data_real_3D_flat<double>(V_host, N, 3);
 
-	
+	///////////////////////////////////////////////////////////////////////////////
+	// Correction
+	///////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Finish
