@@ -37,6 +37,7 @@ void cufcm_test_force(cufftReal* fx, cufftReal* fy, cufftReal* fz){
     }// End of striding loop over filament segment velocities.
 
     __syncthreads();
+    return;
 }
 
 __global__
@@ -51,7 +52,7 @@ void cufcm_flow_solve(cufftComplex* fk_x, cufftComplex* fk_y, cufftComplex* fk_z
     double f1_re, f1_im, f2_re, f2_im, f3_re, f3_im;
 
     // Stay in the loop as long as any thread in the block still needs to compute velocities.
-    for(int i = index; i < GRID_SIZE; i += stride){
+    for(int i = index; i < FFT_GRID_SIZE; i += stride){
         const int indk = (i)/(NY*(NX/2+1));
         const int indj = (i - indk*(NY*(NX/2+1)))/(NX/2+1);
         const int indi = i - indk*(NY*(NX/2+1)) - indj*(NX/2+1);
@@ -88,12 +89,12 @@ void cufcm_flow_solve(cufftComplex* fk_x, cufftComplex* fk_y, cufftComplex* fk_z
         uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((double)GRID_SIZE);
         uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((double)GRID_SIZE);
 
-        // uk_x[i].x = f1_re;
-        // uk_x[i].y = f1_im;
-        // uk_y[i].x = f2_re;
-        // uk_y[i].y = f2_im;
-        // uk_z[i].x = f3_re;
-        // uk_z[i].y = f3_im;
+        // // uk_x[i].x = f1_re;
+        // // uk_x[i].y = f1_im;
+        // // uk_y[i].x = f2_re;
+        // // uk_y[i].y = f2_im;
+        // // uk_z[i].x = f3_re;
+        // // uk_z[i].y = f3_im;
 
         if(i==0){
             uk_x[0].x = 0;
@@ -103,12 +104,9 @@ void cufcm_flow_solve(cufftComplex* fk_x, cufftComplex* fk_y, cufftComplex* fk_z
             uk_z[0].x = 0;
             uk_z[0].y = 0;
         }
-
-        if(i<NX){
-            printf("%d %.8f\n", i, uk_x[i].x);
-        }
     }// End of striding loop over filament segment velocities.
-    // __syncthreads();
+    __syncthreads();
+    return;
 }
 
 __global__

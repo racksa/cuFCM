@@ -6,7 +6,7 @@
 #define NZ 256.0
 #define NPTS 256.0
 #define GRID_SIZE NX*NY*NZ
-#define FFT_GRID_SIZE NX*NY*(NZ/2 + 1)
+#define FFT_GRID_SIZE (NX/2+1)*NY*NZ
 
 #define THREADS_PER_BLOCK 64
 

@@ -98,8 +98,21 @@ void print_host_data_real_3D_flat(T* host_data, int N, int L){
 	for(int np = 0; np < N; np++){
 		printf("%d ( ", np);
 		for(int l = 0; l < L; l++){
-			printf("%.6f ", host_data[L*np + l]);
+			printf("%.8f ", host_data[L*np + l]);
 		}
 		printf(")\n");
+	}
+}
+
+template <typename T>
+void print_host_data_complex_3D_flat(T* host_data, int N, int L){
+	if(std::is_same<T, cufftComplex>::value){
+		for(int np = 0; np < N; np++){
+			printf("%d ( ", np);
+			for(int l = 0; l < L; l++){
+				printf("( %.8f %.8f ) ", host_data[L*np + l].x, host_data[L*np + l].y );
+			}
+			printf(")\n");
+		}
 	}
 }
