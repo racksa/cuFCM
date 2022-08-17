@@ -8,14 +8,11 @@
 #include "cuda_util.hpp"
 #include "config.hpp"
 #include "CUFCM_FCM.hpp"
+#include "CUFCM_CORRECTION.hpp"
 #include "CUFCM_util.hpp"
 #include "CUFCM_data.hpp"
 
-#define PI 3.14159265358979
-#define PI2 6.28318530717959
-#define PI2sqrt 2.5066282746310002
-#define TWOoverPIsqrt 0.7978845608028654
-#define PI2sqrt_inv 0.3989422804014327
+
 
 int main(int argc, char** argv) {
 
@@ -23,13 +20,25 @@ int main(int argc, char** argv) {
 	// Initialise parameters
 	///////////////////////////////////////////////////////////////////////////////
 
-	int N = 1000;
+	auto time_start = get_time();
+
+	int N = 10000;
 
 	int ngd = 11;
 
-	double sigma_fac = 1.0;
-
+	double sigma_fac = 1.75207280;
 	double dx = (PI2)/(NX);
+
+	/* Link list */
+	double Rref_fac = 6.69738570;
+	double Rref = Rref_fac*dx;
+	int M = (int) (PI2/Rref);
+	double Rrefsq = Rref*Rref;
+	if(M < 3){
+		M = 3;
+	}
+	int ncell = M*M*M;
+	int mapsize = 13*ncell;
 
 	/* Monopole */
 	const double rh = 0.02609300415934458;
@@ -74,25 +83,30 @@ int main(int argc, char** argv) {
 	const double WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
 	const double WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
 
+	
+
 
 	///////////////////////////////////////////////////////////////////////////////
 	// CUDA initialisation
 	///////////////////////////////////////////////////////////////////////////////
+	cudaDeviceSynchronize();
+	time_start = get_time();
+	
     cufftHandle plan, iplan;
 
-	cufftReal* fx_host = malloc_host<cufftReal>(GRID_SIZE);					cufftReal* fx_device = malloc_device<cufftReal>(GRID_SIZE);
-	cufftReal* fy_host = malloc_host<cufftReal>(GRID_SIZE);					cufftReal* fy_device = malloc_device<cufftReal>(GRID_SIZE);
-	cufftReal* fz_host = malloc_host<cufftReal>(GRID_SIZE);					cufftReal* fz_device = malloc_device<cufftReal>(GRID_SIZE);
-    cufftComplex* fk_x_host = malloc_host<cufftComplex>(FFT_GRID_SIZE);		cufftComplex* fk_x_device = malloc_device<cufftComplex>(FFT_GRID_SIZE);
-    cufftComplex* fk_y_host = malloc_host<cufftComplex>(FFT_GRID_SIZE);		cufftComplex* fk_y_device = malloc_device<cufftComplex>(FFT_GRID_SIZE);
-    cufftComplex* fk_z_host = malloc_host<cufftComplex>(FFT_GRID_SIZE);		cufftComplex* fk_z_device = malloc_device<cufftComplex>(FFT_GRID_SIZE);
+	cufftDoubleReal* fx_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* fx_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
+	cufftDoubleReal* fy_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* fy_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
+	cufftDoubleReal* fz_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* fz_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
+    cufftDoubleComplex* fk_x_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* fk_x_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
+    cufftDoubleComplex* fk_y_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* fk_y_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
+    cufftDoubleComplex* fk_z_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* fk_z_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
 
-	cufftReal* ux_host = malloc_host<cufftReal>(GRID_SIZE);					cufftReal* ux_device = malloc_device<cufftReal>(GRID_SIZE);
-	cufftReal* uy_host = malloc_host<cufftReal>(GRID_SIZE);					cufftReal* uy_device = malloc_device<cufftReal>(GRID_SIZE);
-	cufftReal* uz_host = malloc_host<cufftReal>(GRID_SIZE);					cufftReal* uz_device = malloc_device<cufftReal>(GRID_SIZE);
-    cufftComplex* uk_x_host = malloc_host<cufftComplex>(FFT_GRID_SIZE);		cufftComplex* uk_x_device = malloc_device<cufftComplex>(FFT_GRID_SIZE);
-    cufftComplex* uk_y_host = malloc_host<cufftComplex>(FFT_GRID_SIZE);		cufftComplex* uk_y_device = malloc_device<cufftComplex>(FFT_GRID_SIZE);
-    cufftComplex* uk_z_host = malloc_host<cufftComplex>(FFT_GRID_SIZE);		cufftComplex* uk_z_device = malloc_device<cufftComplex>(FFT_GRID_SIZE);
+	cufftDoubleReal* ux_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* ux_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
+	cufftDoubleReal* uy_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* uy_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
+	cufftDoubleReal* uz_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* uz_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
+    cufftDoubleComplex* uk_x_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* uk_x_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
+    cufftDoubleComplex* uk_y_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* uk_y_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
+    cufftDoubleComplex* uk_z_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* uk_z_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
 
 	double* Y_host = malloc_host<double>(3*N);					double* Y_device = malloc_device<double>(3*N);
 	double* F_host = malloc_host<double>(3*N);					double* F_device = malloc_device<double>(3*N);
@@ -115,12 +129,31 @@ int main(int argc, char** argv) {
 	int* indy_host = malloc_host<int>(ngd*N);					int* indy_device = malloc_device<int>(ngd*N);
 	int* indz_host = malloc_host<int>(ngd*N);					int* indz_device = malloc_device<int>(ngd*N);
 
+	int* map_host = malloc_host<int>(mapsize);					int* map_device = malloc_device<int>(mapsize);
+	int* head_host = malloc_host<int>(ncell);					int* head_device = malloc_device<int>(ncell);
+	int* list_host = malloc_host<int>(N);						int* list_device = malloc_device<int>(N);
+
+	bulkmap_loop(map_host, M);
+	copy_to_device<int>(map_host, map_device, mapsize);
+
 	/* Create 3D FFT plans */
-	cufftPlan3d(&plan, NX, NY, NZ, CUFFT_R2C);
-	cufftPlan3d(&iplan, NX, NY, NZ, CUFFT_C2R);
+
+	// if (cufftPlan3d(&plan, NX, NY, NZ, CUFFT_D2Z) != CUFFT_SUCCESS){
+	// 	printf("CUFFT error: Plan creation failed");
+	// 	return 0;	
+	// }
+
+	// if (cufftPlan3d(&iplan, NX, NY, NZ, CUFFT_Z2D) != CUFFT_SUCCESS){
+	// 	printf("CUFFT error: Plan creation failed");
+	// 	return 0;	
+	// }
+
+	cufftPlan3d(&plan, NX, NY, NZ, CUFFT_D2Z);
+	cufftPlan3d(&iplan, NX, NY, NZ, CUFFT_Z2D);
 
 	const int num_thread_blocks = (GRID_SIZE + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 
+	auto time_cuda_initialisation = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Wave vector initialisation
 	///////////////////////////////////////////////////////////////////////////////
@@ -153,18 +186,28 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
+	cudaDeviceSynchronize();	time_start = get_time();
 	read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300.dat");
 	read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
 	read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
+	
 
 	copy_to_device<double>(Y_host, Y_device, 3*N);
 	copy_to_device<double>(F_host, F_device, 3*N);
 	copy_to_device<double>(T_host, T_device, 3*N);
 
+	cudaDeviceSynchronize();	auto time_readfile = get_time() - time_start;
+	///////////////////////////////////////////////////////////////////////////////
+	// Link
+	///////////////////////////////////////////////////////////////////////////////
+	cudaDeviceSynchronize();	time_start = get_time();
+	link<<<num_thread_blocks, THREADS_PER_BLOCK>>>(list_device, head_device, Y_device, M, ncell, N);
 
+	cudaDeviceSynchronize();	auto time_linklist = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Gaussian initialisation
 	///////////////////////////////////////////////////////////////////////////////
+	cudaDeviceSynchronize();	time_start = get_time();
 	GA_setup<<<num_thread_blocks, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
 
 	cufcm_gaussian_setup<<<num_thread_blocks, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
@@ -174,10 +217,12 @@ int main(int argc, char** argv) {
 				   xdis_device, ydis_device, zdis_device,
 				   indx_device, indy_device, indz_device,
 				   sigmaGRIDdipsq, anormGRID, anormGRID2, dx);
-				   
+	
+	cudaDeviceSynchronize();	auto time_gaussian_setup = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Spreading
 	///////////////////////////////////////////////////////////////////////////////
+	cudaDeviceSynchronize();	time_start = get_time();
 	cufcm_mono_dipole_distribution<<<num_thread_blocks, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
 										GA_device, F_device, pdmag, sigmaGRIDsq,
 										gaussx_device, gaussy_device, gaussz_device,
@@ -186,21 +231,26 @@ int main(int argc, char** argv) {
 										indx_device, indy_device, indz_device,
 										ngd);
 
+	cudaDeviceSynchronize();	auto time_spreading = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// FFT
 	///////////////////////////////////////////////////////////////////////////////
-	if (cufftExecR2C(plan, fx_device, fk_x_device) != CUFFT_SUCCESS){
-		printf("CUFFT error: ExecR2C Forward failed (fx)\n");
+	cudaDeviceSynchronize();	time_start = get_time();
+	if (cufftExecD2Z(plan, fx_device, fk_x_device) != CUFFT_SUCCESS){
+		printf("CUFFT error: ExecD2Z Forward failed (fx)\n");
 		return 0;	
 	}
-	if (cufftExecR2C(plan, fy_device, fk_y_device) != CUFFT_SUCCESS){
-		printf("CUFFT error: ExecR2C Forward failed (fy)\n");
+	if (cufftExecD2Z(plan, fy_device, fk_y_device) != CUFFT_SUCCESS){
+		printf("CUFFT error: ExecD2Z Forward failed (fy)\n");
 		return 0;	
 	}
-	if (cufftExecR2C(plan, fz_device, fk_z_device) != CUFFT_SUCCESS){
-		printf("CUFFT error: ExecR2C Forward failed (fz)\n");
+	if (cufftExecD2Z(plan, fz_device, fk_z_device) != CUFFT_SUCCESS){
+		printf("CUFFT error: ExecD2Z Forward failed (fz)\n");
 		return 0;	
 	}
+
+	// copy_to_host<cufftDoubleComplex>(fk_x_device, fk_x_host, FFT_GRID_SIZE);
+	// print_host_data_complex_3D_flat<cufftDoubleComplex>(fk_x_host, NX, 1);
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Solve for the flow
@@ -212,22 +262,24 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// IFFT
 	///////////////////////////////////////////////////////////////////////////////
-	if (cufftExecC2R(iplan, uk_x_device, ux_device) != CUFFT_SUCCESS){
-		printf("CUFFT error: ExecR2C Backward failed (fx)\n");
+	if (cufftExecZ2D(iplan, uk_x_device, ux_device) != CUFFT_SUCCESS){
+		printf("CUFFT error: ExecD2Z Backward failed (fx)\n");
 		return 0;	
 	}
-	if (cufftExecC2R(iplan, uk_y_device, uy_device) != CUFFT_SUCCESS){
-		printf("CUFFT error: ExecR2C Backward failed (fy)\n");
+	if (cufftExecZ2D(iplan, uk_y_device, uy_device) != CUFFT_SUCCESS){
+		printf("CUFFT error: ExecD2Z Backward failed (fy)\n");
 		return 0;	
 	}
-	if (cufftExecC2R(iplan, uk_z_device, uz_device) != CUFFT_SUCCESS){
-		printf("CUFFT error: ExecC2R Backward failed (fz)\n");
+	if (cufftExecZ2D(iplan, uk_z_device, uz_device) != CUFFT_SUCCESS){
+		printf("CUFFT error: ExecZ2D Backward failed (fz)\n");
 		return 0;	
 	}
 
+	cudaDeviceSynchronize();	auto time_FFT = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Gathering
 	///////////////////////////////////////////////////////////////////////////////
+	cudaDeviceSynchronize();	time_start = get_time();
 	cufcm_particle_velocities<<<num_thread_blocks, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
 								   V_device, W_device,
 								   pdmag, sigmaGRIDsq,
@@ -237,18 +289,64 @@ int main(int argc, char** argv) {
 								   indx_device, indy_device, indz_device,
 								   ngd, dx);
 
-	copy_to_host<double>(V_device, V_host, 3*N);
-	copy_to_host<double>(W_device, W_host, 3*N);
-	print_host_data_real_3D_flat<double>(V_host, N, 3);
-
+	cudaDeviceSynchronize();	auto time_gathering = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Correction
 	///////////////////////////////////////////////////////////////////////////////
+	// copy_to_host<double>(V_device, V_host, 3*N);
+	// copy_to_host<double>(W_device, W_host, 3*N);
+	// print_host_data_real_3D_flat<double>(V_host, N, 3);
+	cudaDeviceSynchronize();	time_start = get_time();
+
+	
+	// cufcm_pair_correction_loop(Y_host, V_host, W_host, F_host, T_host, N,
+	// 					  map_host, head_host, list_host,
+	// 					  ncell, Rrefsq,
+	// 					  pdmag,
+	// 					  sigmaGRID, sigmaGRIDsq,
+	// 					  sigmaFCM, sigmaFCMsq,
+	// 					  sigmaFCMdip, sigmaFCMdipsq);
+
+	cufcm_pair_correction<<<num_thread_blocks, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+						  map_device, head_device, list_device,
+						  ncell, Rrefsq,
+						  pdmag,
+						  sigmaGRID, sigmaGRIDsq,
+						  sigmaFCM, sigmaFCMsq,
+						  sigmaFCMdip, sigmaFCMdipsq);
+
+	// cufcm_self_correction_loop(V_host, W_host, F_host, T_host, N,
+	// 						   StokesMob, ModStokesMob,
+	// 						   PDStokesMob, BiLapMob,
+	// 						   WT1Mob, WT2Mob);
+
+	cudaDeviceSynchronize();	auto time_correction = get_time() - time_start;
+
+	copy_to_host<double>(V_device, V_host, 3*N);
+	copy_to_host<double>(W_device, W_host, 3*N);
+	// print_host_data_real_3D_flat<double>(V_host, N, 3);
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Print
+	///////////////////////////////////////////////////////////////////////////////
+	std::cout << "-------\nTimings\n-------\n";
+	std::cout << "Cuda initialisation:  " << time_cuda_initialisation << " s\n";
+	std::cout << "Readfile:  " << time_readfile << " s\n";
+	std::cout << "Linklist:  " << time_linklist << " s\n";
+    std::cout << "Gaussian setup:  " << time_gaussian_setup << " s\n";
+    std::cout << "Spreading:  " << time_spreading << " s\n";
+    std::cout << "FFT: " << time_FFT << " s\n";
+	std::cout << "Gathering: " << time_gathering << " s\n";
+	std::cout << "Correction: " << time_correction << " s\n";
+    std::cout << std::endl;
+
+	std::cout << "--------------\nFreeing memory\n--------------\n";
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Finish
 	///////////////////////////////////////////////////////////////////////////////
 	cufftDestroy(plan);
+	cufftDestroy(iplan);
 	cudaFree(fx_device); cudaFree(fy_device); cudaFree(fz_device); 
 	cudaFree(fk_x_device); cudaFree(fk_y_device); cudaFree(fk_z_device);
 	cudaFree(ux_device); cudaFree(uy_device); cudaFree(uz_device); 
@@ -273,6 +371,10 @@ int main(int argc, char** argv) {
 	cudaFree(indx_device);
 	cudaFree(indy_device);
 	cudaFree(indz_device);
+
+	cudaFree(map_device);
+	cudaFree(head_device);
+	cudaFree(list_device);
 
 	cudaFree(q_device);
 	cudaFree(qpad_device);

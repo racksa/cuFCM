@@ -3,7 +3,7 @@
 
 
 __global__
-void cufcm_test_force(cufftReal* fx, cufftReal* fy, cufftReal* fz);
+void cufcm_test_force(cufftDoubleReal* fx, cufftDoubleReal* fy, cufftDoubleReal* fz);
 
 __global__
 void cufcm_gaussian_setup(int N, int ngd, double* Y,
@@ -18,7 +18,7 @@ __global__
 void GA_setup(double *GA, double *T, int N);
 
 __global__
-void cufcm_mono_dipole_distribution(cufftReal *fx, cufftReal *fy, cufftReal *fz, int N,
+void cufcm_mono_dipole_distribution(cufftDoubleReal *fx, cufftDoubleReal *fy, cufftDoubleReal *fz, int N,
               double *GA, double *F, double pdmag, double sigmasq, 
               double *gaussx, double *gaussy, double *gaussz,
               double *grad_gaussx_dip, double *grad_gaussy_dip, double *grad_gaussz_dip,
@@ -27,15 +27,15 @@ void cufcm_mono_dipole_distribution(cufftReal *fx, cufftReal *fy, cufftReal *fz,
               int ngd);
 
 __global__
-void cufcm_flow_solve(cufftComplex* fk_x, cufftComplex* fk_y, cufftComplex* fk_z,
-                      cufftComplex* uk_x, cufftComplex* uk_y, cufftComplex* uk_z,
+void cufcm_flow_solve(cufftDoubleComplex* fk_x, cufftDoubleComplex* fk_y, cufftDoubleComplex* fk_z,
+                      cufftDoubleComplex* uk_x, cufftDoubleComplex* uk_y, cufftDoubleComplex* uk_z,
                       double* q, double* qpad, double* qsq, double* qpadsq);
 
 __global__
-void normalise_array(cufftReal* ux, cufftReal* uy, cufftReal* uz);
+void normalise_array(cufftDoubleReal* ux, cufftDoubleReal* uy, cufftDoubleReal* uz);
 
 __global__
-void cufcm_particle_velocities(cufftReal *ux, cufftReal *uy, cufftReal *uz, int N,
+void cufcm_particle_velocities(cufftDoubleReal *ux, cufftDoubleReal *uy, cufftDoubleReal *uz, int N,
                                double *VTEMP, double *WTEMP,
                                double pdmag, double sigmasq, 
                                double *gaussx, double *gaussy, double *gaussz,
@@ -44,7 +44,7 @@ void cufcm_particle_velocities(cufftReal *ux, cufftReal *uy, cufftReal *uz, int 
                                int *indx, int *indy, int *indz,
                                int ngd, double dx);
 
-void cufcm_test_force_loop(cufftReal* fx, cufftReal* fy, cufftReal* fz);
+void cufcm_test_force_loop(cufftDoubleReal* fx, cufftDoubleReal* fy, cufftDoubleReal* fz);
 
 void cufcm_gaussian_setup_loop(int N, int ngd, double* Y,
                     double* gaussx_, double* gaussy, double* gaussz,
@@ -56,7 +56,7 @@ void cufcm_gaussian_setup_loop(int N, int ngd, double* Y,
 
 void GA_setup_loop(double *GA, double *T, int N);
 
-void cufcm_mono_dipole_distribution_loop(cufftReal *fx, cufftReal *fy, cufftReal *fz, int N,
+void cufcm_mono_dipole_distribution_loop(cufftDoubleReal *fx, cufftDoubleReal *fy, cufftDoubleReal *fz, int N,
               double *GA, double *F, double pdmag, double sigmasq, 
               double *gaussx, double *gaussy, double *gaussz,
               double *grad_gaussx_dip, double *grad_gaussy_dip, double *grad_gaussz_dip,
@@ -64,7 +64,7 @@ void cufcm_mono_dipole_distribution_loop(cufftReal *fx, cufftReal *fy, cufftReal
               int *indx, int *indy, int *indz,
               int ngd);
 
-void cufcm_particle_velocities_loop(cufftReal *ux, cufftReal *uy, cufftReal *uz, int N,
+void cufcm_particle_velocities_loop(cufftDoubleReal *ux, cufftDoubleReal *uy, cufftDoubleReal *uz, int N,
                                double *VTEMP, double *WTEMP,
                                double pdmag, double sigmasq, 
                                double *gaussx, double *gaussy, double *gaussz,
@@ -72,7 +72,6 @@ void cufcm_particle_velocities_loop(cufftReal *ux, cufftReal *uy, cufftReal *uz,
                                double *xdis, double *ydis, double *zdis,
                                int *indx, int *indy, int *indz,
                                int ngd, double dx);
-
 
 __device__ __host__
 double int_pow(double base, int power);
