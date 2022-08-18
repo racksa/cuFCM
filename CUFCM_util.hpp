@@ -227,7 +227,7 @@ void link(int *list, int *head, double *Y, int M, int ncell, int N){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-	int ind, i, j;
+	int ind, i;
 	double xr=0.0, yr=0.0, zr=0.0;
 	double LX = PI2, celli;
 
@@ -240,7 +240,7 @@ void link(int *list, int *head, double *Y, int M, int ncell, int N){
 		xr=Y[3*j + 0];
 		yr=Y[3*j + 1];
 		zr=Y[3*j + 2];
-		// index = index of cell
+		// ind = index of cell
 		// head = head particle of each cell
 		// list[j] = returns the particle ahead that is within the same cell as j
 		ind = (int)((xr/LX)*celli) + (int)((yr/LX)*celli)*M + (int)((zr/LX)*celli)*M*M;
