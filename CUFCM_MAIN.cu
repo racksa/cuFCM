@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 
 	auto time_start = get_time();
 
-	int N = 10000;
+	int N = 50000;
 
 	int ngd = 11;
 
@@ -151,7 +151,8 @@ int main(int argc, char** argv) {
 	cufftPlan3d(&plan, NX, NY, NZ, CUFFT_D2Z);
 	cufftPlan3d(&iplan, NX, NY, NZ, CUFFT_Z2D);
 
-	const int num_thread_blocks = (GRID_SIZE + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	const int num_thread_blocks_GRID = (GRID_SIZE + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	const int num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 
 	auto time_cuda_initialisation = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
@@ -201,16 +202,20 @@ int main(int argc, char** argv) {
 	// Link
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	link<<<num_thread_blocks, THREADS_PER_BLOCK>>>(list_device, head_device, Y_device, M, ncell, N);
+	// link<<<num_thread_blocks, THREADS_PER_BLOCK>>>(list_device, head_device, Y_device, M, ncell, N);
+	link_loop(list_host, head_host, Y_host, M, ncell, N);
+
+	copy_to_device<int>(list_host, list_device, N);
+	copy_to_device<int>(head_host, head_device, ncell);
 
 	cudaDeviceSynchronize();	auto time_linklist = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Gaussian initialisation
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	GA_setup<<<num_thread_blocks, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
+	GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
 
-	cufcm_gaussian_setup<<<num_thread_blocks, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
+	cufcm_gaussian_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
 				   gaussx_device, gaussy_device, gaussz_device,
 				   grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
 				   gaussgrid_device,
@@ -223,7 +228,7 @@ int main(int argc, char** argv) {
 	// Spreading
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	cufcm_mono_dipole_distribution<<<num_thread_blocks, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
+	cufcm_mono_dipole_distribution<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
 										GA_device, F_device, pdmag, sigmaGRIDsq,
 										gaussx_device, gaussy_device, gaussz_device,
 										grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
@@ -255,7 +260,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Solve for the flow
 	///////////////////////////////////////////////////////////////////////////////
-	cufcm_flow_solve<<<num_thread_blocks, THREADS_PER_BLOCK>>>(fk_x_device, fk_y_device, fk_z_device,
+	cufcm_flow_solve<<<num_thread_blocks_GRID, THREADS_PER_BLOCK>>>(fk_x_device, fk_y_device, fk_z_device,
 															   uk_x_device, uk_y_device, uk_z_device,
 															   q_device, qpad_device, qsq_device, qpadsq_device);
 
@@ -280,7 +285,7 @@ int main(int argc, char** argv) {
 	// Gathering
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	cufcm_particle_velocities<<<num_thread_blocks, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
+	cufcm_particle_velocities<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
 								   V_device, W_device,
 								   pdmag, sigmaGRIDsq,
 								   gaussx_device, gaussy_device, gaussz_device,
@@ -307,7 +312,7 @@ int main(int argc, char** argv) {
 	// 					  sigmaFCM, sigmaFCMsq,
 	// 					  sigmaFCMdip, sigmaFCMdipsq);
 
-	cufcm_pair_correction<<<num_thread_blocks, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+	cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
 						  map_device, head_device, list_device,
 						  ncell, Rrefsq,
 						  pdmag,
@@ -326,18 +331,26 @@ int main(int argc, char** argv) {
 	copy_to_host<double>(W_device, W_host, 3*N);
 	// print_host_data_real_3D_flat<double>(V_host, N, 3);
 
+	for (int i = N-10; i < N; i++){
+		printf("%d ( ", i);
+		for(int n = 0; n < 3; n++){
+			printf("%.8f ", V_host[3*i + n]);
+		}
+		printf(")\n");
+	}
+
 	///////////////////////////////////////////////////////////////////////////////
 	// Print
 	///////////////////////////////////////////////////////////////////////////////
 	std::cout << "-------\nTimings\n-------\n";
-	std::cout << "Cuda initialisation:  " << time_cuda_initialisation << " s\n";
-	std::cout << "Readfile:  " << time_readfile << " s\n";
-	std::cout << "Linklist:  " << time_linklist << " s\n";
-    std::cout << "Gaussian setup:  " << time_gaussian_setup << " s\n";
-    std::cout << "Spreading:  " << time_spreading << " s\n";
-    std::cout << "FFT: " << time_FFT << " s\n";
-	std::cout << "Gathering: " << time_gathering << " s\n";
-	std::cout << "Correction: " << time_correction << " s\n";
+	std::cout << "Init CUDA:\t" << time_cuda_initialisation << " s\n";
+	std::cout << "Readfile:\t" << time_readfile << " s\n";
+	std::cout << "Linklist:\t" << time_linklist << " s\n";
+    std::cout << "Gauss setup:\t" << time_gaussian_setup << " s\n";
+    std::cout << "Spreading:\t" << time_spreading << " s\n";
+    std::cout << "FFT+flow:\t" << time_FFT << " s\n";
+	std::cout << "Gathering:\t" << time_gathering << " s\n";
+	std::cout << "Correction:\t" << time_correction << " s\n";
     std::cout << std::endl;
 
 	std::cout << "--------------\nFreeing memory\n--------------\n";
