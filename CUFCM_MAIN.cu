@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 
 	auto time_start = get_time();
 
-	int N = 50000;
+	int N = 500000;
 
 	int ngd = 11;
 
@@ -133,23 +133,25 @@ int main(int argc, char** argv) {
 	int* head_host = malloc_host<int>(ncell);					int* head_device = malloc_device<int>(ncell);
 	int* list_host = malloc_host<int>(N);						int* list_device = malloc_device<int>(N);
 
-	bulkmap_loop(map_host, M);
+	int* Y_hash_host = malloc_host<int>(N);
+	int* F_hash_host = malloc_host<int>(N);
+	int* T_hash_host = malloc_host<int>(N);
+	int* data_hash_host = malloc_host<int>(N);
+	int* original_index_host = malloc_host<int>(N);
+
+	bulkmap_loop(map_host, M, HASH_ENCODE_FUNC);
 	copy_to_device<int>(map_host, map_device, mapsize);
 
 	/* Create 3D FFT plans */
+	if (cufftPlan3d(&plan, NX, NY, NZ, CUFFT_D2Z) != CUFFT_SUCCESS){
+		printf("CUFFT error: Plan creation failed");
+		return 0;	
+	}
 
-	// if (cufftPlan3d(&plan, NX, NY, NZ, CUFFT_D2Z) != CUFFT_SUCCESS){
-	// 	printf("CUFFT error: Plan creation failed");
-	// 	return 0;	
-	// }
-
-	// if (cufftPlan3d(&iplan, NX, NY, NZ, CUFFT_Z2D) != CUFFT_SUCCESS){
-	// 	printf("CUFFT error: Plan creation failed");
-	// 	return 0;	
-	// }
-
-	cufftPlan3d(&plan, NX, NY, NZ, CUFFT_D2Z);
-	cufftPlan3d(&iplan, NX, NY, NZ, CUFFT_Z2D);
+	if (cufftPlan3d(&iplan, NX, NY, NZ, CUFFT_Z2D) != CUFFT_SUCCESS){
+		printf("CUFFT error: Plan creation failed");
+		return 0;	
+	}
 
 	const int num_thread_blocks_GRID = (GRID_SIZE + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	const int num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
@@ -191,7 +193,19 @@ int main(int argc, char** argv) {
 	read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300.dat");
 	read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
 	read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
-	
+
+	/* Sorting */
+	// for(int i = 0; i < N; i++){
+	// 	original_index_host[i] = i;
+	// }
+	// create_hash(Y_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+	// create_hash(F_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+	// create_hash(T_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+	// create_hash(data_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+	// quicksort(Y_hash_host, Y_host, 0, N - 1);
+	// quicksort(F_hash_host, F_host, 0, N - 1);
+	// quicksort(T_hash_host, T_host, 0, N - 1);
+	// quicksort_1D(data_hash_host, original_index_host, 0, N - 1);
 
 	copy_to_device<double>(Y_host, Y_device, 3*N);
 	copy_to_device<double>(F_host, F_device, 3*N);
@@ -203,7 +217,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 	// link<<<num_thread_blocks, THREADS_PER_BLOCK>>>(list_device, head_device, Y_device, M, ncell, N);
-	link_loop(list_host, head_host, Y_host, M, ncell, N);
+	link_loop(list_host, head_host, Y_host, M, N, HASH_ENCODE_FUNC);
 
 	copy_to_device<int>(list_host, list_device, N);
 	copy_to_device<int>(head_host, head_device, ncell);
@@ -254,9 +268,6 @@ int main(int argc, char** argv) {
 		return 0;	
 	}
 
-	// copy_to_host<cufftDoubleComplex>(fk_x_device, fk_x_host, FFT_GRID_SIZE);
-	// print_host_data_complex_3D_flat<cufftDoubleComplex>(fk_x_host, NX, 1);
-
 	///////////////////////////////////////////////////////////////////////////////
 	// Solve for the flow
 	///////////////////////////////////////////////////////////////////////////////
@@ -298,19 +309,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Correction
 	///////////////////////////////////////////////////////////////////////////////
-	// copy_to_host<double>(V_device, V_host, 3*N);
-	// copy_to_host<double>(W_device, W_host, 3*N);
-	// print_host_data_real_3D_flat<double>(V_host, N, 3);
 	cudaDeviceSynchronize();	time_start = get_time();
-
-	
-	// cufcm_pair_correction_loop(Y_host, V_host, W_host, F_host, T_host, N,
-	// 					  map_host, head_host, list_host,
-	// 					  ncell, Rrefsq,
-	// 					  pdmag,
-	// 					  sigmaGRID, sigmaGRIDsq,
-	// 					  sigmaFCM, sigmaFCMsq,
-	// 					  sigmaFCMdip, sigmaFCMdipsq);
 
 	cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
 						  map_device, head_device, list_device,
@@ -320,18 +319,28 @@ int main(int argc, char** argv) {
 						  sigmaFCM, sigmaFCMsq,
 						  sigmaFCMdip, sigmaFCMdipsq);
 
-	// cufcm_self_correction_loop(V_host, W_host, F_host, T_host, N,
-	// 						   StokesMob, ModStokesMob,
-	// 						   PDStokesMob, BiLapMob,
-	// 						   WT1Mob, WT2Mob);
+	cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
+							   StokesMob, ModStokesMob,
+							   PDStokesMob, BiLapMob,
+							   WT1Mob, WT2Mob);
 
 	cudaDeviceSynchronize();	auto time_correction = get_time() - time_start;
 
+
+	/* Print */
 	copy_to_host<double>(V_device, V_host, 3*N);
 	copy_to_host<double>(W_device, W_host, 3*N);
 	// print_host_data_real_3D_flat<double>(V_host, N, 3);
 
-	for (int i = N-10; i < N; i++){
+
+	// for(int i = 0; i < N; i++){
+	// 	F_hash_host[i] = original_index_host[i];
+	// 	T_hash_host[i] = original_index_host[i];
+	// }
+	// quicksort(F_hash_host, V_host, 0, N - 1);
+	// quicksort(T_hash_host, W_host, 0, N - 1);
+
+	for(int i = N-10; i < N; i++){
 		printf("%d ( ", i);
 		for(int n = 0; n < 3; n++){
 			printf("%.8f ", V_host[3*i + n]);
@@ -340,8 +349,10 @@ int main(int argc, char** argv) {
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
-	// Print
+	// Time
 	///////////////////////////////////////////////////////////////////////////////
+	auto time_compute = time_linklist + time_gaussian_setup + time_spreading + time_FFT + time_gathering + time_correction;
+	auto PTPS = N/time_compute;
 	std::cout << "-------\nTimings\n-------\n";
 	std::cout << "Init CUDA:\t" << time_cuda_initialisation << " s\n";
 	std::cout << "Readfile:\t" << time_readfile << " s\n";
@@ -351,6 +362,8 @@ int main(int argc, char** argv) {
     std::cout << "FFT+flow:\t" << time_FFT << " s\n";
 	std::cout << "Gathering:\t" << time_gathering << " s\n";
 	std::cout << "Correction:\t" << time_correction << " s\n";
+	std::cout << "Compute total:\t" << time_compute << " s\n";
+	std::cout << "PTPS:\t" << PTPS << "\n";
     std::cout << std::endl;
 
 	std::cout << "--------------\nFreeing memory\n--------------\n";

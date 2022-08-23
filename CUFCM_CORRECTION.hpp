@@ -39,6 +39,12 @@ void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T
                     double sigmaFCM, double sigmaFCMsq,
                     double sigmaFCMdip, double sigmaFCMdipsq);
 
+__global__
+void cufcm_self_correction(double* V, double* W, double* F, double* T, int N,
+                                double StokesMob, double ModStokesMob,
+                                double PDStokesMob, double BiLapMob,
+                                double WT1Mob, double WT2Mob);
+
 void cufcm_pair_correction_loop(double* Y, double* V, double* W, double* F, double* T, int N,
                     int *map, int *head, int *list,
                     int ncell, double Rrefsq,

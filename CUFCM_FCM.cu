@@ -126,15 +126,12 @@ void cufcm_mono_dipole_distribution(cufftDoubleReal *fx, cufftDoubleReal *fy, cu
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    
-
     int i, j, k, ii, jj, kk;
     double xx, yy, zz, r2, temp;
     double xx2, yy2, zz2;
     double g11, g22, g33, g12, g21, g13, g31, g23, g32;
     double gx, gy, gz, Fx, Fy, Fz;
     double g11xx, g22yy, g33zz, g12yy, g21xx, g13zz, g31xx, g23zz, g32yy;
-    double smallx = 1e-18;
     double temp2 = 0.5 * pdmag / sigmasq;
     double temp3 = temp2 /sigmasq;
     double temp4 = 3.0*temp2;
@@ -154,14 +151,14 @@ void cufcm_mono_dipole_distribution(cufftDoubleReal *fx, cufftDoubleReal *fy, cu
         g31 = - GA[6*np + 4];
         g23 = + GA[6*np + 5];
         g32 = - GA[6*np + 5];
-        for(i = 0; i < ngd; i++){
-            ii = indx[ngd*np + i];
-            xx = grad_gaussx_dip[ngd*np + i];
-            xx2 = xdis[ngd*np + i];
-            gx = gaussx[ngd*np + i];
-            g11xx = g11*xx;
-            g21xx = g21*xx;
-            g31xx = g31*xx;
+        for(k = 0; k < ngd; k++){
+            kk = indz[ngd*np + k];
+            zz = grad_gaussz_dip[ngd*np + k];
+            zz2 = zdis[ngd*np + k];
+            gz = gaussz[ngd*np + k];
+            g13zz = g13*zz;
+            g23zz = g23*zz;
+            g33zz = g33*zz;
             for(j = 0; j < ngd; j++){
                 jj = indy[ngd*np + j];
                 yy = grad_gaussy_dip[ngd*np + j];
@@ -170,15 +167,15 @@ void cufcm_mono_dipole_distribution(cufftDoubleReal *fx, cufftDoubleReal *fy, cu
                 g12yy = g12*yy;
                 g22yy = g22*yy;
                 g32yy = g32*yy;
-                for(k = 0; k < ngd; k++){
-                    kk = indz[ngd*np + k];
-                    zz = grad_gaussz_dip[ngd*np + k];
-                    zz2 = zdis[ngd*np + k];
-                    gz = gaussz[ngd*np + k];
-                    g13zz = g13*zz;
-                    g23zz = g23*zz;
-                    g33zz = g33*zz;
-
+                for(i = 0; i < ngd; i++){
+                    ii = indx[ngd*np + i];
+                    xx = grad_gaussx_dip[ngd*np + i];
+                    xx2 = xdis[ngd*np + i];
+                    gx = gaussx[ngd*np + i];
+                    g11xx = g11*xx;
+                    g21xx = g21*xx;
+                    g31xx = g31*xx;
+                
                     ind = ii + jj*NX + kk*NX*NY;
 
                     r2 = xx2 + yy2 + zz2;
@@ -188,10 +185,6 @@ void cufcm_mono_dipole_distribution(cufftDoubleReal *fx, cufftDoubleReal *fy, cu
                     atomicAdd(&fx[ind], Fx*temp5 + (g11xx + g12yy + g13zz)*temp);
                     atomicAdd(&fy[ind], Fy*temp5 + (g21xx + g22yy + g23zz)*temp);
                     atomicAdd(&fz[ind], Fz*temp5 + (g31xx + g32yy + g33zz)*temp);
-
-                    // fx[ind] += Fx*temp5 + (g11xx + g12yy + g13zz)*temp + smallx;
-                    // fy[ind] += Fy*temp5 + (g21xx + g22yy + g23zz)*temp + smallx;
-                    // fz[ind] += Fz*temp5 + (g31xx + g32yy + g33zz)*temp + smallx;
                 }
             }
         }
@@ -313,21 +306,21 @@ void cufcm_particle_velocities(cufftDoubleReal *ux, cufftDoubleReal *uy, cufftDo
     norm = dx*dx*dx;
 
     for(int np = index; np < N; np += stride){
-        for(i = 0; i < ngd; i++){
-            ii = indx[ngd*np + i];
-            gx = gaussx[ngd*np + i]*norm;
-            xx = grad_gaussx_dip[ngd*np + i];
-            xx2 = xdis[ngd*np + i];
+        for(k = 0; k < ngd; k++){
+            kk = indz[ngd*np + k];
+            gz = gaussz[ngd*np + k];
+            zz = grad_gaussz_dip[ngd*np + k];
+            zz2 = zdis[ngd*np + k];
             for(j = 0; j < ngd; j++){
                 jj = indy[ngd*np + j];
                 gy = gaussy[ngd*np + j];
                 yy = grad_gaussy_dip[ngd*np + j];
                 yy2 = ydis[ngd*np + j];
-                for(k = 0; k < ngd; k++){
-                    kk = indz[ngd*np + k];
-                    gz = gaussz[ngd*np + k];
-                    zz = grad_gaussz_dip[ngd*np + k];
-                    zz2 = zdis[ngd*np + k];
+                for(i = 0; i < ngd; i++){
+                    ii = indx[ngd*np + i];
+                    gx = gaussx[ngd*np + i]*norm;
+                    xx = grad_gaussx_dip[ngd*np + i];
+                    xx2 = xdis[ngd*np + i];
 
                     ind = ii + jj*NX + kk*NX*NY;
 
@@ -339,21 +332,13 @@ void cufcm_particle_velocities(cufftDoubleReal *ux, cufftDoubleReal *uy, cufftDo
                     uy_temp = uy[ind]*temp;
                     uz_temp = uz[ind]*temp;
 
-                    atomicAdd(&VTEMP[3*np + 0], ux_temp*temp5);
-                    atomicAdd(&VTEMP[3*np + 1], uy_temp*temp5);
-                    atomicAdd(&VTEMP[3*np + 2], uz_temp*temp5);
+                    VTEMP[3*np + 0] += ux_temp*temp5;
+                    VTEMP[3*np + 1] += uy_temp*temp5;
+                    VTEMP[3*np + 2] += uz_temp*temp5;
 
-                    atomicAdd(&WTEMP[3*np + 0], -0.5*(uz_temp*yy - uy_temp*zz));
-                    atomicAdd(&WTEMP[3*np + 1], -0.5*(ux_temp*zz - uz_temp*xx));
-                    atomicAdd(&WTEMP[3*np + 2], -0.5*(uy_temp*xx - ux_temp*yy));
-
-                    // VTEMP[3*np + 0] += ux_temp*temp5;
-                    // VTEMP[3*np + 1] += uy_temp*temp5;
-                    // VTEMP[3*np + 2] += uz_temp*temp5;
-
-                    // WTEMP[3*np + 0] -= 0.5*(uz_temp*yy - uy_temp*zz);
-                    // WTEMP[3*np + 1] -= 0.5*(ux_temp*zz - uz_temp*xx);
-                    // WTEMP[3*np + 2] -= 0.5*(uy_temp*xx - ux_temp*yy);                 
+                    WTEMP[3*np + 0] -= 0.5*(uz_temp*yy - uy_temp*zz);
+                    WTEMP[3*np + 1] -= 0.5*(ux_temp*zz - uz_temp*xx);
+                    WTEMP[3*np + 2] -= 0.5*(uy_temp*xx - ux_temp*yy);                 
                 }
             }
         }
