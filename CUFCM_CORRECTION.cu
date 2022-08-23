@@ -360,6 +360,26 @@ void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T
     }
 }
 
+__global__
+void cufcm_self_correction(double* V, double* W, double* F, double* T, int N,
+                                double StokesMob, double ModStokesMob,
+                                double PDStokesMob, double BiLapMob,
+                                double WT1Mob, double WT2Mob){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+    
+    for(int np = index; np < N; np += stride){
+        V[3*np + 0] = V[3*np + 0] + F[3*np + 0]*(StokesMob - ModStokesMob + PDStokesMob - BiLapMob) ;
+        V[3*np + 1] = V[3*np + 1] + F[3*np + 1]*(StokesMob - ModStokesMob + PDStokesMob - BiLapMob) ;
+        V[3*np + 2] = V[3*np + 2] + F[3*np + 2]*(StokesMob - ModStokesMob + PDStokesMob - BiLapMob) ;
+
+        W[3*np + 0] = W[3*np + 0] + T[3*np + 0]*(WT1Mob - WT2Mob) ;
+        W[3*np + 1] = W[3*np + 1] + T[3*np + 1]*(WT1Mob - WT2Mob) ;
+        W[3*np + 2] = W[3*np + 2] + T[3*np + 2]*(WT1Mob - WT2Mob) ;
+    }
+
+}
+
 void cufcm_pair_correction_loop(double* Y, double* V, double* W, double* F, double* T, int N,
                     int *map, int *head, int *list,
                     int ncell, double Rrefsq,

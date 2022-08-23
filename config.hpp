@@ -20,6 +20,6 @@
 
 #define RANK 1
 
-
+#define HASH_ENCODE_FUNC linear_encode
 
 #endif
