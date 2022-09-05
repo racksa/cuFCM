@@ -24,13 +24,13 @@ int main(int argc, char** argv) {
 
 	int N = 500000;
 
-	int ngd = 11;
+	int ngd = NGD;
 
-	double sigma_fac = 1.75207280;
+	double sigma_fac = 1.55917641;
 	double dx = (PI2)/(NX);
 
 	/* Link list */
-	double Rref_fac = 6.69738570;
+	double Rref_fac = 5.21186960;
 	double Rref = Rref_fac*dx;
 	int M = (int) (PI2/Rref);
 	double Rrefsq = Rref*Rref;
@@ -190,22 +190,26 @@ int main(int argc, char** argv) {
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300.dat");
+	read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300-2.dat");
 	read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
 	read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
 
 	/* Sorting */
-	// for(int i = 0; i < N; i++){
-	// 	original_index_host[i] = i;
-	// }
-	// create_hash(Y_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
-	// create_hash(F_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
-	// create_hash(T_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
-	// create_hash(data_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
-	// quicksort(Y_hash_host, Y_host, 0, N - 1);
-	// quicksort(F_hash_host, F_host, 0, N - 1);
-	// quicksort(T_hash_host, T_host, 0, N - 1);
-	// quicksort_1D(data_hash_host, original_index_host, 0, N - 1);
+	#if SPATIAL_HASHING
+
+		for(int i = 0; i < N; i++){
+			original_index_host[i] = i;
+		}
+		create_hash(Y_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+		create_hash(F_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+		create_hash(T_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+		create_hash(data_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+		quicksort(Y_hash_host, Y_host, 0, N - 1);
+		quicksort(F_hash_host, F_host, 0, N - 1);
+		quicksort(T_hash_host, T_host, 0, N - 1);
+		quicksort_1D(data_hash_host, original_index_host, 0, N - 1);
+
+	#endif
 
 	copy_to_device<double>(Y_host, Y_device, 3*N);
 	copy_to_device<double>(F_host, F_device, 3*N);
@@ -227,28 +231,55 @@ int main(int argc, char** argv) {
 	// Gaussian initialisation
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
+
 	GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
 
-	cufcm_gaussian_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
-				   gaussx_device, gaussy_device, gaussz_device,
-				   grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
-				   gaussgrid_device,
-				   xdis_device, ydis_device, zdis_device,
-				   indx_device, indy_device, indz_device,
-				   sigmaGRIDdipsq, anormGRID, anormGRID2, dx);
+	// #if PARALLELISATION_TYPE == 0
+
+		cufcm_precompute_gauss<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
+					gaussx_device, gaussy_device, gaussz_device,
+					grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
+					gaussgrid_device,
+					xdis_device, ydis_device, zdis_device,
+					indx_device, indy_device, indz_device,
+					sigmaGRIDdipsq, anormGRID, anormGRID2, dx);
+
+	// #endif
 	
-	cudaDeviceSynchronize();	auto time_gaussian_setup = get_time() - time_start;
+	cudaDeviceSynchronize();	auto time_precompute_gauss = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Spreading
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	cufcm_mono_dipole_distribution<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
-										GA_device, F_device, pdmag, sigmaGRIDsq,
-										gaussx_device, gaussy_device, gaussz_device,
-										grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
-										xdis_device, ydis_device, zdis_device,
-										indx_device, indy_device, indz_device,
-										ngd);
+
+	#if PARALLELISATION_TYPE == 0
+
+		cufcm_mono_dipole_distribution_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
+											GA_device, F_device, pdmag, sigmaGRIDsq,
+											gaussx_device, gaussy_device, gaussz_device,
+											grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
+											xdis_device, ydis_device, zdis_device,
+											indx_device, indy_device, indz_device,
+											ngd);
+
+	#elif PARALLELISATION_TYPE == 1
+
+		cufcm_mono_dipole_distribution_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device,
+											Y_device, GA_device, F_device,
+											N, ngd,
+											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+											anormGRID, anormGRID2,
+											dx);
+	#elif PARALLELISATION_TYPE == 2
+
+		cufcm_mono_dipole_distribution_bpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
+											Y_device, GA_device, F_device,
+											N, ngd,
+											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+											anormGRID, anormGRID2,
+											dx);
+
+	#endif
 
 	cudaDeviceSynchronize();	auto time_spreading = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
@@ -296,14 +327,39 @@ int main(int argc, char** argv) {
 	// Gathering
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	cufcm_particle_velocities<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
-								   V_device, W_device,
-								   pdmag, sigmaGRIDsq,
-								   gaussx_device, gaussy_device, gaussz_device,
-								   grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
-								   xdis_device, ydis_device, zdis_device,
-								   indx_device, indy_device, indz_device,
-								   ngd, dx);
+
+	#if PARALLELISATION_TYPE == 0
+
+		cufcm_particle_velocities_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
+									V_device, W_device,
+									pdmag, sigmaGRIDsq,
+									gaussx_device, gaussy_device, gaussz_device,
+									grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
+									xdis_device, ydis_device, zdis_device,
+									indx_device, indy_device, indz_device,
+									ngd, dx);
+
+	#elif PARALLELISATION_TYPE == 1
+
+		cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+									Y_device,
+									V_device, W_device,
+									N, ngd,
+									pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+									anormGRID, anormGRID2,
+									dx);
+
+	#elif PARALLELISATION_TYPE == 2
+
+		cufcm_particle_velocities_bpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+									Y_device,
+									V_device, W_device,
+									N, ngd,
+									pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+									anormGRID, anormGRID2,
+									dx);
+
+	#endif
 
 	cudaDeviceSynchronize();	auto time_gathering = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
@@ -311,13 +367,27 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
-						  map_device, head_device, list_device,
-						  ncell, Rrefsq,
-						  pdmag,
-						  sigmaGRID, sigmaGRIDsq,
-						  sigmaFCM, sigmaFCMsq,
-						  sigmaFCMdip, sigmaFCMdipsq);
+	#if CORRECTION_TYPE == 0
+
+		cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+							map_device, head_device, list_device,
+							ncell, Rrefsq,
+							pdmag,
+							sigmaGRID, sigmaGRIDsq,
+							sigmaFCM, sigmaFCMsq,
+							sigmaFCMdip, sigmaFCMdipsq);
+	
+	#elif CORRECTION_TYPE == 1
+
+		cufcm_pair_correction_spatial_hashing<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+							map_device, head_device, list_device,
+							ncell, Rrefsq,
+							pdmag,
+							sigmaGRID, sigmaGRIDsq,
+							sigmaFCM, sigmaFCMsq,
+							sigmaFCMdip, sigmaFCMdipsq);
+
+	#endif
 
 	cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
 							   StokesMob, ModStokesMob,
@@ -333,17 +403,27 @@ int main(int argc, char** argv) {
 	// print_host_data_real_3D_flat<double>(V_host, N, 3);
 
 
-	// for(int i = 0; i < N; i++){
-	// 	F_hash_host[i] = original_index_host[i];
-	// 	T_hash_host[i] = original_index_host[i];
-	// }
-	// quicksort(F_hash_host, V_host, 0, N - 1);
-	// quicksort(T_hash_host, W_host, 0, N - 1);
+	#if SPATIAL_HASHING
+
+		for(int i = 0; i < N; i++){
+			F_hash_host[i] = original_index_host[i];
+			T_hash_host[i] = original_index_host[i];
+		}
+		quicksort(F_hash_host, V_host, 0, N - 1);
+		quicksort(T_hash_host, W_host, 0, N - 1);
+
+	#endif
+
 
 	for(int i = N-10; i < N; i++){
-		printf("%d ( ", i);
+		printf("%d V ( ", i);
 		for(int n = 0; n < 3; n++){
 			printf("%.8f ", V_host[3*i + n]);
+		}
+		printf(")     \t");
+		printf("W ( ");
+		for(int n = 0; n < 3; n++){
+			printf("%.8f ", W_host[3*i + n]);
 		}
 		printf(")\n");
 	}
@@ -351,13 +431,13 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
 	///////////////////////////////////////////////////////////////////////////////
-	auto time_compute = time_linklist + time_gaussian_setup + time_spreading + time_FFT + time_gathering + time_correction;
+	auto time_compute = time_linklist + time_precompute_gauss + time_spreading + time_FFT + time_gathering + time_correction;
 	auto PTPS = N/time_compute;
 	std::cout << "-------\nTimings\n-------\n";
 	std::cout << "Init CUDA:\t" << time_cuda_initialisation << " s\n";
 	std::cout << "Readfile:\t" << time_readfile << " s\n";
 	std::cout << "Linklist:\t" << time_linklist << " s\n";
-    std::cout << "Gauss setup:\t" << time_gaussian_setup << " s\n";
+    std::cout << "Precomputing:\t" << time_precompute_gauss << " s\n";
     std::cout << "Spreading:\t" << time_spreading << " s\n";
     std::cout << "FFT+flow:\t" << time_FFT << " s\n";
 	std::cout << "Gathering:\t" << time_gathering << " s\n";

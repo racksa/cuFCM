@@ -226,18 +226,19 @@ void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T
                 // V[3*j + 1] = V[3*j + 1] + temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] );
                 // V[3*j + 2] = V[3*j + 2] + temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] );
 
-                if(i==9997){
-                    printf("\tinteraction (%d %d)\t cell(%d %d) vi(%.8f %.8f %.8f) \n", i, j, icell, icell, 
-                    temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] ), 
-                    temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] ), 
-                    temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] ));
-                }
-                if(j==9997){
-                    printf("\tinteraction (%d %d)\t cell(%d %d) vj(%.8f %.8f %.8f) \n", i, j, icell, icell, 
-                    temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ), 
-                    temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ), 
-                    temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
-                }
+                // if(i==9997){
+                //     printf("\tinteraction (%d %d)\t cell(%d %d) vi(%.8f %.8f %.8f) \n", i, j, icell, icell, 
+                //     temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] ), 
+                //     temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] ), 
+                //     temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] ));
+                // }
+                // if(j==9997){
+                //     printf("\tinteraction (%d %d)\t cell(%d %d) vj(%.8f %.8f %.8f) \n", i, j, icell, icell, 
+                //     temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ), 
+                //     temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ), 
+                //     temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
+                // }
+
             }
             j = list[j];
         }
@@ -327,18 +328,19 @@ void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T
                     // V[3*j + 1] = V[3*j + 1] + temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] );
                     // V[3*j + 2] = V[3*j + 2] + temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] );
                     
-                    if(i==9997){
-                        printf("\tinteraction (%d %d)\t cell(%d %d) vi(%.8f %.8f %.8f) \n", i, j, icell, jcell, 
-                        temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] ), 
-                        temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] ), 
-                        temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] ));
-                    }
-                    if(j==9997){
-                        printf("\tinteraction (%d %d)\t cell(%d %d) vj(%.8f %.8f %.8f) \n", i, j, icell, jcell, 
-                        temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ), 
-                        temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ), 
-                        temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
-                    }
+                    // if(i==9997){
+                    //     printf("\tinteraction (%d %d)\t cell(%d %d) vi(%.8f %.8f %.8f) \n", i, j, icell, jcell, 
+                    //     temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] ), 
+                    //     temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] ), 
+                    //     temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] ));
+                    // }
+                    // if(j==9997){
+                    //     printf("\tinteraction (%d %d)\t cell(%d %d) vj(%.8f %.8f %.8f) \n", i, j, icell, jcell, 
+                    //     temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ), 
+                    //     temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ), 
+                    //     temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
+                    // }
+
                 }
                 j = list[j];
             }
@@ -349,12 +351,244 @@ void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T
         atomicAdd(&W[3*i + 0], wxi);
         atomicAdd(&W[3*i + 1], wyi);
         atomicAdd(&W[3*i + 2], wzi);
-        // V[3*i + 0] += vxi;
-        // V[3*i + 1] += vyi;
-        // V[3*i + 2] += vzi;
-        // W[3*i + 0] += wxi;
-        // W[3*i + 1] += wyi;
-        // W[3*i + 2] += wzi;
+
+        return;
+    }
+}
+
+__global__
+void cufcm_pair_correction_spatial_hashing(double* Y, double* V, double* W, double* F, double* T, int N,
+                    int *map, int *head, int *list,
+                    int ncell, double Rrefsq,
+                    double pdmag,
+                    double sigma, double sigmasq,
+                    double sigmaFCM, double sigmaFCMsq,
+                    double sigmaFCMdip, double sigmaFCMdipsq){
+
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    int icell = 0, i = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
+    double xi = 0.0, yi = 0.0, zi = 0.0, vxi = 0.0, vyi = 0.0, vzi = 0.0, wxi = 0.0, wyi = 0.0, wzi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rijsq = 0.0, rij = 0.0;
+    double pdmagsq_quarter = pdmag * pdmag * 0.25;
+    double quatemp = 0.0;
+    double temp1VF, temp2VF;
+    double tempVTWF;
+    double temp1WT, temp2WT;
+
+    double gamma, gammasq, gammaVF_FCM, gammaVF_FCMsq, gammaVTWF_FCM, gammaVTWF_FCMsq, gammaWT_FCM, gammaWT_FCMsq;
+    double erfS, expS, gaussgam, erfS_VF_FCM, expS_VF_FCM, erfS_VTWF_FCM, expS_VTWF_FCM, erfS_WT_FCM, expS_WT_FCM;
+
+    double Atemp, Btemp, Ctemp, Dtemp, AFCMtemp, BFCMtemp, Ptemp, Qtemp;
+    double ftemp, fFCMtemp_VTWF, fFCMtemp_WT, dfdrtemp, dfdrFCMtemp;
+    double Fjdotx, Fidotx;
+    double Tjdotx, Tidotx;
+
+    gamma = sqrtf(2.0)*sigma;
+    gammasq = gamma*gamma;
+
+    gammaVF_FCM = sqrtf(2.0)*sigmaFCM;
+    gammaVF_FCMsq = gammaVF_FCM*gammaVF_FCM;
+
+    gammaVTWF_FCM = sqrtf(sigmaFCM*sigmaFCM + sigmaFCMdip*sigmaFCMdip);
+    gammaVTWF_FCMsq = gammaVTWF_FCM*gammaVTWF_FCM;
+
+    gammaWT_FCM = sqrtf(2.0)*sigmaFCMdip;
+    gammaWT_FCMsq = gammaWT_FCM*gammaWT_FCM;
+
+    int m = 0;
+
+    for(int np = index; np < N; np += stride){
+        // Create mapping from np to i
+        i = head[icell];
+        while(m <= np){
+            if(i > -1){
+                i = list[i];
+            }
+            else{
+                if(icell < ncell){
+                    icell++;
+                    i = head[icell];
+                }
+            }
+            if(i > -1){
+                m++;
+            }
+        }
+        
+        xi = Y[3*i + 0];
+        yi = Y[3*i + 1];
+        zi = Y[3*i + 2];
+        j = list[i];
+        // intra-cell interactions
+        // corrections apply to both parties
+        while(j > -1){
+            xij = xi - Y[3*j + 0];
+            yij = yi - Y[3*j + 1];
+            zij = zi - Y[3*j + 2];
+
+            xij = xij - PI2 * ((double) ((int) (xij/PI)));
+            yij = yij - PI2 * ((double) ((int) (yij/PI)));
+            zij = zij - PI2 * ((double) ((int) (zij/PI)));
+
+            rijsq=xij*xij+yij*yij+zij*zij;
+            if(rijsq < Rrefsq){
+                rij = sqrtf(rijsq);
+                erfS = erf(0.5*rij/sigma);
+                expS = exp(-rijsq/(2.0*gammasq));
+                gaussgam = expS/pow(2.0*PI*gammasq, 1.5);
+
+                erfS_VF_FCM = erf(rij/(sqrtf(2)*gammaVF_FCM));
+                expS_VF_FCM = exp(-rijsq/(2.0*gammaVF_FCMsq));
+
+                erfS_VTWF_FCM = erf(rij/(sqrtf(2)*gammaVTWF_FCM));
+                expS_VTWF_FCM = exp(-rijsq/(2.0*gammaVTWF_FCMsq));
+
+                erfS_WT_FCM = erf(rij/(sqrtf(2)*gammaWT_FCM));
+                expS_WT_FCM = exp(-rijsq/(2.0*gammaWT_FCMsq));
+
+                // ------------VF------------
+                Fjdotx = xij*F[3*j + 0] + yij*F[3*j + 1] + zij*F[3*j + 2];
+                Fidotx = xij*F[3*i + 0] + yij*F[3*i + 1] + zij*F[3*i + 2];
+
+                AFCMtemp = A(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                BFCMtemp = B(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                Atemp = A(rij, rijsq, gamma, gammasq, expS, erfS);
+                Btemp = B(rij, rijsq, gamma, gammasq, expS, erfS);
+                Ctemp = C(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
+                Dtemp = D(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
+                Ptemp = P(rij, rijsq, sigma, sigmasq, gaussgam)*pdmagsq_quarter;
+                Qtemp = Q(rij, rijsq, sigma, sigmasq, gaussgam)*pdmagsq_quarter;
+
+                temp1VF = (AFCMtemp - Atemp - Ctemp - Ptemp);
+                temp2VF = (BFCMtemp - Btemp - Dtemp - Qtemp);
+
+                // ------------WF+VT------------
+                fFCMtemp_VTWF = f(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, expS_VTWF_FCM, erfS_VTWF_FCM);
+                ftemp = f(rij, rijsq, gamma, gammasq, expS, erfS);
+                quatemp = 0.25*pdmag/(gammasq)*gaussgam;
+
+                tempVTWF = (fFCMtemp_VTWF - ftemp + quatemp);
+
+                // ------------WT------------
+                fFCMtemp_WT = f(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                dfdrFCMtemp = dfdr(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                dfdrtemp = dfdr(rij, rijsq, gamma, gammasq, expS, erfS);
+
+                Tidotx = (T[3*i + 0]*xij + T[3*i + 1]*yij + T[3*i + 2]*zij);
+                Tjdotx = (T[3*j + 0]*xij + T[3*j + 1]*yij + T[3*j + 2]*zij);
+
+                temp1WT = (dfdrFCMtemp*rij + 2.0*fFCMtemp_WT) - (dfdrtemp*rij + 2.0*ftemp);
+                temp2WT = dfdrFCMtemp/rij - dfdrtemp/rij;
+
+                // Summation
+                wxi = wxi + 0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                wyi = wyi + 0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                wzi = wzi + 0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
+
+                atomicAdd(&W[3*j + 0], 0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
+                atomicAdd(&W[3*j + 1], 0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
+                atomicAdd(&W[3*j + 2], 0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
+
+                vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
+                vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
+                vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+
+                atomicAdd(&V[3*j + 0], temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ));
+                atomicAdd(&V[3*j + 1], temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ));
+                atomicAdd(&V[3*j + 2], temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
+
+            }
+            j = list[j];
+        }
+        jcello = 13*icell;
+        // inter-cell interactions
+        for(nabor = 0; nabor < 13; nabor++){
+            jcell = map[jcello + nabor];
+            j = head[jcell];
+            while(j > -1){
+                xij = xi - Y[3*j + 0];
+                yij = yi - Y[3*j + 1];
+                zij = zi - Y[3*j + 2];
+
+                xij = xij - PI2 * ((double) ((int) (xij/PI)));
+                yij = yij - PI2 * ((double) ((int) (yij/PI)));
+                zij = zij - PI2 * ((double) ((int) (zij/PI)));
+                rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < Rrefsq){
+                    rij = sqrtf(rijsq);
+                    erfS = erf(0.5*rij/sigma);
+                    expS = exp(-rijsq/(2.0*gammasq));
+                    gaussgam = expS/pow(2.0*PI*gammasq, 1.5);
+
+                    erfS_VF_FCM = erf(rij/(sqrtf(2)*gammaVF_FCM));
+                    expS_VF_FCM = exp(-rijsq/(2.0*gammaVF_FCMsq));
+
+                    erfS_VTWF_FCM = erf(rij/(sqrtf(2)*gammaVTWF_FCM));
+                    expS_VTWF_FCM = exp(-rijsq/(2.0*gammaVTWF_FCMsq));
+
+                    erfS_WT_FCM = erf(rij/(sqrtf(2)*gammaWT_FCM));
+                    expS_WT_FCM = exp(-rijsq/(2.0*gammaWT_FCMsq));
+
+                    // ------------VF------------
+                    Fjdotx = xij*F[3*j + 0] + yij*F[3*j + 1] + zij*F[3*j + 2];
+                    Fidotx = xij*F[3*i + 0] + yij*F[3*i + 1] + zij*F[3*i + 2];
+
+                    AFCMtemp = A(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                    BFCMtemp = B(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                    Atemp = A(rij, rijsq, gamma, gammasq, expS, erfS);
+                    Btemp = B(rij, rijsq, gamma, gammasq, expS, erfS);
+                    Ctemp = C(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
+                    Dtemp = D(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
+                    Ptemp = P(rij, rijsq, sigma, sigmasq, gaussgam)*pdmagsq_quarter;
+                    Qtemp = Q(rij, rijsq, sigma, sigmasq, gaussgam)*pdmagsq_quarter;
+
+                    temp1VF = (AFCMtemp - Atemp - Ctemp - Ptemp);
+                    temp2VF = (BFCMtemp - Btemp - Dtemp - Qtemp);
+
+                    // ------------WF+VT------------
+                    fFCMtemp_VTWF = f(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, expS_VTWF_FCM, erfS_VTWF_FCM);
+                    ftemp = f(rij, rijsq, gamma, gammasq, expS, erfS);
+                    quatemp = 0.25*pdmag/(gammasq)*gaussgam;
+
+                    tempVTWF = (fFCMtemp_VTWF - ftemp + quatemp);
+
+                    // ------------WT------------
+                    fFCMtemp_WT = f(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                    dfdrFCMtemp = dfdr(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                    dfdrtemp = dfdr(rij, rijsq, gamma, gammasq, expS, erfS);
+
+                    Tidotx = (T[3*i + 0]*xij + T[3*i + 1]*yij + T[3*i + 2]*zij);
+                    Tjdotx = (T[3*j + 0]*xij + T[3*j + 1]*yij + T[3*j + 2]*zij);
+
+                    temp1WT = (dfdrFCMtemp*rij + 2.0*fFCMtemp_WT) - (dfdrtemp*rij + 2.0*ftemp);
+                    temp2WT = dfdrFCMtemp/rij - dfdrtemp/rij;
+
+                    // Summation
+                    wxi = wxi + 0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                    wyi = wyi + 0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                    wzi = wzi + 0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
+
+                    atomicAdd(&W[3*j + 0], 0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
+                    atomicAdd(&W[3*j + 1], 0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
+                    atomicAdd(&W[3*j + 2], 0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
+                    vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
+                    vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
+                    vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+                    
+                    atomicAdd(&V[3*j + 0], temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ));
+                    atomicAdd(&V[3*j + 1], temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ));
+                    atomicAdd(&V[3*j + 2], temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
+                }
+                j = list[j];
+            }
+        }
+        atomicAdd(&V[3*i + 0], vxi);
+        atomicAdd(&V[3*i + 1], vyi);
+        atomicAdd(&V[3*i + 2], vzi);
+        atomicAdd(&W[3*i + 0], wxi);
+        atomicAdd(&W[3*i + 1], wyi);
+        atomicAdd(&W[3*i + 2], wzi);
 
         return;
     }
