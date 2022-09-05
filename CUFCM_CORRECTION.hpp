@@ -45,6 +45,15 @@ void cufcm_self_correction(double* V, double* W, double* F, double* T, int N,
                                 double PDStokesMob, double BiLapMob,
                                 double WT1Mob, double WT2Mob);
 
+__global__
+void cufcm_pair_correction_spatial_hashing(double* Y, double* V, double* W, double* F, double* T, int N,
+                    int *map, int *head, int *list,
+                    int ncell, double Rrefsq,
+                    double pdmag,
+                    double sigma, double sigmasq,
+                    double sigmaFCM, double sigmaFCMsq,
+                    double sigmaFCMdip, double sigmaFCMdipsq);
+
 void cufcm_pair_correction_loop(double* Y, double* V, double* W, double* F, double* T, int N,
                     int *map, int *head, int *list,
                     int ncell, double Rrefsq,
