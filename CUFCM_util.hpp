@@ -138,10 +138,12 @@ void print_host_data_complex_3D_flat(T* host_data, int L1, int L2){
 // Linklist
 ///////////////////////////////////////////////////////////////////////////////
 /* Hash functions */
+__device__ __host__
 uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M){
 	return xi + (yi + zi*M)*M;
 }
 
+__device__ __host__
 uint64_t morton_encode_for(unsigned int x, unsigned int y, unsigned int z, int M){
 	uint64_t answer = 0;
 	for (uint64_t i = 0; i < (sizeof(uint64_t)* CHAR_BIT)/3; ++i) {
@@ -166,7 +168,7 @@ inline uint64_t mortonEncode_magicbits(unsigned int x, unsigned int y, unsigned 
 	return answer;
 }
 
-
+__device__ __host__
 int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xi, yi, zi;
 	xi = fmodf((x+M), M);
@@ -187,6 +189,7 @@ int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, 
 }
 
 /* Linklist functions */
+__device__ __host__
 void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int imap=0, tempmap=0;
 	unsigned int iz = 0, iy = 0, ix = 0;
@@ -216,6 +219,7 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 	return;
 }
 
+__device__ __host__
 void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	uint64_t index;
 	int ncell = M*M*M;
@@ -309,6 +313,24 @@ void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsign
 ///////////////////////////////////////////////////////////////////////////////
 // Particle sorting
 ///////////////////////////////////////////////////////////////////////////////
+__global__
+void create_hase_gpu(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+	const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+	int xc, yc, zc;
+
+	for(int np = index; np < N; np += stride){
+		xc = (int) (Y[3*np + 0]/dx);
+		yc = (int) (Y[3*np + 1]/dx);
+		zc = (int) (Y[3*np + 2]/dx);
+
+		hash[np] = xc + (yc + zc*NX)*NX;
+	}
+	return;
+}
+
+__device__ __host__
 void create_hash(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xc, yc, zc;
 
@@ -322,12 +344,14 @@ void create_hash(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int,
 	return;
 }
 
+__device__ __host__
 void swap(int* a, int* b){
     int t = *a;
     *a = *b;
     *b = t;
 }
 
+__device__ __host__
 void swap_Y(Real *Y, int i, int j){
     Real t0 = Y[3*i + 0];
     Real t1 = Y[3*i + 1];
@@ -340,6 +364,7 @@ void swap_Y(Real *Y, int i, int j){
     Y[3*j + 2] = t2;
 }
 
+__device__ __host__
 int partition (int arr[], Real *Y, int low, int high){
     int pivot = arr[high];  // selecting last element as pivot
     int i = (low - 1);  // index of smaller element
@@ -363,6 +388,7 @@ int partition (int arr[], Real *Y, int low, int high){
     a[] is the key array, p is starting index, that is 0, 
     and r is the last index of array.  
 */
+__device__ __host__
 void quicksort(int a[], Real *Y, int p, int r){
     if(p < r)
     {
@@ -373,7 +399,7 @@ void quicksort(int a[], Real *Y, int p, int r){
     }
 }
 
-
+__device__ __host__
 int partition_1D (int arr[], int *Y, int low, int high){
     int pivot = arr[high];  // selecting last element as pivot
     int i = (low - 1);  // index of smaller element
@@ -393,6 +419,7 @@ int partition_1D (int arr[], int *Y, int low, int high){
     return (i + 1);
 }
 
+__device__ __host__
 void quicksort_1D(int a[], int *Y, int p, int r){
     if(p < r)
     {

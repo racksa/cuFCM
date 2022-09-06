@@ -32,7 +32,7 @@
 // 2 = Block per particle (BPP) shared
 // 3 = Block per particle (BPP) recompute
 
-#define SPATIAL_HASHING 1
+#define SPATIAL_HASHING 0
 // 0 = Spatial hashing for correction, but without sorting
 // 1 = Spatial hashing and sorting
 
@@ -40,7 +40,7 @@
 // 0 = linklist
 // 1 = spatial hashing
 
-#define USE_DOUBLE_PRECISION false
+#define USE_DOUBLE_PRECISION true
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;
