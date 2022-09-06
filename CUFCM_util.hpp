@@ -23,7 +23,7 @@ void print_host_data_real(T* host_data){
 			printf("[");
 			for(int k = 0; k < NZ; k++){
 				const int index = i*NY*NZ + j*NZ + k;
-                if(std::is_same<T, cufftDoubleReal>::value){
+                if(std::is_same<T, myCufftReal>::value){
                     printf("%.8f,\t", host_data[index]);
                 }
 			}
@@ -47,7 +47,7 @@ void print_host_data_real_3D_indexstyle(T* host_data1, T* host_data2, T* host_da
 		for(int j = 0; j < NY; j++){
 			for(int i = 0; i < NX; i++){
 				const int index = i + j*NX + k*NY*NX;
-                if(std::is_same<T, cufftDoubleReal>::value){
+                if(std::is_same<T, myCufftReal>::value){
                     printf("(%d %d %d) %d (%.8f %.8f %.8f) \n", i, j, k, index, host_data1[index], host_data2[index], host_data3[index]);
                 }
 			}
@@ -65,7 +65,7 @@ void print_host_data_complex(T* host_data){
 			printf("[");
 			for(int k = 0; k < (NZ/2+1); k++){
 				const int index = i*NY*NZ + j*NZ + k;
-				if(std::is_same<T, cufftDoubleComplex>::value){
+				if(std::is_same<T, myCufftComplex>::value){
 					printf("%.8f + i%.8f,\t", host_data[index].x, host_data[index].y);
 				}
 			}
@@ -89,7 +89,7 @@ void print_host_data_complex_3D_indexstyle(T* host_data1, T* host_data2, T* host
 		for(int j = 0; j < NY; j++){
 			for(int i = 0; i < (NX/2+1); i++){
 				const int index = i + j*(NX/2+1) + k*NY*(NX/2+1);
-				if(std::is_same<T, cufftDoubleComplex>::value){
+				if(std::is_same<T, myCufftComplex>::value){
 					printf("(%d %d %d) %d (%.2f %.2f) (%.2f %.2f) (%.2f %.2f) \n", i, j, k, index, host_data1[index].x, host_data1[index].y, 
 																						host_data2[index].x, host_data2[index].y, 
 																						host_data3[index].x, host_data3[index].y);
@@ -123,7 +123,7 @@ void print_host_data_int_3D_flat(T* host_data, int N, int L){
 
 template <typename T>
 void print_host_data_complex_3D_flat(T* host_data, int L1, int L2){
-	if(std::is_same<T, cufftDoubleComplex>::value){
+	if(std::is_same<T, myCufftComplex>::value){
 		for(int l1 = 0; l1 < L1; l1++){
 			printf("%d ( ", l1);
 			for(int l2 = 0; l2 < L2; l2++){
@@ -175,9 +175,9 @@ int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, 
 
 	return f(xi, yi, zi, M);
 
-	// double beta;
+	// Real beta;
 	// int q;
-	// double celli = (double) M;
+	// Real celli = (Real) M;
 	// xi = fmodf((x+M), M);
 	// yi = fmodf((y+M), M);
 	// zi = fmodf((z+M), M);
@@ -216,17 +216,17 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 	return;
 }
 
-void link_loop(int *list, int *head, double *Y, int M, int N, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	uint64_t index;
 	int ncell = M*M*M;
 	int i = 0, j = 0;
 	unsigned int xi, yi, zi;
-	double xr=0.0, yr=0.0, zr=0.0;
-	double LX = PI2, celli;
+	Real xr=0.0, yr=0.0, zr=0.0;
+	Real LX = PI2, celli;
 	for(i = 0; i<ncell; i++){
 		head[i]=-1;
 	}
-	celli = (double) (M);
+	celli = (Real) (M);
 	for(j = 0; j<N; j++){
 		xr = Y[3*j + 0];
 		yr = Y[3*j + 1];
@@ -278,18 +278,18 @@ void link_loop(int *list, int *head, double *Y, int M, int N, uint64_t (*f)(unsi
 // }
 
 // __global__
-// void link(int *list, int *head, double *Y, int M, int ncell, int N){
+// void link(int *list, int *head, Real *Y, int M, int ncell, int N){
 // 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
 //     const int stride = blockDim.x*gridDim.x;
 
 // 	int ind, i;
-// 	double xr=0.0, yr=0.0, zr=0.0;
-// 	double LX = PI2, celli;
+// 	Real xr=0.0, yr=0.0, zr=0.0;
+// 	Real LX = PI2, celli;
 
 // 	for(i = index; i < ncell; i += stride){
 // 		head[i] = -1;
 // 	}
-// 	celli = (double) (M);
+// 	celli = (Real) (M);
 
 // 	for(int j = index; j < N; j += stride){
 // 		xr=Y[3*j + 0];
@@ -309,7 +309,7 @@ void link_loop(int *list, int *head, double *Y, int M, int N, uint64_t (*f)(unsi
 ///////////////////////////////////////////////////////////////////////////////
 // Particle sorting
 ///////////////////////////////////////////////////////////////////////////////
-void create_hash(int *hash, double *Y, int N, double dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+void create_hash(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xc, yc, zc;
 
 	for(int np = 0; np < N; np++){
@@ -328,10 +328,10 @@ void swap(int* a, int* b){
     *b = t;
 }
 
-void swap_Y(double *Y, int i, int j){
-    double t0 = Y[3*i + 0];
-    double t1 = Y[3*i + 1];
-    double t2 = Y[3*i + 2];
+void swap_Y(Real *Y, int i, int j){
+    Real t0 = Y[3*i + 0];
+    Real t1 = Y[3*i + 1];
+    Real t2 = Y[3*i + 2];
     Y[3*i + 0] = Y[3*j + 0];
     Y[3*i + 1] = Y[3*j + 1];
     Y[3*i + 2] = Y[3*j + 2];
@@ -340,7 +340,7 @@ void swap_Y(double *Y, int i, int j){
     Y[3*j + 2] = t2;
 }
 
-int partition (int arr[], double *Y, int low, int high){
+int partition (int arr[], Real *Y, int low, int high){
     int pivot = arr[high];  // selecting last element as pivot
     int i = (low - 1);  // index of smaller element
  
@@ -363,7 +363,7 @@ int partition (int arr[], double *Y, int low, int high){
     a[] is the key array, p is starting index, that is 0, 
     and r is the last index of array.  
 */
-void quicksort(int a[], double *Y, int p, int r){
+void quicksort(int a[], Real *Y, int p, int r){
     if(p < r)
     {
         int q;

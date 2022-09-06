@@ -7,84 +7,84 @@
 #include "CUFCM_CORRECTION.hpp"
 
 __device__ __host__
-double f(double r, double rsq, double sigma, double sigmasq, double expS, double erfS){
+Real f(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
 	return 1.0/(8.0*PI*pow(r, 3)) * ( erfS - r/sigma*sqrt(2.0/PI) * expS );
 }
 
 __device__ __host__
-double dfdr(double r, double rsq, double sigma, double sigmasq, double expS, double erfS){
+Real dfdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
 	return -3.0/r*f(r, rsq, sigma, sigmasq, expS, erfS) + 1.0/(8.0*PI*pow(r, 3)) * (rsq/(sigmasq*sigma)) * sqrt(2.0/PI) * expS;
 }
 
 // S_ij = A(r) delta_ij + B(r) x_ix_j
 __device__ __host__
-double A(double r, double rsq, double sigma, double sigmasq, double expS, double erfS){
+Real A(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
 	return 1.0/(8.0*PI*r) * ((1.0 + sigmasq/rsq)*erfS- (2.0*sigma/r)/sqrt(PI2) * expS);
 }
 
 __device__ __host__
-double B(double r, double rsq, double sigma, double sigmasq, double expS, double erfS){
+Real B(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
 	return 1.0/(8.0*PI*pow(r, 3)) * ((1.0 - 3.0*sigmasq/rsq)*erfS + (6.0*sigma/r)/sqrt(PI2) * expS);
 }
 
 __device__ __host__
-double dAdr(double r, double rsq, double sigma, double sigmasq, double expS, double erfS){
+Real dAdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
 	return -1.0/(8.0*PI*pow(r, 2)) * ((1.0+3.0*sigmasq/rsq)*erfS - (4.0*r/sigma + 6*sigma/r)/sqrt(PI2) * expS );
 }
 
 __device__ __host__
-double dBdr(double r, double rsq, double sigma, double sigmasq, double expS, double erfS){
+Real dBdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
 	return -1.0/(8.0*PI*pow(r, 4)) * ((3.0-15.0*sigmasq/rsq)*erfS + (4.0*r/sigma + 30.0*sigma/r)/sqrt(PI2) * expS);
 }
 
 // D_ij = C(r) delta_ij + F(r) x_ix_j
 __device__ __host__
-double C(double r, double rsq, double sigma, double sigmasq, double gaussgam, double erfS){
+Real C(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS){
 	return 1.0/(4.0*PI*pow(r, 3))*erfS - (1.0 + sigmasq/rsq)*gaussgam;
 }
 
 __device__ __host__
-double D(double r, double rsq, double sigma, double sigmasq, double gaussgam, double erfS){
+Real D(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS){
 	return -3.0/(4.0*PI*pow(r, 5))*erfS + (1.0/rsq + 3.0*sigmasq/pow(r, 4))*gaussgam;
 }
 
 __device__ __host__
-double P(double r, double rsq, double sigma, double sigmasq, double gaussgam){
+Real P(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam){
 	return (1.0 - rsq/4.0/sigmasq) * gaussgam / sigmasq;
 }
 
 __device__ __host__
-double Q(double r, double rsq, double sigma, double sigmasq, double gaussgam){
+Real Q(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam){
 	return 1.0/4.0 * gaussgam / sigmasq / sigmasq;
 }
 
 __global__
-void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T, int N,
+void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,
-                    int ncell, double Rrefsq,
-                    double pdmag,
-                    double sigma, double sigmasq,
-                    double sigmaFCM, double sigmaFCMsq,
-                    double sigmaFCMdip, double sigmaFCMdipsq){
+                    int ncell, Real Rrefsq,
+                    Real pdmag,
+                    Real sigma, Real sigmasq,
+                    Real sigmaFCM, Real sigmaFCMsq,
+                    Real sigmaFCMdip, Real sigmaFCMdipsq){
 
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
     int icell = 0, i = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
-    double xi = 0.0, yi = 0.0, zi = 0.0, vxi = 0.0, vyi = 0.0, vzi = 0.0, wxi = 0.0, wyi = 0.0, wzi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rijsq = 0.0, rij = 0.0;
-    double pdmagsq_quarter = pdmag * pdmag * 0.25;
-    double quatemp = 0.0;
-    double temp1VF, temp2VF;
-    double tempVTWF;
-    double temp1WT, temp2WT;
+    Real xi = 0.0, yi = 0.0, zi = 0.0, vxi = 0.0, vyi = 0.0, vzi = 0.0, wxi = 0.0, wyi = 0.0, wzi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rijsq = 0.0, rij = 0.0;
+    Real pdmagsq_quarter = pdmag * pdmag * 0.25;
+    Real quatemp = 0.0;
+    Real temp1VF, temp2VF;
+    Real tempVTWF;
+    Real temp1WT, temp2WT;
 
-    double gamma, gammasq, gammaVF_FCM, gammaVF_FCMsq, gammaVTWF_FCM, gammaVTWF_FCMsq, gammaWT_FCM, gammaWT_FCMsq;
-    double erfS, expS, gaussgam, erfS_VF_FCM, expS_VF_FCM, erfS_VTWF_FCM, expS_VTWF_FCM, erfS_WT_FCM, expS_WT_FCM;
+    Real gamma, gammasq, gammaVF_FCM, gammaVF_FCMsq, gammaVTWF_FCM, gammaVTWF_FCMsq, gammaWT_FCM, gammaWT_FCMsq;
+    Real erfS, expS, gaussgam, erfS_VF_FCM, expS_VF_FCM, erfS_VTWF_FCM, expS_VTWF_FCM, erfS_WT_FCM, expS_WT_FCM;
 
-    double Atemp, Btemp, Ctemp, Dtemp, AFCMtemp, BFCMtemp, Ptemp, Qtemp;
-    double ftemp, fFCMtemp_VTWF, fFCMtemp_WT, dfdrtemp, dfdrFCMtemp;
-    double Fjdotx, Fidotx;
-    double Tjdotx, Tidotx;
+    Real Atemp, Btemp, Ctemp, Dtemp, AFCMtemp, BFCMtemp, Ptemp, Qtemp;
+    Real ftemp, fFCMtemp_VTWF, fFCMtemp_WT, dfdrtemp, dfdrFCMtemp;
+    Real Fjdotx, Fidotx;
+    Real Tjdotx, Tidotx;
 
     gamma = sqrtf(2.0)*sigma;
     gammasq = gamma*gamma;
@@ -149,9 +149,9 @@ void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T
             yij = yi - Y[3*j + 1];
             zij = zi - Y[3*j + 2];
 
-            xij = xij - PI2 * ((double) ((int) (xij/PI)));
-            yij = yij - PI2 * ((double) ((int) (yij/PI)));
-            zij = zij - PI2 * ((double) ((int) (zij/PI)));
+            xij = xij - PI2 * ((Real) ((int) (xij/PI)));
+            yij = yij - PI2 * ((Real) ((int) (yij/PI)));
+            zij = zij - PI2 * ((Real) ((int) (zij/PI)));
 
             rijsq=xij*xij+yij*yij+zij*zij;
             if(rijsq < Rrefsq){
@@ -252,9 +252,9 @@ void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * ((double) ((int) (xij/PI)));
-                yij = yij - PI2 * ((double) ((int) (yij/PI)));
-                zij = zij - PI2 * ((double) ((int) (zij/PI)));
+                xij = xij - PI2 * ((Real) ((int) (xij/PI)));
+                yij = yij - PI2 * ((Real) ((int) (yij/PI)));
+                zij = zij - PI2 * ((Real) ((int) (zij/PI)));
                 rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rrefsq){
                     rij = sqrtf(rijsq);
@@ -357,32 +357,32 @@ void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T
 }
 
 __global__
-void cufcm_pair_correction_spatial_hashing(double* Y, double* V, double* W, double* F, double* T, int N,
+void cufcm_pair_correction_spatial_hashing(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,
-                    int ncell, double Rrefsq,
-                    double pdmag,
-                    double sigma, double sigmasq,
-                    double sigmaFCM, double sigmaFCMsq,
-                    double sigmaFCMdip, double sigmaFCMdipsq){
+                    int ncell, Real Rrefsq,
+                    Real pdmag,
+                    Real sigma, Real sigmasq,
+                    Real sigmaFCM, Real sigmaFCMsq,
+                    Real sigmaFCMdip, Real sigmaFCMdipsq){
 
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
     int icell = 0, i = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
-    double xi = 0.0, yi = 0.0, zi = 0.0, vxi = 0.0, vyi = 0.0, vzi = 0.0, wxi = 0.0, wyi = 0.0, wzi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rijsq = 0.0, rij = 0.0;
-    double pdmagsq_quarter = pdmag * pdmag * 0.25;
-    double quatemp = 0.0;
-    double temp1VF, temp2VF;
-    double tempVTWF;
-    double temp1WT, temp2WT;
+    Real xi = 0.0, yi = 0.0, zi = 0.0, vxi = 0.0, vyi = 0.0, vzi = 0.0, wxi = 0.0, wyi = 0.0, wzi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rijsq = 0.0, rij = 0.0;
+    Real pdmagsq_quarter = pdmag * pdmag * 0.25;
+    Real quatemp = 0.0;
+    Real temp1VF, temp2VF;
+    Real tempVTWF;
+    Real temp1WT, temp2WT;
 
-    double gamma, gammasq, gammaVF_FCM, gammaVF_FCMsq, gammaVTWF_FCM, gammaVTWF_FCMsq, gammaWT_FCM, gammaWT_FCMsq;
-    double erfS, expS, gaussgam, erfS_VF_FCM, expS_VF_FCM, erfS_VTWF_FCM, expS_VTWF_FCM, erfS_WT_FCM, expS_WT_FCM;
+    Real gamma, gammasq, gammaVF_FCM, gammaVF_FCMsq, gammaVTWF_FCM, gammaVTWF_FCMsq, gammaWT_FCM, gammaWT_FCMsq;
+    Real erfS, expS, gaussgam, erfS_VF_FCM, expS_VF_FCM, erfS_VTWF_FCM, expS_VTWF_FCM, erfS_WT_FCM, expS_WT_FCM;
 
-    double Atemp, Btemp, Ctemp, Dtemp, AFCMtemp, BFCMtemp, Ptemp, Qtemp;
-    double ftemp, fFCMtemp_VTWF, fFCMtemp_WT, dfdrtemp, dfdrFCMtemp;
-    double Fjdotx, Fidotx;
-    double Tjdotx, Tidotx;
+    Real Atemp, Btemp, Ctemp, Dtemp, AFCMtemp, BFCMtemp, Ptemp, Qtemp;
+    Real ftemp, fFCMtemp_VTWF, fFCMtemp_WT, dfdrtemp, dfdrFCMtemp;
+    Real Fjdotx, Fidotx;
+    Real Tjdotx, Tidotx;
 
     gamma = sqrtf(2.0)*sigma;
     gammasq = gamma*gamma;
@@ -427,9 +427,9 @@ void cufcm_pair_correction_spatial_hashing(double* Y, double* V, double* W, doub
             yij = yi - Y[3*j + 1];
             zij = zi - Y[3*j + 2];
 
-            xij = xij - PI2 * ((double) ((int) (xij/PI)));
-            yij = yij - PI2 * ((double) ((int) (yij/PI)));
-            zij = zij - PI2 * ((double) ((int) (zij/PI)));
+            xij = xij - PI2 * ((Real) ((int) (xij/PI)));
+            yij = yij - PI2 * ((Real) ((int) (yij/PI)));
+            zij = zij - PI2 * ((Real) ((int) (zij/PI)));
 
             rijsq=xij*xij+yij*yij+zij*zij;
             if(rijsq < Rrefsq){
@@ -511,9 +511,9 @@ void cufcm_pair_correction_spatial_hashing(double* Y, double* V, double* W, doub
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * ((double) ((int) (xij/PI)));
-                yij = yij - PI2 * ((double) ((int) (yij/PI)));
-                zij = zij - PI2 * ((double) ((int) (zij/PI)));
+                xij = xij - PI2 * ((Real) ((int) (xij/PI)));
+                yij = yij - PI2 * ((Real) ((int) (yij/PI)));
+                zij = zij - PI2 * ((Real) ((int) (zij/PI)));
                 rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rrefsq){
                     rij = sqrtf(rijsq);
@@ -595,10 +595,10 @@ void cufcm_pair_correction_spatial_hashing(double* Y, double* V, double* W, doub
 }
 
 __global__
-void cufcm_self_correction(double* V, double* W, double* F, double* T, int N,
-                                double StokesMob, double ModStokesMob,
-                                double PDStokesMob, double BiLapMob,
-                                double WT1Mob, double WT2Mob){
+void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
+                                Real StokesMob, Real ModStokesMob,
+                                Real PDStokesMob, Real BiLapMob,
+                                Real WT1Mob, Real WT2Mob){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
     
@@ -614,28 +614,28 @@ void cufcm_self_correction(double* V, double* W, double* F, double* T, int N,
 
 }
 
-void cufcm_pair_correction_loop(double* Y, double* V, double* W, double* F, double* T, int N,
+void cufcm_pair_correction_loop(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,
-                    int ncell, double Rrefsq,
-                    double pdmag,
-                    double sigma, double sigmasq,
-                    double sigmaFCM, double sigmaFCMsq,
-                    double sigmaFCMdip, double sigmaFCMdipsq){
+                    int ncell, Real Rrefsq,
+                    Real pdmag,
+                    Real sigma, Real sigmasq,
+                    Real sigmaFCM, Real sigmaFCMsq,
+                    Real sigmaFCMdip, Real sigmaFCMdipsq){
     int icell = 0, i = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
-    double xi = 0.0, yi = 0.0, zi = 0.0, vxi = 0.0, vyi = 0.0, vzi = 0.0, wxi = 0.0, wyi = 0.0, wzi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rijsq = 0.0, rij = 0.0;
-    double pdmagsq_quarter = pdmag * pdmag * 0.25;
-    double quatemp = 0.0;
-    double temp1VF, temp2VF;
-    double tempVTWF;
-    double temp1WT, temp2WT;
+    Real xi = 0.0, yi = 0.0, zi = 0.0, vxi = 0.0, vyi = 0.0, vzi = 0.0, wxi = 0.0, wyi = 0.0, wzi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rijsq = 0.0, rij = 0.0;
+    Real pdmagsq_quarter = pdmag * pdmag * 0.25;
+    Real quatemp = 0.0;
+    Real temp1VF, temp2VF;
+    Real tempVTWF;
+    Real temp1WT, temp2WT;
 
-    double gamma, gammasq, gammaVF_FCM, gammaVF_FCMsq, gammaVTWF_FCM, gammaVTWF_FCMsq, gammaWT_FCM, gammaWT_FCMsq;
-    double erfS, expS, gaussgam, erfS_VF_FCM, expS_VF_FCM, erfS_VTWF_FCM, expS_VTWF_FCM, erfS_WT_FCM, expS_WT_FCM;
+    Real gamma, gammasq, gammaVF_FCM, gammaVF_FCMsq, gammaVTWF_FCM, gammaVTWF_FCMsq, gammaWT_FCM, gammaWT_FCMsq;
+    Real erfS, expS, gaussgam, erfS_VF_FCM, expS_VF_FCM, erfS_VTWF_FCM, expS_VTWF_FCM, erfS_WT_FCM, expS_WT_FCM;
 
-    double Atemp, Btemp, Ctemp, Dtemp, AFCMtemp, BFCMtemp, Ptemp, Qtemp;
-    double ftemp, fFCMtemp_VTWF, fFCMtemp_WT, dfdrtemp, dfdrFCMtemp;
-    double Fjdotx, Fidotx;
-    double Tjdotx, Tidotx;
+    Real Atemp, Btemp, Ctemp, Dtemp, AFCMtemp, BFCMtemp, Ptemp, Qtemp;
+    Real ftemp, fFCMtemp_VTWF, fFCMtemp_WT, dfdrtemp, dfdrFCMtemp;
+    Real Fjdotx, Fidotx;
+    Real Tjdotx, Tidotx;
 
     gamma = sqrt(2.0)*sigma;
     gammasq = gamma*gamma;
@@ -670,9 +670,9 @@ void cufcm_pair_correction_loop(double* Y, double* V, double* W, double* F, doub
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * ((double) ((int) (xij/PI)));
-                yij = yij - PI2 * ((double) ((int) (yij/PI)));
-                zij = zij - PI2 * ((double) ((int) (zij/PI)));
+                xij = xij - PI2 * ((Real) ((int) (xij/PI)));
+                yij = yij - PI2 * ((Real) ((int) (yij/PI)));
+                zij = zij - PI2 * ((Real) ((int) (zij/PI)));
 
                 rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rrefsq){
@@ -753,9 +753,9 @@ void cufcm_pair_correction_loop(double* Y, double* V, double* W, double* F, doub
                     yij = yi - Y[3*j + 1];
                     zij = zi - Y[3*j + 2];
 
-                    xij = xij - PI2 * ((double) ((int) (xij/PI)));
-                    yij = yij - PI2 * ((double) ((int) (yij/PI)));
-                    zij = zij - PI2 * ((double) ((int) (zij/PI)));
+                    xij = xij - PI2 * ((Real) ((int) (xij/PI)));
+                    yij = yij - PI2 * ((Real) ((int) (yij/PI)));
+                    zij = zij - PI2 * ((Real) ((int) (zij/PI)));
                     rijsq=xij*xij+yij*yij+zij*zij;
                     if(rijsq < Rrefsq){
                         rij = sqrt(rijsq);
@@ -838,10 +838,10 @@ void cufcm_pair_correction_loop(double* Y, double* V, double* W, double* F, doub
     return;
 }
 
-void cufcm_self_correction_loop(double* V, double* W, double* F, double* T, int N,
-                                double StokesMob, double ModStokesMob,
-                                double PDStokesMob, double BiLapMob,
-                                double WT1Mob, double WT2Mob){
+void cufcm_self_correction_loop(Real* V, Real* W, Real* F, Real* T, int N,
+                                Real StokesMob, Real ModStokesMob,
+                                Real PDStokesMob, Real BiLapMob,
+                                Real WT1Mob, Real WT2Mob){
     for(int i = 0; i < N; i++){
         V[3*i + 0] = V[3*i + 0] + F[3*i + 0]*(StokesMob - ModStokesMob + PDStokesMob - BiLapMob) ;
         V[3*i + 1] = V[3*i + 1] + F[3*i + 1]*(StokesMob - ModStokesMob + PDStokesMob - BiLapMob) ;

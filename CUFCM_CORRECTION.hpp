@@ -1,68 +1,68 @@
 #pragma once
 
 __device__ __host__
-double f(double r, double rsq, double sigma, double sigmasq, double expS, double erfS);
+Real f(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
 
 __device__ __host__
-double dfdr(double r, double rsq, double sigma, double sigmasq, double expS, double erfS);
+Real dfdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
 
 __device__ __host__
-double A(double r, double rsq, double sigma, double sigmasq, double expS, double erfS);
+Real A(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
 
 __device__ __host__
-double B(double r, double rsq, double sigma, double sigmasq, double expS, double erfS);
+Real B(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
 
 __device__ __host__
-double dAdr(double r, double rsq, double sigma, double sigmasq, double expS, double erfS);
+Real dAdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
 
 __device__ __host__
-double dBdr(double r, double rsq, double sigma, double sigmasq, double expS, double erfS);
+Real dBdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
 
 __device__ __host__
-double C(double r, double rsq, double sigma, double sigmasq, double gaussgam, double erfS);
+Real C(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
-double D(double r, double rsq, double sigma, double sigmasq, double gaussgam, double erfS);
+Real D(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
-double P(double r, double rsq, double sigma, double sigmasq, double gaussgam);
+Real P(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
 
 __device__ __host__
-double Q(double r, double rsq, double sigma, double sigmasq, double gaussgam);
+Real Q(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
 
 __global__
-void cufcm_pair_correction(double* Y, double* V, double* W, double* F, double* T, int N,
+void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,
-                    int ncell, double Rrefsq,
-                    double pdmag,
-                    double sigma, double sigmasq,
-                    double sigmaFCM, double sigmaFCMsq,
-                    double sigmaFCMdip, double sigmaFCMdipsq);
+                    int ncell, Real Rrefsq,
+                    Real pdmag,
+                    Real sigma, Real sigmasq,
+                    Real sigmaFCM, Real sigmaFCMsq,
+                    Real sigmaFCMdip, Real sigmaFCMdipsq);
 
 __global__
-void cufcm_self_correction(double* V, double* W, double* F, double* T, int N,
-                                double StokesMob, double ModStokesMob,
-                                double PDStokesMob, double BiLapMob,
-                                double WT1Mob, double WT2Mob);
+void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
+                                Real StokesMob, Real ModStokesMob,
+                                Real PDStokesMob, Real BiLapMob,
+                                Real WT1Mob, Real WT2Mob);
 
 __global__
-void cufcm_pair_correction_spatial_hashing(double* Y, double* V, double* W, double* F, double* T, int N,
+void cufcm_pair_correction_spatial_hashing(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,
-                    int ncell, double Rrefsq,
-                    double pdmag,
-                    double sigma, double sigmasq,
-                    double sigmaFCM, double sigmaFCMsq,
-                    double sigmaFCMdip, double sigmaFCMdipsq);
+                    int ncell, Real Rrefsq,
+                    Real pdmag,
+                    Real sigma, Real sigmasq,
+                    Real sigmaFCM, Real sigmaFCMsq,
+                    Real sigmaFCMdip, Real sigmaFCMdipsq);
 
-void cufcm_pair_correction_loop(double* Y, double* V, double* W, double* F, double* T, int N,
+void cufcm_pair_correction_loop(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,
-                    int ncell, double Rrefsq,
-                    double pdmag,
-                    double sigma, double sigmasq,
-                    double sigmaFCM, double sigmaFCMsq,
-                    double sigmaFCMdip, double sigmaFCMdipsq);
+                    int ncell, Real Rrefsq,
+                    Real pdmag,
+                    Real sigma, Real sigmasq,
+                    Real sigmaFCM, Real sigmaFCMsq,
+                    Real sigmaFCMdip, Real sigmaFCMdipsq);
 
-void cufcm_self_correction_loop(double* V, double* W, double* F, double* T, int N,
-                                double StokesMob, double ModStokesMob,
-                                double PDStokesMob, double BiLapMob,
-                                double WT1Mob, double WT2Mob);
+void cufcm_self_correction_loop(Real* V, Real* W, Real* F, Real* T, int N,
+                                Real StokesMob, Real ModStokesMob,
+                                Real PDStokesMob, Real BiLapMob,
+                                Real WT1Mob, Real WT2Mob);

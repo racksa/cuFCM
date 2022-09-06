@@ -26,14 +26,14 @@ int main(int argc, char** argv) {
 
 	int ngd = NGD;
 
-	double sigma_fac = 1.55917641;
-	double dx = (PI2)/(NX);
+	Real sigma_fac = 1.55917641;
+	Real dx = (PI2)/(NX);
 
 	/* Link list */
-	double Rref_fac = 5.21186960;
-	double Rref = Rref_fac*dx;
+	Real Rref_fac = 5.21186960;
+	Real Rref = Rref_fac*dx;
 	int M = (int) (PI2/Rref);
-	double Rrefsq = Rref*Rref;
+	Real Rrefsq = Rref*Rref;
 	if(M < 3){
 		M = 3;
 	}
@@ -41,47 +41,47 @@ int main(int argc, char** argv) {
 	int mapsize = 13*ncell;
 
 	/* Monopole */
-	const double rh = 0.02609300415934458;
-	const double sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
-	const double sigmaFCMsq = sigmaFCM*sigmaFCM;
-	const double anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
-	const double anormFCM2 = 2.0*sigmaFCMsq;
+	const Real rh = 0.02609300415934458;
+	const Real sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
+	const Real sigmaFCMsq = sigmaFCM*sigmaFCM;
+	const Real anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
+	const Real anormFCM2 = 2.0*sigmaFCMsq;
 
-	const double sigmaGRID = sigmaFCM * sigma_fac;
-	const double sigmaGRIDsq = sigmaGRID * sigmaGRID;
-	const double anormGRID = 1.0/sqrt(2.0*PI*sigmaGRIDsq);
-	const double anormGRID2 = 2.0*sigmaGRIDsq;
+	const Real sigmaGRID = sigmaFCM * sigma_fac;
+	const Real sigmaGRIDsq = sigmaGRID * sigmaGRID;
+	const Real anormGRID = 1.0/sqrt(2.0*PI*sigmaGRIDsq);
+	const Real anormGRID2 = 2.0*sigmaGRIDsq;
 
-	const double gammaGRID = sqrt(2.0)*sigmaGRID;
-	const double pdmag = sigmaFCMsq - sigmaGRIDsq;
+	const Real gammaGRID = sqrt(2.0)*sigmaGRID;
+	const Real pdmag = sigmaFCMsq - sigmaGRIDsq;
 
 	/* Dipole */
-	const double sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
-	const double sigmaFCMdipsq = sigmaFCMdip*sigmaFCMdip;
-	const double anormFCMdip = 1.0/sqrt(2.0*PI*sigmaFCMdipsq);
-	const double anormFCMdip2 = 2.0*sigmaFCMdipsq;
+	const Real sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
+	const Real sigmaFCMdipsq = sigmaFCMdip*sigmaFCMdip;
+	const Real anormFCMdip = 1.0/sqrt(2.0*PI*sigmaFCMdipsq);
+	const Real anormFCMdip2 = 2.0*sigmaFCMdipsq;
 
-	const double sigma_dip_fac = sigmaGRID/sigmaFCMdip;
+	const Real sigma_dip_fac = sigmaGRID/sigmaFCMdip;
 	// sigma_dip_fac = 1;
 
-	const double sigmaGRIDdip = sigmaFCMdip * sigma_dip_fac;
-	const double sigmaGRIDdipsq = sigmaGRIDdip * sigmaGRIDdip;
-	const double anormGRIDdip = 1.0/sqrt(2.0*PI*sigmaGRIDdipsq);
-	const double anormGRIDdip2 = 2.0*sigmaGRIDdipsq;
+	const Real sigmaGRIDdip = sigmaFCMdip * sigma_dip_fac;
+	const Real sigmaGRIDdipsq = sigmaGRIDdip * sigmaGRIDdip;
+	const Real anormGRIDdip = 1.0/sqrt(2.0*PI*sigmaGRIDdipsq);
+	const Real anormGRIDdip2 = 2.0*sigmaGRIDdipsq;
 
 	/* Self corrections */
-	const double StokesMob = 1.0/(6.0*PI*rh);
-	const double ModStokesMob = 1.0/(6.0*PI*sigmaGRID*sqrt(PI));
+	const Real StokesMob = 1.0/(6.0*PI*rh);
+	const Real ModStokesMob = 1.0/(6.0*PI*sigmaGRID*sqrt(PI));
 
-	double PDStokesMob = 2.0/pow(2.0*PI, 1.5);
+	Real PDStokesMob = 2.0/pow(2.0*PI, 1.5);
 	PDStokesMob = PDStokesMob/pow(gammaGRID, 3.0);
 	PDStokesMob = PDStokesMob*pdmag/3.0;
 
-	double BiLapMob = 1.0/pow(4.0*PI*sigmaGRIDsq, 1.5);
+	Real BiLapMob = 1.0/pow(4.0*PI*sigmaGRIDsq, 1.5);
 	BiLapMob = BiLapMob/(4.0*sigmaGRIDsq)*pdmag*pdmag;
 
-	const double WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
-	const double WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
+	const Real WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
+	const Real WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
 
 	
 
@@ -94,37 +94,37 @@ int main(int argc, char** argv) {
 	
     cufftHandle plan, iplan;
 
-	cufftDoubleReal* fx_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* fx_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
-	cufftDoubleReal* fy_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* fy_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
-	cufftDoubleReal* fz_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* fz_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
-    cufftDoubleComplex* fk_x_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* fk_x_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
-    cufftDoubleComplex* fk_y_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* fk_y_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
-    cufftDoubleComplex* fk_z_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* fk_z_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
+	myCufftReal* fx_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fx_device = malloc_device<myCufftReal>(GRID_SIZE);
+	myCufftReal* fy_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fy_device = malloc_device<myCufftReal>(GRID_SIZE);
+	myCufftReal* fz_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fz_device = malloc_device<myCufftReal>(GRID_SIZE);
+    myCufftComplex* fk_x_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_x_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+    myCufftComplex* fk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+    myCufftComplex* fk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
 
-	cufftDoubleReal* ux_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* ux_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
-	cufftDoubleReal* uy_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* uy_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
-	cufftDoubleReal* uz_host = malloc_host<cufftDoubleReal>(GRID_SIZE);					cufftDoubleReal* uz_device = malloc_device<cufftDoubleReal>(GRID_SIZE);
-    cufftDoubleComplex* uk_x_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* uk_x_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
-    cufftDoubleComplex* uk_y_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* uk_y_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
-    cufftDoubleComplex* uk_z_host = malloc_host<cufftDoubleComplex>(FFT_GRID_SIZE);		cufftDoubleComplex* uk_z_device = malloc_device<cufftDoubleComplex>(FFT_GRID_SIZE);
+	myCufftReal* ux_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* ux_device = malloc_device<myCufftReal>(GRID_SIZE);
+	myCufftReal* uy_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* uy_device = malloc_device<myCufftReal>(GRID_SIZE);
+	myCufftReal* uz_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* uz_device = malloc_device<myCufftReal>(GRID_SIZE);
+    myCufftComplex* uk_x_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_x_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+    myCufftComplex* uk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+    myCufftComplex* uk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
 
-	double* Y_host = malloc_host<double>(3*N);					double* Y_device = malloc_device<double>(3*N);
-	double* F_host = malloc_host<double>(3*N);					double* F_device = malloc_device<double>(3*N);
-	double* T_host = malloc_host<double>(3*N);					double* T_device = malloc_device<double>(3*N);
-	double* V_host = malloc_host<double>(3*N);					double* V_device = malloc_device<double>(3*N);
-	double* W_host = malloc_host<double>(3*N);					double* W_device = malloc_device<double>(3*N);
-	double* GA_host = malloc_host<double>(6*N);					double* GA_device = malloc_device<double>(6*N);
+	Real* Y_host = malloc_host<Real>(3*N);					Real* Y_device = malloc_device<Real>(3*N);
+	Real* F_host = malloc_host<Real>(3*N);					Real* F_device = malloc_device<Real>(3*N);
+	Real* T_host = malloc_host<Real>(3*N);					Real* T_device = malloc_device<Real>(3*N);
+	Real* V_host = malloc_host<Real>(3*N);					Real* V_device = malloc_device<Real>(3*N);
+	Real* W_host = malloc_host<Real>(3*N);					Real* W_device = malloc_device<Real>(3*N);
+	Real* GA_host = malloc_host<Real>(6*N);					Real* GA_device = malloc_device<Real>(6*N);
 
-	double* gaussx_host = malloc_host<double>(ngd*N);			double* gaussx_device = malloc_device<double>(ngd*N);
-	double* gaussy_host = malloc_host<double>(ngd*N);			double* gaussy_device = malloc_device<double>(ngd*N);
-	double* gaussz_host = malloc_host<double>(ngd*N);			double* gaussz_device = malloc_device<double>(ngd*N);
-	double* grad_gaussx_dip_host = malloc_host<double>(ngd*N);	double* grad_gaussx_dip_device = malloc_device<double>(ngd*N);
-	double* grad_gaussy_dip_host = malloc_host<double>(ngd*N);	double* grad_gaussy_dip_device = malloc_device<double>(ngd*N);
-	double* grad_gaussz_dip_host = malloc_host<double>(ngd*N);	double* grad_gaussz_dip_device = malloc_device<double>(ngd*N);
-	double* gaussgrid_host = malloc_host<double>(ngd);			double* gaussgrid_device = malloc_device<double>(ngd);
-	double* xdis_host = malloc_host<double>(ngd*N);				double* xdis_device = malloc_device<double>(ngd*N);
-	double* ydis_host = malloc_host<double>(ngd*N);				double* ydis_device = malloc_device<double>(ngd*N);
-	double* zdis_host = malloc_host<double>(ngd*N);				double* zdis_device = malloc_device<double>(ngd*N);
+	Real* gaussx_host = malloc_host<Real>(ngd*N);			Real* gaussx_device = malloc_device<Real>(ngd*N);
+	Real* gaussy_host = malloc_host<Real>(ngd*N);			Real* gaussy_device = malloc_device<Real>(ngd*N);
+	Real* gaussz_host = malloc_host<Real>(ngd*N);			Real* gaussz_device = malloc_device<Real>(ngd*N);
+	Real* grad_gaussx_dip_host = malloc_host<Real>(ngd*N);	Real* grad_gaussx_dip_device = malloc_device<Real>(ngd*N);
+	Real* grad_gaussy_dip_host = malloc_host<Real>(ngd*N);	Real* grad_gaussy_dip_device = malloc_device<Real>(ngd*N);
+	Real* grad_gaussz_dip_host = malloc_host<Real>(ngd*N);	Real* grad_gaussz_dip_device = malloc_device<Real>(ngd*N);
+	Real* gaussgrid_host = malloc_host<Real>(ngd);			Real* gaussgrid_device = malloc_device<Real>(ngd);
+	Real* xdis_host = malloc_host<Real>(ngd*N);				Real* xdis_device = malloc_device<Real>(ngd*N);
+	Real* ydis_host = malloc_host<Real>(ngd*N);				Real* ydis_device = malloc_device<Real>(ngd*N);
+	Real* zdis_host = malloc_host<Real>(ngd*N);				Real* zdis_device = malloc_device<Real>(ngd*N);
 	int* indx_host = malloc_host<int>(ngd*N);					int* indx_device = malloc_device<int>(ngd*N);
 	int* indy_host = malloc_host<int>(ngd*N);					int* indy_device = malloc_device<int>(ngd*N);
 	int* indz_host = malloc_host<int>(ngd*N);					int* indz_device = malloc_device<int>(ngd*N);
@@ -138,17 +138,18 @@ int main(int argc, char** argv) {
 	int* T_hash_host = malloc_host<int>(N);
 	int* data_hash_host = malloc_host<int>(N);
 	int* original_index_host = malloc_host<int>(N);
+	int* cell_hash_mark_host = malloc_host<int>(ncell);
 
 	bulkmap_loop(map_host, M, HASH_ENCODE_FUNC);
 	copy_to_device<int>(map_host, map_device, mapsize);
 
 	/* Create 3D FFT plans */
-	if (cufftPlan3d(&plan, NX, NY, NZ, CUFFT_D2Z) != CUFFT_SUCCESS){
+	if (cufftPlan3d(&plan, NX, NY, NZ, cufftReal2Complex) != CUFFT_SUCCESS){
 		printf("CUFFT error: Plan creation failed");
 		return 0;	
 	}
 
-	if (cufftPlan3d(&iplan, NX, NY, NZ, CUFFT_Z2D) != CUFFT_SUCCESS){
+	if (cufftPlan3d(&iplan, NX, NY, NZ, cufftComplex2Real) != CUFFT_SUCCESS){
 		printf("CUFFT error: Plan creation failed");
 		return 0;	
 	}
@@ -162,40 +163,46 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	int pad = (NX/2 + 1);
 	int nptsh = (NX/2);
-	double* q_host = malloc_host<double>(NX);			double* q_device = malloc_device<double>(NX);
-	double* qpad_host = malloc_host<double>(pad);		double* qpad_device = malloc_device<double>(pad);
-	double* qsq_host = malloc_host<double>(NX);			double* qsq_device = malloc_device<double>(NX);
-	double* qpadsq_host = malloc_host<double>(pad);		double* qpadsq_device = malloc_device<double>(pad);
+	Real* q_host = malloc_host<Real>(NX);			Real* q_device = malloc_device<Real>(NX);
+	Real* qpad_host = malloc_host<Real>(pad);		Real* qpad_device = malloc_device<Real>(pad);
+	Real* qsq_host = malloc_host<Real>(NX);			Real* qsq_device = malloc_device<Real>(NX);
+	Real* qpadsq_host = malloc_host<Real>(pad);		Real* qpadsq_device = malloc_device<Real>(pad);
 
 	for(int i=0; i<NX; i++){
 		if(i < nptsh || i == nptsh){
-			q_host[i] = (double) i;
+			q_host[i] = (Real) i;
 		}
 		if(i > nptsh){
-			q_host[i] = (double) (i - NX);
+			q_host[i] = (Real) (i - NX);
 		}
 		qsq_host[i] = q_host[i]*q_host[i];
 	}
 	
 	for(int i=0; i<pad; i++){
-		qpad_host[i] = (double) i;
+		qpad_host[i] = (Real) i;
 		qpadsq_host[i] = qpad_host[i]*qpad_host[i];
 	}
-	copy_to_device<double>(q_host, q_device, NX);
-	copy_to_device<double>(qpad_host, qpad_device, pad);
-	copy_to_device<double>(qsq_host, qsq_device, NX);
-	copy_to_device<double>(qpadsq_host, qpadsq_device, pad);
+	copy_to_device<Real>(q_host, q_device, NX);
+	copy_to_device<Real>(qpad_host, qpad_device, pad);
+	copy_to_device<Real>(qsq_host, qsq_device, NX);
+	copy_to_device<Real>(qpadsq_host, qpadsq_device, pad);
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
+
 	read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300-2.dat");
 	read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
 	read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
-
-	/* Sorting */
-	#if SPATIAL_HASHING
+	
+	cudaDeviceSynchronize();	auto time_readfile = get_time() - time_start;
+	///////////////////////////////////////////////////////////////////////////////
+	// Spatial hashing
+	///////////////////////////////////////////////////////////////////////////////
+	cudaDeviceSynchronize();	time_start = get_time();
+	/* Hashing */
+	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
 
 		for(int i = 0; i < N; i++){
 			original_index_host[i] = i;
@@ -204,24 +211,31 @@ int main(int argc, char** argv) {
 		create_hash(F_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
 		create_hash(T_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
 		create_hash(data_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+
+	#endif
+	/* Sorting */
+	#if SPATIAL_HASHING == 1
+
 		quicksort(Y_hash_host, Y_host, 0, N - 1);
 		quicksort(F_hash_host, F_host, 0, N - 1);
 		quicksort(T_hash_host, T_host, 0, N - 1);
-		quicksort_1D(data_hash_host, original_index_host, 0, N - 1);
+		quicksort_1D(data_hash_host, original_index_host, 0, N - 1);		
 
 	#endif
 
-	copy_to_device<double>(Y_host, Y_device, 3*N);
-	copy_to_device<double>(F_host, F_device, 3*N);
-	copy_to_device<double>(T_host, T_device, 3*N);
+	cudaDeviceSynchronize();	auto time_hashing = get_time() - time_start;
 
-	cudaDeviceSynchronize();	auto time_readfile = get_time() - time_start;
+	
+	copy_to_device<Real>(Y_host, Y_device, 3*N);
+	copy_to_device<Real>(F_host, F_device, 3*N);
+	copy_to_device<Real>(T_host, T_device, 3*N);
 	///////////////////////////////////////////////////////////////////////////////
 	// Link
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
+
 	// link<<<num_thread_blocks, THREADS_PER_BLOCK>>>(list_device, head_device, Y_device, M, ncell, N);
-	link_loop(list_host, head_host, Y_host, M, N, HASH_ENCODE_FUNC);
+	link_loop(list_host, head_host, Y_host, M, N, linear_encode);
 
 	copy_to_device<int>(list_host, list_device, N);
 	copy_to_device<int>(head_host, head_device, ncell);
@@ -234,7 +248,7 @@ int main(int argc, char** argv) {
 
 	GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
 
-	// #if PARALLELISATION_TYPE == 0
+	#if PARALLELISATION_TYPE == 0
 
 		cufcm_precompute_gauss<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
 					gaussx_device, gaussy_device, gaussz_device,
@@ -244,7 +258,7 @@ int main(int argc, char** argv) {
 					indx_device, indy_device, indz_device,
 					sigmaGRIDdipsq, anormGRID, anormGRID2, dx);
 
-	// #endif
+	#endif
 	
 	cudaDeviceSynchronize();	auto time_precompute_gauss = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
@@ -272,7 +286,16 @@ int main(int argc, char** argv) {
 											dx);
 	#elif PARALLELISATION_TYPE == 2
 
-		cufcm_mono_dipole_distribution_bpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
+		cufcm_mono_dipole_distribution_bpp_shared<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
+											Y_device, GA_device, F_device,
+											N, ngd,
+											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+											anormGRID, anormGRID2,
+											dx);
+	
+	#elif PARALLELISATION_TYPE == 3
+
+		cufcm_mono_dipole_distribution_bpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
 											Y_device, GA_device, F_device,
 											N, ngd,
 											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
@@ -286,15 +309,15 @@ int main(int argc, char** argv) {
 	// FFT
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	if (cufftExecD2Z(plan, fx_device, fk_x_device) != CUFFT_SUCCESS){
+	if (cufftExecReal2Complex(plan, fx_device, fk_x_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Forward failed (fx)\n");
 		return 0;	
 	}
-	if (cufftExecD2Z(plan, fy_device, fk_y_device) != CUFFT_SUCCESS){
+	if (cufftExecReal2Complex(plan, fy_device, fk_y_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Forward failed (fy)\n");
 		return 0;	
 	}
-	if (cufftExecD2Z(plan, fz_device, fk_z_device) != CUFFT_SUCCESS){
+	if (cufftExecReal2Complex(plan, fz_device, fk_z_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Forward failed (fz)\n");
 		return 0;	
 	}
@@ -309,15 +332,15 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// IFFT
 	///////////////////////////////////////////////////////////////////////////////
-	if (cufftExecZ2D(iplan, uk_x_device, ux_device) != CUFFT_SUCCESS){
+	if (cufftExecComplex2Real(iplan, uk_x_device, ux_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Backward failed (fx)\n");
 		return 0;	
 	}
-	if (cufftExecZ2D(iplan, uk_y_device, uy_device) != CUFFT_SUCCESS){
+	if (cufftExecComplex2Real(iplan, uk_y_device, uy_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Backward failed (fy)\n");
 		return 0;	
 	}
-	if (cufftExecZ2D(iplan, uk_z_device, uz_device) != CUFFT_SUCCESS){
+	if (cufftExecComplex2Real(iplan, uk_z_device, uz_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecZ2D Backward failed (fz)\n");
 		return 0;	
 	}
@@ -351,7 +374,17 @@ int main(int argc, char** argv) {
 
 	#elif PARALLELISATION_TYPE == 2
 
-		cufcm_particle_velocities_bpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+		cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+									Y_device,
+									V_device, W_device,
+									N, ngd,
+									pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+									anormGRID, anormGRID2,
+									dx);
+
+	#elif PARALLELISATION_TYPE == 3
+
+		cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
 									Y_device,
 									V_device, W_device,
 									N, ngd,
@@ -369,7 +402,7 @@ int main(int argc, char** argv) {
 
 	#if CORRECTION_TYPE == 0
 
-		cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+		cufcm_pair_correction_linklist<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
 							map_device, head_device, list_device,
 							ncell, Rrefsq,
 							pdmag,
@@ -398,12 +431,12 @@ int main(int argc, char** argv) {
 
 
 	/* Print */
-	copy_to_host<double>(V_device, V_host, 3*N);
-	copy_to_host<double>(W_device, W_host, 3*N);
-	// print_host_data_real_3D_flat<double>(V_host, N, 3);
+	copy_to_host<Real>(V_device, V_host, 3*N);
+	copy_to_host<Real>(W_device, W_host, 3*N);
+	// print_host_data_real_3D_flat<Real>(V_host, N, 3);
 
 
-	#if SPATIAL_HASHING
+	#if SPATIAL_HASHING == 1
 
 		for(int i = 0; i < N; i++){
 			F_hash_host[i] = original_index_host[i];
@@ -436,6 +469,7 @@ int main(int argc, char** argv) {
 	std::cout << "-------\nTimings\n-------\n";
 	std::cout << "Init CUDA:\t" << time_cuda_initialisation << " s\n";
 	std::cout << "Readfile:\t" << time_readfile << " s\n";
+	std::cout << "Hashing:\t" << time_hashing << " s\n";
 	std::cout << "Linklist:\t" << time_linklist << " s\n";
     std::cout << "Precomputing:\t" << time_precompute_gauss << " s\n";
     std::cout << "Spreading:\t" << time_spreading << " s\n";
@@ -443,7 +477,7 @@ int main(int argc, char** argv) {
 	std::cout << "Gathering:\t" << time_gathering << " s\n";
 	std::cout << "Correction:\t" << time_correction << " s\n";
 	std::cout << "Compute total:\t" << time_compute << " s\n";
-	std::cout << "PTPS:\t" << PTPS << "\n";
+	std::cout << "PTPS:\t" << PTPS << " /s\n";
     std::cout << std::endl;
 
 	std::cout << "--------------\nFreeing memory\n--------------\n";
