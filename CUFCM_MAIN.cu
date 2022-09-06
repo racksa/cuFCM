@@ -3,8 +3,6 @@
 // Include CUDA runtime and CUFFT
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <cub/cub.cuh> 
-
 
 #include "cuda_util.hpp"
 #include "config.hpp"
@@ -16,7 +14,6 @@
 
 
 int main(int argc, char** argv) {
-
 	///////////////////////////////////////////////////////////////////////////////
 	// Initialise parameters
 	///////////////////////////////////////////////////////////////////////////////
@@ -203,7 +200,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	/* Hashing */
+	// /* Hashing */
 	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
 
 		for(int i = 0; i < N; i++){
@@ -219,10 +216,11 @@ int main(int argc, char** argv) {
 	/* Sorting */
 	#if SPATIAL_HASHING == 1
 
-		quicksort(Y_hash_host, Y_host, 0, N - 1);
-		quicksort(F_hash_host, F_host, 0, N - 1);
-		quicksort(T_hash_host, T_host, 0, N - 1);
-		quicksort_1D(data_hash_host, original_index_host, 0, N - 1);		
+		quicksortIterative(Y_hash_host, Y_host, 0, N - 1);
+		quicksortIterative(F_hash_host, F_host, 0, N - 1);
+		quicksortIterative(T_hash_host, T_host, 0, N - 1);
+		quicksort_1D(data_hash_host, original_index_host, 0, N - 1);	
+
 	#endif
 
 	copy_to_device<Real>(Y_host, Y_device, 3*N);
@@ -230,27 +228,29 @@ int main(int argc, char** argv) {
 	copy_to_device<Real>(T_host, T_device, 3*N);
 
 	/* Hashing */
-	// #if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
+	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
 
-	// 	for(int i = 0; i < N; i++){
-	// 		original_index_host[i] = i;
-	// 	}
-	// 	create_hash(Y_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
-	// 	create_hash(F_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
-	// 	create_hash(T_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
-	// 	create_hash(data_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+		// for(int i = 0; i < N; i++){
+		// 	original_index_host[i] = i;
+		// }
+		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(data_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
 
-	// #endif
+	#endif
 	
-	// /* Sorting */
-	// #if SPATIAL_HASHING == 1
+	/* Sorting */
+	#if SPATIAL_HASHING == 1
 
-	// 	quicksort(Y_hash_device, Y_device, 0, N - 1);
-	// 	quicksort(F_hash_device, F_device, 0, N - 1);
-	// 	quicksort(T_hash_device, T_device, 0, N - 1);
-	// 	quicksort_1D(data_hash_device, original_index_device, 0, N - 1);		
+		// cub::DeviceRadixSort::SortPairs(nullptr, 0, Y_hash_device, Y_device, N);
 
-	// #endif
+		// quicksortIterative_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_hash_device, Y_device, 0, N - 1);
+		// quicksortIterative_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_hash_device, F_device, 0, N - 1);
+		// quicksortIterative_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_hash_device, T_device, 0, N - 1);
+		// quicksort_1D(data_hash_device, original_index_device, 0, N - 1);		
+
+	#endif
 
 	cudaDeviceSynchronize();	auto time_hashing = get_time() - time_start;
 
