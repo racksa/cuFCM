@@ -138,12 +138,12 @@ void print_host_data_complex_3D_flat(T* host_data, int L1, int L2){
 // Linklist
 ///////////////////////////////////////////////////////////////////////////////
 /* Hash functions */
-__device__ __host__
+__host__ __device__
 uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M){
 	return xi + (yi + zi*M)*M;
 }
 
-__device__ __host__
+__host__ __device__
 uint64_t morton_encode_for(unsigned int x, unsigned int y, unsigned int z, int M){
 	uint64_t answer = 0;
 	for (uint64_t i = 0; i < (sizeof(uint64_t)* CHAR_BIT)/3; ++i) {
@@ -168,7 +168,7 @@ inline uint64_t mortonEncode_magicbits(unsigned int x, unsigned int y, unsigned 
 	return answer;
 }
 
-__device__ __host__
+__host__ __device__
 int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xi, yi, zi;
 	xi = fmodf((x+M), M);
@@ -189,7 +189,7 @@ int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, 
 }
 
 /* Linklist functions */
-__device__ __host__
+__host__ __device__
 void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int imap=0, tempmap=0;
 	unsigned int iz = 0, iy = 0, ix = 0;
@@ -219,7 +219,7 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 	return;
 }
 
-__device__ __host__
+__host__ __device__
 void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	uint64_t index;
 	int ncell = M*M*M;
@@ -314,7 +314,7 @@ void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsign
 // Particle sorting
 ///////////////////////////////////////////////////////////////////////////////
 __global__
-void create_hase_gpu(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+void create_hash_gpu(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -330,7 +330,6 @@ void create_hase_gpu(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned 
 	return;
 }
 
-__device__ __host__
 void create_hash(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xc, yc, zc;
 
@@ -344,14 +343,14 @@ void create_hash(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int,
 	return;
 }
 
-__device__ __host__
+
 void swap(int* a, int* b){
     int t = *a;
     *a = *b;
     *b = t;
 }
 
-__device__ __host__
+
 void swap_Y(Real *Y, int i, int j){
     Real t0 = Y[3*i + 0];
     Real t1 = Y[3*i + 1];
@@ -364,7 +363,7 @@ void swap_Y(Real *Y, int i, int j){
     Y[3*j + 2] = t2;
 }
 
-__device__ __host__
+
 int partition (int arr[], Real *Y, int low, int high){
     int pivot = arr[high];  // selecting last element as pivot
     int i = (low - 1);  // index of smaller element
@@ -384,12 +383,10 @@ int partition (int arr[], Real *Y, int low, int high){
     return (i + 1);
 }
 
-/*  
-    a[] is the key array, p is starting index, that is 0, 
-    and r is the last index of array.  
-*/
-__device__ __host__
-void quicksort(int a[], Real *Y, int p, int r){
+
+/* a[] is the key array, p is starting index, that is 0, 
+    and r is the last index of array. */
+void quicksort(int *a, Real *Y, int p, int r){
     if(p < r)
     {
         int q;
@@ -399,7 +396,41 @@ void quicksort(int a[], Real *Y, int p, int r){
     }
 }
 
-__device__ __host__
+/* A[] --> Array to be sorted,
+l --> Starting index,
+h --> Ending index */
+void quicksortIterative(int *a, Real *Y, int l, int h)
+{
+    // Create an auxiliary stack
+    int stack[h - l + 1];
+    // initialize top of stack
+    int top = -1;
+    // push initial values of l and h to stack
+    stack[++top] = l;
+    stack[++top] = h;
+    // Keep popping from stack while is not empty
+    while (top >= 0) {
+        // Pop h and l
+        h = stack[top--];
+        l = stack[top--];
+        // Set pivot element at its correct position
+        // in sorted array
+        int p = partition(a, Y, l, h);
+        // If there are elements on left side of pivot,
+        // then push left side to stack
+        if (p - 1 > l) {
+            stack[++top] = l;
+            stack[++top] = p - 1;
+        }
+        // If there are elements on right side of pivot,
+        // then push right side to stack
+        if (p + 1 < h) {
+            stack[++top] = p + 1;
+            stack[++top] = h;
+        }
+    }
+}
+
 int partition_1D (int arr[], int *Y, int low, int high){
     int pivot = arr[high];  // selecting last element as pivot
     int i = (low - 1);  // index of smaller element
@@ -419,7 +450,6 @@ int partition_1D (int arr[], int *Y, int low, int high){
     return (i + 1);
 }
 
-__device__ __host__
 void quicksort_1D(int a[], int *Y, int p, int r){
     if(p < r)
     {
