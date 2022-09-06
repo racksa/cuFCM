@@ -8,6 +8,7 @@
 #ifndef NO_CUDA
 #include <cublas_v2.h>
 #include <cuda_profiler_api.h>
+#include "config.hpp"
 
 // helper for initializing cublas
 // use only for demos: not threadsafe
@@ -182,11 +183,11 @@ T* malloc_host(size_t N, T value=T()) {
 
 // aliases for types used in timing host code
 using clock_type    = std::chrono::high_resolution_clock;
-using duration_type = std::chrono::duration<double>;
+using duration_type = std::chrono::duration<Real>;
 
 // return the time in seconds since the get_time function was first called
 // for demos only: not threadsafe
-static double get_time() {
+static Real get_time() {
     static auto start_time = clock_type::now();
     return duration_type(clock_type::now()-start_time).count();
 }

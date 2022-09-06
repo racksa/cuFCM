@@ -1,3 +1,5 @@
+#include <cufft.h>
+
 #ifndef CONFIG_H
 #define CONFIG_H
 
@@ -16,7 +18,7 @@
 #define GRID_SIZE (NX*NY*NZ)
 #define FFT_GRID_SIZE ((NX/2+1)*NY*NZ)
 
-#define THREADS_PER_BLOCK 256
+#define THREADS_PER_BLOCK 32
 
 #define BATCH 10
 
@@ -27,12 +29,35 @@
 #define PARALLELISATION_TYPE 2
 // 0 = Thread per particle (TPP) register
 // 1 = Thread per particle (TPP) recompute
-// 2 = Block per particle (BPP)
+// 2 = Block per particle (BPP) shared
+// 3 = Block per particle (BPP) recompute
 
-#define SPATIAL_HASHING true
+#define SPATIAL_HASHING 1
+// 0 = Spatial hashing for correction, but without sorting
+// 1 = Spatial hashing and sorting
 
 #define CORRECTION_TYPE 1
 // 0 = linklist
 // 1 = spatial hashing
+
+#define USE_DOUBLE_PRECISION false
+
+#if USE_DOUBLE_PRECISION
+    typedef double Real;
+    typedef cufftDoubleReal myCufftReal;
+    typedef cufftDoubleComplex myCufftComplex;
+    #define cufftComplex2Real CUFFT_Z2D
+    #define cufftReal2Complex CUFFT_D2Z
+    #define cufftExecReal2Complex cufftExecD2Z
+    #define cufftExecComplex2Real cufftExecZ2D
+#else
+    typedef float Real;
+    typedef cufftReal myCufftReal;
+    typedef cufftComplex myCufftComplex;
+    #define cufftComplex2Real CUFFT_C2R
+    #define cufftReal2Complex CUFFT_R2C
+    #define cufftExecReal2Complex cufftExecR2C
+    #define cufftExecComplex2Real cufftExecC2R
+#endif
 
 #endif

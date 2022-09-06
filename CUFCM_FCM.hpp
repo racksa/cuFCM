@@ -1,110 +1,125 @@
 #pragma once
-
-
-
-__global__
-void cufcm_test_force(cufftDoubleReal* fx, cufftDoubleReal* fy, cufftDoubleReal* fz);
+#include "config.hpp"
 
 __global__
-void cufcm_precompute_gauss(int N, int ngd, double* Y,
-                    double* gaussx_, double* gaussy, double* gaussz,
-                    double* grad_gaussx_dip, double* grad_gaussy_dip, double* grad_gaussz_dip,
-                    double* gaussgrid,
-                    double* xdis, double* ydis, double* zdis,
+void cufcm_test_force(myCufftReal* fx, myCufftReal* fy, myCufftReal* fz);
+
+__global__
+void cufcm_precompute_gauss(int N, int ngd, Real* Y,
+                    Real* gaussx_, Real* gaussy, Real* gaussz,
+                    Real* grad_gaussx_dip, Real* grad_gaussy_dip, Real* grad_gaussz_dip,
+                    Real* gaussgrid,
+                    Real* xdis, Real* ydis, Real* zdis,
                     int* indx, int* indy, int* indz,
-                    double sigmadipsq, double anorm, double anorm2, double dx);
+                    Real sigmadipsq, Real anorm, Real anorm2, Real dx);
 
 __global__
-void GA_setup(double *GA, double *T, int N);
+void GA_setup(Real *GA, Real *T, int N);
 
 __global__
-void cufcm_mono_dipole_distribution_tpp_register(cufftDoubleReal *fx, cufftDoubleReal *fy, cufftDoubleReal *fz, int N,
-              double *GA, double *F, double pdmag, double sigmasq, 
-              double *gaussx, double *gaussy, double *gaussz,
-              double *grad_gaussx_dip, double *grad_gaussy_dip, double *grad_gaussz_dip,
-              double *xdis, double *ydis, double *zdis,
+void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
+              Real *GA, Real *F, Real pdmag, Real sigmasq, 
+              Real *gaussx, Real *gaussy, Real *gaussz,
+              Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
+              Real *xdis, Real *ydis, Real *zdis,
               int *indx, int *indy, int *indz,
               int ngd);
 
 __global__
-void cufcm_mono_dipole_distribution_tpp_recompute(cufftDoubleReal *fx, cufftDoubleReal *fy, cufftDoubleReal *fz,
-              double *Y, double *GA, double *F,
+void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
+              Real *Y, Real *GA, Real *F,
               int N, int ngd, 
-              double pdmag, double sigmasq, double sigmadipsq,
-              double anorm, double anorm2,
-              double dx);
+              Real pdmag, Real sigmasq, Real sigmadipsq,
+              Real anorm, Real anorm2,
+              Real dx);
 
 __global__
-void cufcm_mono_dipole_distribution_bpp(cufftDoubleReal *fx, cufftDoubleReal *fy, cufftDoubleReal *fz, double *Y,
-              double *GA, double *F, int N, int ngd, 
-              double pdmag, double sigmasq, double sigmadipsq,
-              double anorm, double anorm2,
-              double dx);
+void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
+              Real *GA, Real *F, int N, int ngd, 
+              Real pdmag, Real sigmasq, Real sigmadipsq,
+              Real anorm, Real anorm2,
+              Real dx);
 
 __global__
-void cufcm_flow_solve(cufftDoubleComplex* fk_x, cufftDoubleComplex* fk_y, cufftDoubleComplex* fk_z,
-                      cufftDoubleComplex* uk_x, cufftDoubleComplex* uk_y, cufftDoubleComplex* uk_z,
-                      double* q, double* qpad, double* qsq, double* qpadsq);
+void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
+              Real *GA, Real *F, int N, int ngd, 
+              Real pdmag, Real sigmasq, Real sigmadipsq,
+              Real anorm, Real anorm2,
+              Real dx);
 
 __global__
-void normalise_array(cufftDoubleReal* ux, cufftDoubleReal* uy, cufftDoubleReal* uz);
+void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
+                      myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
+                      Real* q, Real* qpad, Real* qsq, Real* qpadsq);
 
 __global__
-void cufcm_particle_velocities_tpp_register(cufftDoubleReal *ux, cufftDoubleReal *uy, cufftDoubleReal *uz, int N,
-                               double *VTEMP, double *WTEMP,
-                               double pdmag, double sigmasq, 
-                               double *gaussx, double *gaussy, double *gaussz,
-                               double *grad_gaussx_dip, double *grad_gaussy_dip, double *grad_gaussz_dip,
-                               double *xdis, double *ydis, double *zdis,
+void normalise_array(myCufftReal* ux, myCufftReal* uy, myCufftReal* uz);
+
+__global__
+void cufcm_particle_velocities_tpp_register(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz, int N,
+                               Real *VTEMP, Real *WTEMP,
+                               Real pdmag, Real sigmasq, 
+                               Real *gaussx, Real *gaussy, Real *gaussz,
+                               Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
+                               Real *xdis, Real *ydis, Real *zdis,
                                int *indx, int *indy, int *indz,
-                               int ngd, double dx);
+                               int ngd, Real dx);
 
 __global__
-void cufcm_particle_velocities_tpp_recompute(cufftDoubleReal *ux, cufftDoubleReal *uy, cufftDoubleReal *uz,
-                                double *Y,
-                                double *VTEMP, double *WTEMP,
+void cufcm_particle_velocities_tpp_recompute(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+                                Real *Y,
+                                Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
-                                double pdmag, double sigmasq, double sigmadipsq,
-                                double anorm, double anorm2,
-                                double dx);
+                                Real pdmag, Real sigmasq, Real sigmadipsq,
+                                Real anorm, Real anorm2,
+                                Real dx);
 
 __global__
-void cufcm_particle_velocities_bpp(cufftDoubleReal *ux, cufftDoubleReal *uy, cufftDoubleReal *uz,
-                                double *Y,
-                                double *VTEMP, double *WTEMP,
+void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+                                Real *Y,
+                                Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
-                                double pdmag, double sigmasq, double sigmadipsq,
-                                double anorm, double anorm2,
-                                double dx);
+                                Real pdmag, Real sigmasq, Real sigmadipsq,
+                                Real anorm, Real anorm2,
+                                Real dx);
 
-void cufcm_test_force_loop(cufftDoubleReal* fx, cufftDoubleReal* fy, cufftDoubleReal* fz);
+__global__
+void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+                                Real *Y,
+                                Real *VTEMP, Real *WTEMP,
+                                int N, int ngd, 
+                                Real pdmag, Real sigmasq, Real sigmadipsq,
+                                Real anorm, Real anorm2,
+                                Real dx);
 
-void cufcm_precompute_gauss_loop(int N, int ngd, double* Y,
-                    double* gaussx_, double* gaussy, double* gaussz,
-                    double* grad_gaussx_dip, double* grad_gaussy_dip, double* grad_gaussz_dip,
-                    double* gaussgrid,
-                    double* xdis, double* ydis, double* zdis,
+void cufcm_test_force_loop(myCufftReal* fx, myCufftReal* fy, myCufftReal* fz);
+
+void cufcm_precompute_gauss_loop(int N, int ngd, Real* Y,
+                    Real* gaussx_, Real* gaussy, Real* gaussz,
+                    Real* grad_gaussx_dip, Real* grad_gaussy_dip, Real* grad_gaussz_dip,
+                    Real* gaussgrid,
+                    Real* xdis, Real* ydis, Real* zdis,
                     int* indx, int* indy, int* indz,
-                    double sigmadipsq, double anorm, double anorm2, double dx);
+                    Real sigmadipsq, Real anorm, Real anorm2, Real dx);
 
-void GA_setup_loop(double *GA, double *T, int N);
+void GA_setup_loop(Real *GA, Real *T, int N);
 
-void cufcm_mono_dipole_distribution_tpp_loop(cufftDoubleReal *fx, cufftDoubleReal *fy, cufftDoubleReal *fz, int N,
-              double *GA, double *F, double pdmag, double sigmasq, 
-              double *gaussx, double *gaussy, double *gaussz,
-              double *grad_gaussx_dip, double *grad_gaussy_dip, double *grad_gaussz_dip,
-              double *xdis, double *ydis, double *zdis,
+void cufcm_mono_dipole_distribution_tpp_loop(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
+              Real *GA, Real *F, Real pdmag, Real sigmasq, 
+              Real *gaussx, Real *gaussy, Real *gaussz,
+              Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
+              Real *xdis, Real *ydis, Real *zdis,
               int *indx, int *indy, int *indz,
               int ngd);
 
-void cufcm_particle_velocities_loop(cufftDoubleReal *ux, cufftDoubleReal *uy, cufftDoubleReal *uz, int N,
-                               double *VTEMP, double *WTEMP,
-                               double pdmag, double sigmasq, 
-                               double *gaussx, double *gaussy, double *gaussz,
-                               double *grad_gaussx_dip, double *grad_gaussy_dip, double *grad_gaussz_dip,
-                               double *xdis, double *ydis, double *zdis,
+void cufcm_particle_velocities_loop(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz, int N,
+                               Real *VTEMP, Real *WTEMP,
+                               Real pdmag, Real sigmasq, 
+                               Real *gaussx, Real *gaussy, Real *gaussz,
+                               Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
+                               Real *xdis, Real *ydis, Real *zdis,
                                int *indx, int *indy, int *indz,
-                               int ngd, double dx);
+                               int ngd, Real dx);
 
 __device__ __host__
-double int_pow(double base, int power);
+Real int_pow(Real base, int power);
