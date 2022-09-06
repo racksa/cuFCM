@@ -3,6 +3,7 @@
 // Include CUDA runtime and CUFFT
 #include <cuda_runtime.h>
 #include <cufft.h>
+#include <cub/cub.cuh> 
 
 
 #include "cuda_util.hpp"
@@ -131,14 +132,14 @@ int main(int argc, char** argv) {
 
 	int* map_host = malloc_host<int>(mapsize);					int* map_device = malloc_device<int>(mapsize);
 	int* head_host = malloc_host<int>(ncell);					int* head_device = malloc_device<int>(ncell);
-	int* list_host = malloc_host<int>(N);						int* list_device = malloc_device<int>(N);
+	int* list_host = malloc_host<int>(N);							int* list_device = malloc_device<int>(N);
 
-	int* Y_hash_host = malloc_host<int>(N);
-	int* F_hash_host = malloc_host<int>(N);
-	int* T_hash_host = malloc_host<int>(N);
-	int* data_hash_host = malloc_host<int>(N);
-	int* original_index_host = malloc_host<int>(N);
-	int* cell_hash_mark_host = malloc_host<int>(ncell);
+	int* Y_hash_host = malloc_host<int>(N);							int* Y_hash_device = malloc_device<int>(N);	
+	int* F_hash_host = malloc_host<int>(N);							int* F_hash_device = malloc_device<int>(N);
+	int* T_hash_host = malloc_host<int>(N);							int* T_hash_device = malloc_device<int>(N);
+	int* data_hash_host = malloc_host<int>(N);						int* data_hash_device = malloc_device<int>(N);
+	int* original_index_host = malloc_host<int>(N);					int* original_index_device = malloc_device<int>(N);
+	int* cell_hash_mark_host = malloc_host<int>(ncell);			int* cell_hash_mark_device = malloc_device<int>(ncell);
 
 	bulkmap_loop(map_host, M, HASH_ENCODE_FUNC);
 	copy_to_device<int>(map_host, map_device, mapsize);
@@ -201,6 +202,7 @@ int main(int argc, char** argv) {
 	// Spatial hashing
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
+
 	/* Hashing */
 	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
 
@@ -213,6 +215,7 @@ int main(int argc, char** argv) {
 		create_hash(data_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
 
 	#endif
+	
 	/* Sorting */
 	#if SPATIAL_HASHING == 1
 
@@ -220,15 +223,37 @@ int main(int argc, char** argv) {
 		quicksort(F_hash_host, F_host, 0, N - 1);
 		quicksort(T_hash_host, T_host, 0, N - 1);
 		quicksort_1D(data_hash_host, original_index_host, 0, N - 1);		
-
 	#endif
 
-	cudaDeviceSynchronize();	auto time_hashing = get_time() - time_start;
-
-	
 	copy_to_device<Real>(Y_host, Y_device, 3*N);
 	copy_to_device<Real>(F_host, F_device, 3*N);
 	copy_to_device<Real>(T_host, T_device, 3*N);
+
+	/* Hashing */
+	// #if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
+
+	// 	for(int i = 0; i < N; i++){
+	// 		original_index_host[i] = i;
+	// 	}
+	// 	create_hash(Y_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+	// 	create_hash(F_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+	// 	create_hash(T_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+	// 	create_hash(data_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+
+	// #endif
+	
+	// /* Sorting */
+	// #if SPATIAL_HASHING == 1
+
+	// 	quicksort(Y_hash_device, Y_device, 0, N - 1);
+	// 	quicksort(F_hash_device, F_device, 0, N - 1);
+	// 	quicksort(T_hash_device, T_device, 0, N - 1);
+	// 	quicksort_1D(data_hash_device, original_index_device, 0, N - 1);		
+
+	// #endif
+
+	cudaDeviceSynchronize();	auto time_hashing = get_time() - time_start;
+
 	///////////////////////////////////////////////////////////////////////////////
 	// Link
 	///////////////////////////////////////////////////////////////////////////////
@@ -444,6 +469,13 @@ int main(int argc, char** argv) {
 		}
 		quicksort(F_hash_host, V_host, 0, N - 1);
 		quicksort(T_hash_host, W_host, 0, N - 1);
+
+		// for(int i = 0; i < N; i++){
+		// 	F_hash_device[i] = original_index_device[i];
+		// 	T_hash_device[i] = original_index_device[i];
+		// }
+		// quicksort(F_hash_device, V_device, 0, N - 1);
+		// quicksort(T_hash_device, W_device, 0, N - 1);
 
 	#endif
 
