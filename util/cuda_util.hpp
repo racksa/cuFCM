@@ -8,7 +8,7 @@
 #ifndef NO_CUDA
 #include <cublas_v2.h>
 #include <cuda_profiler_api.h>
-#include "config.hpp"
+#include "../config.hpp"
 
 // helper for initializing cublas
 // use only for demos: not threadsafe
