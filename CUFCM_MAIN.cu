@@ -4,12 +4,16 @@
 #include <cuda_runtime.h>
 #include <cufft.h>
 
+#include <cub/device/device_radix_sort.cuh>
+
 #include "cuda_util.hpp"
 #include "config.hpp"
 #include "CUFCM_FCM.hpp"
 #include "CUFCM_CORRECTION.hpp"
 #include "CUFCM_util.hpp"
 #include "CUFCM_data.hpp"
+#include "util/CUFCM_print.hpp"
+#include "util/CUFCM_hashing.hpp"
 
 
 
@@ -17,6 +21,34 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Initialise parameters
 	///////////////////////////////////////////////////////////////////////////////
+
+	// int n = 6;
+	// int key_host[n] = {4, 5, 3, 6, 2, 1};
+	// int* key_sorted_host = malloc_host<int>(n);
+	// int* key_device = malloc_device<int>(n);
+	// int* key_sorted_device = malloc_device<int>(n);
+	// int value_host[n] = {40, 50, 30, 60, 20, 10};
+	// int* value_sorted_host = malloc_host<int>(n);
+	// int* value_device = malloc_device<int>(n);
+	// int* value_sorted_device = malloc_device<int>(n);
+
+	// for(int i = 0; i < n; i++){
+	// 	printf("init (%d %d)\n", key_host[i], value_host[i]);
+	// }
+
+	// copy_to_device<int>(key_host, key_device, n);
+	// copy_to_device<int>(value_host, value_device, n);
+
+	// sort_index_by_key(key_device, value_device, n);
+
+	// copy_to_host<int>(key_device, key_host, n);
+	// copy_to_host<int>(value_device, value_host, n);
+
+	// for(int i = 0; i < n; i++){
+	// 	printf("sorted (%d %d)\n", key_host[i], value_host[i]);
+	// }
+
+
 
 	auto time_start = get_time();
 
@@ -106,37 +138,42 @@ int main(int argc, char** argv) {
     myCufftComplex* uk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
     myCufftComplex* uk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
 
-	Real* Y_host = malloc_host<Real>(3*N);					Real* Y_device = malloc_device<Real>(3*N);
-	Real* F_host = malloc_host<Real>(3*N);					Real* F_device = malloc_device<Real>(3*N);
-	Real* T_host = malloc_host<Real>(3*N);					Real* T_device = malloc_device<Real>(3*N);
-	Real* V_host = malloc_host<Real>(3*N);					Real* V_device = malloc_device<Real>(3*N);
-	Real* W_host = malloc_host<Real>(3*N);					Real* W_device = malloc_device<Real>(3*N);
-	Real* GA_host = malloc_host<Real>(6*N);					Real* GA_device = malloc_device<Real>(6*N);
+	Real *aux_host = malloc_host<Real>(3*N);						Real *aux_device = malloc_device<Real>(3*N);
+	Real* Y_host = malloc_host<Real>(3*N);						Real* Y_device = malloc_device<Real>(3*N);
+	Real* F_host = malloc_host<Real>(3*N);						Real* F_device = malloc_device<Real>(3*N);
+	Real* T_host = malloc_host<Real>(3*N);						Real* T_device = malloc_device<Real>(3*N);
+	Real* V_host = malloc_host<Real>(3*N);						Real* V_device = malloc_device<Real>(3*N);
+	Real* W_host = malloc_host<Real>(3*N);						Real* W_device = malloc_device<Real>(3*N);
+	Real* GA_host = malloc_host<Real>(6*N);						Real* GA_device = malloc_device<Real>(6*N);
 
-	Real* gaussx_host = malloc_host<Real>(ngd*N);			Real* gaussx_device = malloc_device<Real>(ngd*N);
-	Real* gaussy_host = malloc_host<Real>(ngd*N);			Real* gaussy_device = malloc_device<Real>(ngd*N);
-	Real* gaussz_host = malloc_host<Real>(ngd*N);			Real* gaussz_device = malloc_device<Real>(ngd*N);
-	Real* grad_gaussx_dip_host = malloc_host<Real>(ngd*N);	Real* grad_gaussx_dip_device = malloc_device<Real>(ngd*N);
-	Real* grad_gaussy_dip_host = malloc_host<Real>(ngd*N);	Real* grad_gaussy_dip_device = malloc_device<Real>(ngd*N);
-	Real* grad_gaussz_dip_host = malloc_host<Real>(ngd*N);	Real* grad_gaussz_dip_device = malloc_device<Real>(ngd*N);
-	Real* gaussgrid_host = malloc_host<Real>(ngd);			Real* gaussgrid_device = malloc_device<Real>(ngd);
-	Real* xdis_host = malloc_host<Real>(ngd*N);				Real* xdis_device = malloc_device<Real>(ngd*N);
-	Real* ydis_host = malloc_host<Real>(ngd*N);				Real* ydis_device = malloc_device<Real>(ngd*N);
-	Real* zdis_host = malloc_host<Real>(ngd*N);				Real* zdis_device = malloc_device<Real>(ngd*N);
+	Real* gaussx_host = malloc_host<Real>(ngd*N);				Real* gaussx_device = malloc_device<Real>(ngd*N);
+	Real* gaussy_host = malloc_host<Real>(ngd*N);				Real* gaussy_device = malloc_device<Real>(ngd*N);
+	Real* gaussz_host = malloc_host<Real>(ngd*N);				Real* gaussz_device = malloc_device<Real>(ngd*N);
+	Real* grad_gaussx_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussx_dip_device = malloc_device<Real>(ngd*N);
+	Real* grad_gaussy_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussy_dip_device = malloc_device<Real>(ngd*N);
+	Real* grad_gaussz_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussz_dip_device = malloc_device<Real>(ngd*N);
+	Real* gaussgrid_host = malloc_host<Real>(ngd);				Real* gaussgrid_device = malloc_device<Real>(ngd);
+	Real* xdis_host = malloc_host<Real>(ngd*N);					Real* xdis_device = malloc_device<Real>(ngd*N);
+	Real* ydis_host = malloc_host<Real>(ngd*N);					Real* ydis_device = malloc_device<Real>(ngd*N);
+	Real* zdis_host = malloc_host<Real>(ngd*N);					Real* zdis_device = malloc_device<Real>(ngd*N);
 	int* indx_host = malloc_host<int>(ngd*N);					int* indx_device = malloc_device<int>(ngd*N);
 	int* indy_host = malloc_host<int>(ngd*N);					int* indy_device = malloc_device<int>(ngd*N);
 	int* indz_host = malloc_host<int>(ngd*N);					int* indz_device = malloc_device<int>(ngd*N);
 
 	int* map_host = malloc_host<int>(mapsize);					int* map_device = malloc_device<int>(mapsize);
 	int* head_host = malloc_host<int>(ncell);					int* head_device = malloc_device<int>(ncell);
-	int* list_host = malloc_host<int>(N);							int* list_device = malloc_device<int>(N);
+	int* list_host = malloc_host<int>(N);						int* list_device = malloc_device<int>(N);
 
 	int* Y_hash_host = malloc_host<int>(N);							int* Y_hash_device = malloc_device<int>(N);	
 	int* F_hash_host = malloc_host<int>(N);							int* F_hash_device = malloc_device<int>(N);
 	int* T_hash_host = malloc_host<int>(N);							int* T_hash_device = malloc_device<int>(N);
-	int* data_hash_host = malloc_host<int>(N);						int* data_hash_device = malloc_device<int>(N);
-	int* original_index_host = malloc_host<int>(N);					int* original_index_device = malloc_device<int>(N);
-	int* cell_hash_mark_host = malloc_host<int>(ncell);			int* cell_hash_mark_device = malloc_device<int>(ncell);
+	int* index_hash_host = malloc_host<int>(N);						int* data_hash_device = malloc_device<int>(N);
+	int* Y_index_host = malloc_host<int>(N);							int* Y_index_device = malloc_device<int>(N);	
+	int* F_index_host = malloc_host<int>(N);							int* F_index_device = malloc_device<int>(N);
+	int* T_index_host = malloc_host<int>(N);							int* T_index_device = malloc_device<int>(N);
+	int* particle_index_host = malloc_host<int>(N);						int* particle_index_device = malloc_device<int>(N);
+	int* sortback_index_host = malloc_host<int>(N);						int* sortback_index_device = malloc_device<int>(N);
+	int* cell_hash_mark_host = malloc_host<int>(ncell);					int* cell_hash_mark_device = malloc_device<int>(ncell);
 
 	bulkmap_loop(map_host, M, HASH_ENCODE_FUNC);
 	copy_to_device<int>(map_host, map_device, mapsize);
@@ -200,16 +237,16 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	// /* Hashing */
+	/* CPU Hashing */
 	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
 
 		for(int i = 0; i < N; i++){
-			original_index_host[i] = i;
+			particle_index_host[i] = i;
 		}
 		create_hash(Y_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
 		create_hash(F_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
 		create_hash(T_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
-		create_hash(data_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+		create_hash(index_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
 
 	#endif
 	
@@ -219,7 +256,7 @@ int main(int argc, char** argv) {
 		quicksortIterative(Y_hash_host, Y_host, 0, N - 1);
 		quicksortIterative(F_hash_host, F_host, 0, N - 1);
 		quicksortIterative(T_hash_host, T_host, 0, N - 1);
-		quicksort_1D(data_hash_host, original_index_host, 0, N - 1);	
+		quicksort_1D(index_hash_host, particle_index_host, 0, N - 1);	
 
 	#endif
 
@@ -227,28 +264,23 @@ int main(int argc, char** argv) {
 	copy_to_device<Real>(F_host, F_device, 3*N);
 	copy_to_device<Real>(T_host, T_device, 3*N);
 
-	/* Hashing */
-	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
+	/* GPU Hashing */
+	#if SPATIAL_HASHING == 2
 
-		// for(int i = 0; i < N; i++){
-		// 	original_index_host[i] = i;
-		// }
-		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
-		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
-		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+		// Create Hash (i, j, k) -> Hash
+		particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
 		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(data_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
 
-	#endif
-	
-	/* Sorting */
-	#if SPATIAL_HASHING == 1
-
-		// cub::DeviceRadixSort::SortPairs(nullptr, 0, Y_hash_device, Y_device, N);
-
-		// quicksortIterative_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_hash_device, Y_device, 0, N - 1);
-		// quicksortIterative_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_hash_device, F_device, 0, N - 1);
-		// quicksortIterative_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_hash_device, T_device, 0, N - 1);
-		// quicksort_1D(data_hash_device, original_index_device, 0, N - 1);		
+		// Sort particle index by hash
+		sort_index_by_key(data_hash_device, particle_index_device, N);
+		
+		// Sort pos/force/torque by particle index
+		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
+		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
+		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, F_device, aux_device, N);
+		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
+		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, T_device, aux_device, N);
 
 	#endif
 
@@ -259,9 +291,8 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	// link<<<num_thread_blocks, THREADS_PER_BLOCK>>>(list_device, head_device, Y_device, M, ncell, N);
+	copy_to_host<Real>(Y_device, Y_host, 3*N);
 	link_loop(list_host, head_host, Y_host, M, N, linear_encode);
-
 	copy_to_device<int>(list_host, list_device, N);
 	copy_to_device<int>(head_host, head_device, ncell);
 
@@ -454,32 +485,43 @@ int main(int argc, char** argv) {
 
 	cudaDeviceSynchronize();	auto time_correction = get_time() - time_start;
 
+	/* Sort back */
+	#if SPATIAL_HASHING == 2 and SORT_BACK == 1
 
-	/* Print */
+		particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, N);
+		sort_index_by_key(particle_index_device, sortback_index_device, N);
+
+		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, aux_device, 3*N);
+		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, V_device, aux_device, N);
+
+		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(W_device, aux_device, 3*N);
+		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, W_device, aux_device, N);
+
+		copy_to_host<Real>(V_device, V_host, 3*N);
+		copy_to_host<Real>(W_device, W_host, 3*N);
+
+	#endif
+
 	copy_to_host<Real>(V_device, V_host, 3*N);
 	copy_to_host<Real>(W_device, W_host, 3*N);
-	// print_host_data_real_3D_flat<Real>(V_host, N, 3);
 
+	#if SPATIAL_HASHING == 1 and SORT_BACK == 1
 
-	#if SPATIAL_HASHING == 1
+		copy_to_host<Real>(V_device, V_host, 3*N);
+		copy_to_host<Real>(W_device, W_host, 3*N);
 
 		for(int i = 0; i < N; i++){
-			F_hash_host[i] = original_index_host[i];
-			T_hash_host[i] = original_index_host[i];
+			F_hash_host[i] = particle_index_host[i];
+			T_hash_host[i] = particle_index_host[i];
 		}
 		quicksort(F_hash_host, V_host, 0, N - 1);
 		quicksort(T_hash_host, W_host, 0, N - 1);
 
-		// for(int i = 0; i < N; i++){
-		// 	F_hash_device[i] = original_index_device[i];
-		// 	T_hash_device[i] = original_index_device[i];
-		// }
-		// quicksort(F_hash_device, V_device, 0, N - 1);
-		// quicksort(T_hash_device, W_device, 0, N - 1);
-
 	#endif
+	
 
 
+	/* Print */
 	for(int i = N-10; i < N; i++){
 		printf("%d V ( ", i);
 		for(int n = 0; n < 3; n++){
