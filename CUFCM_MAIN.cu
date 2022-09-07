@@ -6,15 +6,16 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
-#include "cuda_util.hpp"
+
 #include "config.hpp"
 #include "CUFCM_FCM.hpp"
 #include "CUFCM_CORRECTION.hpp"
-#include "CUFCM_util.hpp"
 #include "CUFCM_data.hpp"
+
+#include "util/cuda_util.hpp"
+#include "util/CUFCM_linklist.hpp"
 #include "util/CUFCM_print.hpp"
 #include "util/CUFCM_hashing.hpp"
-
 
 
 int main(int argc, char** argv) {
@@ -167,13 +168,14 @@ int main(int argc, char** argv) {
 	int* Y_hash_host = malloc_host<int>(N);							int* Y_hash_device = malloc_device<int>(N);	
 	int* F_hash_host = malloc_host<int>(N);							int* F_hash_device = malloc_device<int>(N);
 	int* T_hash_host = malloc_host<int>(N);							int* T_hash_device = malloc_device<int>(N);
-	int* index_hash_host = malloc_host<int>(N);						int* data_hash_device = malloc_device<int>(N);
+	int* index_hash_host = malloc_host<int>(N);						int* particle_hash_device = malloc_device<int>(N);
 	int* Y_index_host = malloc_host<int>(N);							int* Y_index_device = malloc_device<int>(N);	
 	int* F_index_host = malloc_host<int>(N);							int* F_index_device = malloc_device<int>(N);
 	int* T_index_host = malloc_host<int>(N);							int* T_index_device = malloc_device<int>(N);
 	int* particle_index_host = malloc_host<int>(N);						int* particle_index_device = malloc_device<int>(N);
 	int* sortback_index_host = malloc_host<int>(N);						int* sortback_index_device = malloc_device<int>(N);
-	int* cell_hash_mark_host = malloc_host<int>(ncell);					int* cell_hash_mark_device = malloc_device<int>(ncell);
+	int* cell_start_host = malloc_host<int>(ncell);						int* cell_start_device = malloc_device<int>(ncell);
+	int* cell_end_host = malloc_host<int>(ncell);						int* cell_end_device = malloc_device<int>(ncell);
 
 	bulkmap_loop(map_host, M, HASH_ENCODE_FUNC);
 	copy_to_device<int>(map_host, map_device, mapsize);
@@ -269,10 +271,10 @@ int main(int argc, char** argv) {
 
 		// Create Hash (i, j, k) -> Hash
 		particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
-		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(data_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
 
 		// Sort particle index by hash
-		sort_index_by_key(data_hash_device, particle_index_device, N);
+		sort_index_by_key(particle_hash_device, particle_index_device, N);
 		
 		// Sort pos/force/torque by particle index
 		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);

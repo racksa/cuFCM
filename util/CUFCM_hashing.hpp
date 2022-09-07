@@ -82,6 +82,7 @@ void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
     return;
 }
 
+
 void sort_index_by_key(int *key, int *index, int N){
 	void     *d_temp_storage = NULL;
 	size_t   temp_storage_bytes = 0;
@@ -99,6 +100,17 @@ void sort_index_by_key(int *key, int *index, int N){
 
 }
 
+__global__
+void create_cell_list(int *particle_hash, int *cell_start, int *cell_end, int N, int ncell){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
 
+    for(int np = index; np < N; np+=stride){
+
+    }
+    
+    return;
+    
+}
 
 	
