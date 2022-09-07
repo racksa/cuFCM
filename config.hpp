@@ -32,9 +32,14 @@
 // 2 = Block per particle (BPP) shared
 // 3 = Block per particle (BPP) recompute
 
-#define SPATIAL_HASHING 1
+#define SPATIAL_HASHING 2
 // 0 = Spatial hashing for correction, but without sorting
 // 1 = Spatial hashing and sorting
+// 2 = Spatial hashing and sorting (GPU)
+
+#define SORT_BACK 1
+// 0 = Do not sort back
+// 1 = Sort back
 
 #define CORRECTION_TYPE 1
 // 0 = linklist
