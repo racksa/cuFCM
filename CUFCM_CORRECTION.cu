@@ -116,34 +116,16 @@ void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T,
             if(i > -1){
                 m++;
             }
-            // if(np == 300){
-                // printf("--- thread tracker:%d\tm:%d\ti:%d\ticell/ncell:\t %d / %d \n", np, m, i, icell, ncell);
-            // }
+
         }
 
-        // 9993 ( 0.54540205 0.08480939 0.09774844 )
-        // 9994 ( 0.88209362 0.12272217 0.49171341 )
-        // 9995 ( -0.17118156 0.76744805 -0.64195434 )
-        // 9996 ( -0.16255797 0.14025717 -0.18016408 )
-        // 9997 ( 1.40436664 0.00166609 0.70345968 )
-        // 9997 ( 0.33007566 1.19916520 -1.61376982 )
-        // 9999 ( 2.12668145 -0.10840189 0.03746328 )
-
-        // printf("--- thread:%d\ti:%d\ticell/ncell:\t %d / %d \n", np, i, icell, ncell);
-    
-        
         xi = Y[3*i + 0];
         yi = Y[3*i + 1];
         zi = Y[3*i + 2];
-        // vxi = V[3*i + 0];
-        // vyi = V[3*i + 1];
-        // vzi = V[3*i + 2];
-        // wxi = W[3*i + 0];
-        // wyi = W[3*i + 1];
-        // wzi = W[3*i + 2];
+
         j = list[i];
-        // intra-cell interactions
-        // corrections apply to both parties
+        /* intra-cell interactions */
+        /* corrections apply to both parties */
         while(j > -1){
             xij = xi - Y[3*j + 0];
             yij = yi - Y[3*j + 1];
@@ -211,9 +193,6 @@ void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T,
                 atomicAdd(&W[3*j + 0], 0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
                 atomicAdd(&W[3*j + 1], 0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
                 atomicAdd(&W[3*j + 2], 0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
-                // W[3*j + 0] = W[3*j + 0] + 0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] );
-                // W[3*j + 1] = W[3*j + 1] + 0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] );
-                // W[3*j + 2] = W[3*j + 2] + 0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] );
 
                 vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
                 vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
@@ -222,22 +201,6 @@ void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T,
                 atomicAdd(&V[3*j + 0], temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ));
                 atomicAdd(&V[3*j + 1], temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ));
                 atomicAdd(&V[3*j + 2], temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
-                // V[3*j + 0] = V[3*j + 0] + temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] );
-                // V[3*j + 1] = V[3*j + 1] + temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] );
-                // V[3*j + 2] = V[3*j + 2] + temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] );
-
-                // if(i==9997){
-                //     printf("\tinteraction (%d %d)\t cell(%d %d) vi(%.8f %.8f %.8f) \n", i, j, icell, icell, 
-                //     temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] ), 
-                //     temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] ), 
-                //     temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] ));
-                // }
-                // if(j==9997){
-                //     printf("\tinteraction (%d %d)\t cell(%d %d) vj(%.8f %.8f %.8f) \n", i, j, icell, icell, 
-                //     temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ), 
-                //     temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ), 
-                //     temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
-                // }
 
             }
             j = list[j];
@@ -313,9 +276,6 @@ void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T,
                     atomicAdd(&W[3*j + 0], 0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
                     atomicAdd(&W[3*j + 1], 0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
                     atomicAdd(&W[3*j + 2], 0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
-                    // W[3*j + 0] = W[3*j + 0] + 0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] );
-                    // W[3*j + 1] = W[3*j + 1] + 0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] );
-                    // W[3*j + 2] = W[3*j + 2] + 0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] );
 
                     vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
                     vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
@@ -324,22 +284,6 @@ void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T,
                     atomicAdd(&V[3*j + 0], temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ));
                     atomicAdd(&V[3*j + 1], temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ));
                     atomicAdd(&V[3*j + 2], temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
-                    // V[3*j + 0] = V[3*j + 0] + temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] );
-                    // V[3*j + 1] = V[3*j + 1] + temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] );
-                    // V[3*j + 2] = V[3*j + 2] + temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] );
-                    
-                    // if(i==9997){
-                    //     printf("\tinteraction (%d %d)\t cell(%d %d) vi(%.8f %.8f %.8f) \n", i, j, icell, jcell, 
-                    //     temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] ), 
-                    //     temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] ), 
-                    //     temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] ));
-                    // }
-                    // if(j==9997){
-                    //     printf("\tinteraction (%d %d)\t cell(%d %d) vj(%.8f %.8f %.8f) \n", i, j, icell, jcell, 
-                    //     temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ), 
-                    //     temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ), 
-                    //     temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
-                    // }
 
                 }
                 j = list[j];
@@ -357,7 +301,7 @@ void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T,
 }
 
 __global__
-void cufcm_pair_correction_spatial_hashing(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
+void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,

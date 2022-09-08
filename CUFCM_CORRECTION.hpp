@@ -46,7 +46,7 @@ void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
                                 Real WT1Mob, Real WT2Mob);
 
 __global__
-void cufcm_pair_correction_spatial_hashing(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
+void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,

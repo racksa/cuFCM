@@ -23,45 +23,18 @@ int main(int argc, char** argv) {
 	// Initialise parameters
 	///////////////////////////////////////////////////////////////////////////////
 
-	// int n = 6;
-	// int key_host[n] = {4, 5, 3, 6, 2, 1};
-	// int* key_sorted_host = malloc_host<int>(n);
-	// int* key_device = malloc_device<int>(n);
-	// int* key_sorted_device = malloc_device<int>(n);
-	// int value_host[n] = {40, 50, 30, 60, 20, 10};
-	// int* value_sorted_host = malloc_host<int>(n);
-	// int* value_device = malloc_device<int>(n);
-	// int* value_sorted_device = malloc_device<int>(n);
-
-	// for(int i = 0; i < n; i++){
-	// 	printf("init (%d %d)\n", key_host[i], value_host[i]);
-	// }
-
-	// copy_to_device<int>(key_host, key_device, n);
-	// copy_to_device<int>(value_host, value_device, n);
-
-	// sort_index_by_key(key_device, value_device, n);
-
-	// copy_to_host<int>(key_device, key_host, n);
-	// copy_to_host<int>(value_device, value_host, n);
-
-	// for(int i = 0; i < n; i++){
-	// 	printf("sorted (%d %d)\n", key_host[i], value_host[i]);
-	// }
-
-
-
 	auto time_start = get_time();
 
 	int N = 500000;
 
 	int ngd = NGD;
 
-	Real sigma_fac = 1.55917641;
+	Real sigma_fac = SIGMA_FAC;
+	Real Rref_fac = RREF_FAC;
+
 	Real dx = (PI2)/(NX);
 
 	/* Link list */
-	Real Rref_fac = 5.21186960;
 	Real Rref = Rref_fac*dx;
 	int M = (int) (PI2/Rref);
 	Real cellL = PI2 / (Real)M;
@@ -316,7 +289,7 @@ int main(int argc, char** argv) {
 
 	GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
 
-	#if PARALLELISATION_TYPE == 0
+	#if GRIDDING_TYPE == 0
 
 		cufcm_precompute_gauss<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
 					gaussx_device, gaussy_device, gaussz_device,
@@ -334,7 +307,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	#if PARALLELISATION_TYPE == 0
+	#if GRIDDING_TYPE == 0
 
 		cufcm_mono_dipole_distribution_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
 											GA_device, F_device, pdmag, sigmaGRIDsq,
@@ -344,7 +317,7 @@ int main(int argc, char** argv) {
 											indx_device, indy_device, indz_device,
 											ngd);
 
-	#elif PARALLELISATION_TYPE == 1
+	#elif GRIDDING_TYPE == 1
 
 		cufcm_mono_dipole_distribution_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device,
 											Y_device, GA_device, F_device,
@@ -352,7 +325,7 @@ int main(int argc, char** argv) {
 											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 											anormGRID, anormGRID2,
 											dx);
-	#elif PARALLELISATION_TYPE == 2
+	#elif GRIDDING_TYPE == 2
 
 		cufcm_mono_dipole_distribution_bpp_shared<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
 											Y_device, GA_device, F_device,
@@ -361,7 +334,7 @@ int main(int argc, char** argv) {
 											anormGRID, anormGRID2,
 											dx);
 	
-	#elif PARALLELISATION_TYPE == 3
+	#elif GRIDDING_TYPE == 3
 
 		cufcm_mono_dipole_distribution_bpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
 											Y_device, GA_device, F_device,
@@ -419,7 +392,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	#if PARALLELISATION_TYPE == 0
+	#if GRIDDING_TYPE == 0
 
 		cufcm_particle_velocities_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
 									V_device, W_device,
@@ -430,7 +403,7 @@ int main(int argc, char** argv) {
 									indx_device, indy_device, indz_device,
 									ngd, dx);
 
-	#elif PARALLELISATION_TYPE == 1
+	#elif GRIDDING_TYPE == 1
 
 		cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
 									Y_device,
@@ -440,7 +413,7 @@ int main(int argc, char** argv) {
 									anormGRID, anormGRID2,
 									dx);
 
-	#elif PARALLELISATION_TYPE == 2
+	#elif GRIDDING_TYPE == 2
 
 		cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
 									Y_device,
@@ -450,7 +423,7 @@ int main(int argc, char** argv) {
 									anormGRID, anormGRID2,
 									dx);
 
-	#elif PARALLELISATION_TYPE == 3
+	#elif GRIDDING_TYPE == 3
 
 		cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
 									Y_device,
@@ -480,7 +453,7 @@ int main(int argc, char** argv) {
 	
 	#elif CORRECTION_TYPE == 1
 
-		cufcm_pair_correction_spatial_hashing<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+		cufcm_pair_correction_spatial_hashing_tpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
 							particle_cellhash_device, cell_start_device, cell_end_device,
 							map_device,
 							ncell, Rrefsq,
