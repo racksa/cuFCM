@@ -12,7 +12,7 @@
 #include "../config.hpp"
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -23,12 +23,12 @@ void create_hash_gpu(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned 
 		yc = (int) (Y[3*np + 1]/dx);
 		zc = (int) (Y[3*np + 2]/dx);
 
-		hash[np] = xc + (yc + zc*NX)*NX;
+		hash[np] = xc + (yc + zc*M)*M;
 	}
 	return;
 }
 
-void create_hash(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+void create_hash(int *hash, Real *Y, int N, Real dx, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xc, yc, zc;
 
 	for(int np = 0; np < N; np++){
@@ -36,7 +36,7 @@ void create_hash(int *hash, Real *Y, int N, Real dx, uint64_t (*f)(unsigned int,
 		yc = (int) (Y[3*np + 1]/dx);
 		zc = (int) (Y[3*np + 2]/dx);
 
-		hash[np] = xc + (yc + zc*NX)*NX;
+		hash[np] = xc + (yc + zc*M)*M;
 	}
 	return;
 }
@@ -101,12 +101,25 @@ void sort_index_by_key(int *key, int *index, int N){
 }
 
 __global__
-void create_cell_list(int *particle_hash, int *cell_start, int *cell_end, int N, int ncell){
+void create_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int N){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    for(int np = index; np < N; np+=stride){
+    unsigned int c1, c2;
 
+    for(int np = index; np < N; np+=stride){
+        c2 = particle_cellindex[np];
+        c1 = particle_cellindex[np-1];
+
+        if(c1 != c2 || np == 0){
+            cell_start[c2] = np;
+            if(np > 0){
+                cell_end[c1] = np;
+            }
+        }
+        if(np == N - 1){
+            cell_end[c2] = np;
+        }
     }
     
     return;

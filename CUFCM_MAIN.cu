@@ -64,6 +64,7 @@ int main(int argc, char** argv) {
 	Real Rref_fac = 5.21186960;
 	Real Rref = Rref_fac*dx;
 	int M = (int) (PI2/Rref);
+	Real cellL = PI2 / (Real)M;
 	Real Rrefsq = Rref*Rref;
 	if(M < 3){
 		M = 3;
@@ -165,15 +166,17 @@ int main(int argc, char** argv) {
 	int* head_host = malloc_host<int>(ncell);					int* head_device = malloc_device<int>(ncell);
 	int* list_host = malloc_host<int>(N);						int* list_device = malloc_device<int>(N);
 
-	int* Y_hash_host = malloc_host<int>(N);							int* Y_hash_device = malloc_device<int>(N);	
-	int* F_hash_host = malloc_host<int>(N);							int* F_hash_device = malloc_device<int>(N);
-	int* T_hash_host = malloc_host<int>(N);							int* T_hash_device = malloc_device<int>(N);
-	int* index_hash_host = malloc_host<int>(N);						int* particle_hash_device = malloc_device<int>(N);
+	int* Y_hash_host = malloc_host<int>(N);								int* Y_hash_device = malloc_device<int>(N);	
+	int* F_hash_host = malloc_host<int>(N);								int* F_hash_device = malloc_device<int>(N);
+	int* T_hash_host = malloc_host<int>(N);								int* T_hash_device = malloc_device<int>(N);
+	int* particle_cellindex_host = malloc_host<int>(N);					int* particle_cellindex_device = malloc_device<int>(N);
+	int* particle_cellhash_host = malloc_host<int>(N);					int* particle_cellhash_device = malloc_device<int>(N);
 	int* Y_index_host = malloc_host<int>(N);							int* Y_index_device = malloc_device<int>(N);	
 	int* F_index_host = malloc_host<int>(N);							int* F_index_device = malloc_device<int>(N);
 	int* T_index_host = malloc_host<int>(N);							int* T_index_device = malloc_device<int>(N);
 	int* particle_index_host = malloc_host<int>(N);						int* particle_index_device = malloc_device<int>(N);
 	int* sortback_index_host = malloc_host<int>(N);						int* sortback_index_device = malloc_device<int>(N);
+	
 	int* cell_start_host = malloc_host<int>(ncell);						int* cell_start_device = malloc_device<int>(ncell);
 	int* cell_end_host = malloc_host<int>(ncell);						int* cell_end_device = malloc_device<int>(ncell);
 
@@ -245,10 +248,10 @@ int main(int argc, char** argv) {
 		for(int i = 0; i < N; i++){
 			particle_index_host[i] = i;
 		}
-		create_hash(Y_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
-		create_hash(F_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
-		create_hash(T_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
-		create_hash(index_hash_host, Y_host, N, dx, HASH_ENCODE_FUNC);
+		create_hash(Y_hash_host, Y_host, N, dx, M, HASH_ENCODE_FUNC);
+		create_hash(F_hash_host, Y_host, N, dx, M, HASH_ENCODE_FUNC);
+		create_hash(T_hash_host, Y_host, N, dx, M, HASH_ENCODE_FUNC);
+		create_hash(particle_cellhash_host, Y_host, N, dx, M, HASH_ENCODE_FUNC);
 
 	#endif
 	
@@ -258,7 +261,7 @@ int main(int argc, char** argv) {
 		quicksortIterative(Y_hash_host, Y_host, 0, N - 1);
 		quicksortIterative(F_hash_host, F_host, 0, N - 1);
 		quicksortIterative(T_hash_host, T_host, 0, N - 1);
-		quicksort_1D(index_hash_host, particle_index_host, 0, N - 1);	
+		quicksort_1D(particle_cellhash_host, particle_index_host, 0, N - 1);	
 
 	#endif
 
@@ -271,10 +274,10 @@ int main(int argc, char** argv) {
 
 		// Create Hash (i, j, k) -> Hash
 		particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
-		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_hash_device, Y_device, N, dx, HASH_ENCODE_FUNC);
+		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, HASH_ENCODE_FUNC);
 
 		// Sort particle index by hash
-		sort_index_by_key(particle_hash_device, particle_index_device, N);
+		sort_index_by_key(particle_cellhash_device, particle_index_device, N);
 		
 		// Sort pos/force/torque by particle index
 		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
@@ -284,6 +287,9 @@ int main(int argc, char** argv) {
 		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
 		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, T_device, aux_device, N);
 
+		// Find cell starting/ending points
+		create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
+		
 	#endif
 
 	cudaDeviceSynchronize();	auto time_hashing = get_time() - time_start;
@@ -293,10 +299,14 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	copy_to_host<Real>(Y_device, Y_host, 3*N);
-	link_loop(list_host, head_host, Y_host, M, N, linear_encode);
-	copy_to_device<int>(list_host, list_device, N);
-	copy_to_device<int>(head_host, head_device, ncell);
+	#if CORRECTION_TYPE == 0
+
+		copy_to_host<Real>(Y_device, Y_host, 3*N);
+		link_loop(list_host, head_host, Y_host, M, N, linear_encode);
+		copy_to_device<int>(list_host, list_device, N);
+		copy_to_device<int>(head_host, head_device, ncell);
+
+	#endif
 
 	cudaDeviceSynchronize();	auto time_linklist = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
@@ -471,7 +481,8 @@ int main(int argc, char** argv) {
 	#elif CORRECTION_TYPE == 1
 
 		cufcm_pair_correction_spatial_hashing<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
-							map_device, head_device, list_device,
+							particle_cellhash_device, cell_start_device, cell_end_device,
+							map_device,
 							ncell, Rrefsq,
 							pdmag,
 							sigmaGRID, sigmaGRIDsq,
