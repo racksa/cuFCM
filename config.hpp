@@ -13,7 +13,26 @@
 #define NY 256.0
 #define NZ 256.0
 #define NPTS 256.0
+
 #define NGD 9
+#define SIGMA_FAC 1.55917641;
+#define RREF_FAC 5.21186960;
+
+// #define NGD 11
+// #define SIGMA_FAC 1.75207280;
+// #define RREF_FAC 6.69738570;
+
+// #define NGD 13
+// #define SIGMA_FAC 1.92479594;
+// #define RREF_FAC 8.18540500;
+
+// #define NGD 15
+// #define SIGMA_FAC 2.08834941;
+// #define RREF_FAC 9.66631420;
+
+// #define NGD 18
+// #define SIGMA_FAC 2.24239977;
+// #define RREF_FAC 11.19847000;
 
 #define GRID_SIZE (NX*NY*NZ)
 #define FFT_GRID_SIZE ((NX/2+1)*NY*NZ)
@@ -26,24 +45,24 @@
 
 #define HASH_ENCODE_FUNC linear_encode
 
-#define PARALLELISATION_TYPE 2
+#define GRIDDING_TYPE 2
 // 0 = Thread per particle (TPP) register
 // 1 = Thread per particle (TPP) recompute
-// 2 = Block per particle (BPP) shared
+// 2 = Block per particle (BPP) shared  **default
 // 3 = Block per particle (BPP) recompute
 
 #define SPATIAL_HASHING 2
 // 0 = Spatial hashing for correction, but without sorting
 // 1 = Spatial hashing and sorting
-// 2 = Spatial hashing and sorting (GPU)
+// 2 = Spatial hashing and sorting (GPU)    **default
 
 #define SORT_BACK 1
 // 0 = Do not sort back
-// 1 = Sort back
+// 1 = Sort back    **default
 
 #define CORRECTION_TYPE 1
 // 0 = linklist
-// 1 = spatial hashing
+// 1 = spatial hashing (TPP)  (must have Spatial hashing == 2)    **default
 
 #define USE_DOUBLE_PRECISION true
 
