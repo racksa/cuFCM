@@ -14,18 +14,12 @@
 // Linklist
 ///////////////////////////////////////////////////////////////////////////////
 /* Hash functions */
-<<<<<<< HEAD
 __host__ __device__
-=======
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M){
 	return xi + (yi + zi*M)*M;
 }
 
-<<<<<<< HEAD
 __host__ __device__
-=======
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 uint64_t morton_encode_for(unsigned int x, unsigned int y, unsigned int z, int M){
 	uint64_t answer = 0;
 	for (uint64_t i = 0; i < (sizeof(uint64_t)* CHAR_BIT)/3; ++i) {
@@ -50,10 +44,7 @@ inline uint64_t mortonEncode_magicbits(unsigned int x, unsigned int y, unsigned 
 	return answer;
 }
 
-<<<<<<< HEAD
 __device__ __host__
-=======
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xi, yi, zi;
 	xi = fmodf((x+M), M);
@@ -64,10 +55,7 @@ int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, 
 }
 
 /* Linklist functions */
-<<<<<<< HEAD
 __device__ __host__
-=======
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int imap=0, tempmap=0;
 	unsigned int iz = 0, iy = 0, ix = 0;
@@ -93,7 +81,6 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 			}
 		}
 	}
-<<<<<<< HEAD
 	return;
 }
 
@@ -133,9 +120,6 @@ void bulkmap(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned
         // map[imap+11]=icell(M, ix-1, iy+1, iz+1, f);
         // map[imap+12]=icell(M, ix, iy, iz+1, f);
     }
-=======
-	
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 	return;
 }
 
@@ -164,20 +148,7 @@ void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsign
 		list[j] = head[index];
 		head[index] = j;
 
-<<<<<<< HEAD
 	}
-=======
-        // if(j > 499900){
-        //     printf("%d \t(%.3f %.3f %.3f) %d \n", j, 
-        //                                 Y[3*j], Y[3*j+1], Y[3*j+2], head[j]);
-        // }
-	}
-    // for(int j = 499900; j < N; j++){
-	// 	printf("%d \t(%.3f %.3f %.3f) %d \n", j, 
-	// 								Y[3*j], Y[3*j+1], Y[3*j+2], head[j]);
-	// }
-
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 	return;
 }
 

@@ -14,19 +14,13 @@
 #define NZ 256.0
 #define NPTS 256.0
 
-<<<<<<< HEAD
-#define RH 0.008089855908506678
+// #define RH 0.008089855908506678
 // #define RH 0.010192579749743977
-// #define RH 0.02609300415934458
+#define RH 0.02609300415934458
 
 #define NGD 9
 #define SIGMA_FAC 1.55917641
 #define RREF_FAC 5.21186960
-=======
-#define NGD 9
-#define SIGMA_FAC 1.55917641;
-#define RREF_FAC 5.21186960;
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 
 // #define NGD 11
 // #define SIGMA_FAC 1.75207280;
@@ -55,13 +49,10 @@
 
 #define HASH_ENCODE_FUNC linear_encode
 
-<<<<<<< HEAD
 #define SOLVER_MODE 1
 // 0 = FCM
 // 1 = Fast FCM
 
-=======
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 #define GRIDDING_TYPE 2
 // 0 = Thread per particle (TPP) register
 // 1 = Thread per particle (TPP) recompute
@@ -78,17 +69,12 @@
 // 1 = Sort back    **default
 
 #define CORRECTION_TYPE 1
-<<<<<<< HEAD
 // 0 = Linklist
 // 1 = Spatial hashing (TPP)  (must have Spatial hashing == 2)    **default
 
 #define OUTPUT_TO_FILE 1
 // 0 = Dont write to file
 // 1 = Write to file
-=======
-// 0 = linklist
-// 1 = spatial hashing (TPP)  (must have Spatial hashing == 2)    **default
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 
 #define USE_DOUBLE_PRECISION true
 

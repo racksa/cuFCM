@@ -98,32 +98,10 @@ void cufcm_precompute_gauss(int N, int ngd, Real* Y,
     return;
 }
 
-<<<<<<< HEAD
 
 __global__
 void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
               Real *T, Real *F, Real pdmag, Real sigmasq, 
-=======
-__global__
-void GA_setup(Real *GA, Real *T, int N){
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
-
-    for(int np = index; np < N; np += stride){
-        GA[6*np + 0] = 0.0;
-        GA[6*np + 1] = 0.0;
-        GA[6*np + 2] = 0.0;
-        GA[6*np + 3] = 0.5*T[3*np + 2];
-        GA[6*np + 4] = -0.5*T[3*np + 1];
-        GA[6*np + 5] = 0.5*T[3*np + 0];
-    }
-    return;
-}
-
-__global__
-void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
-              Real *GA, Real *F, Real pdmag, Real sigmasq, 
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
               Real *gaussx, Real *gaussy, Real *gaussz,
               Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
               Real *xdis, Real *ydis, Real *zdis,
@@ -149,7 +127,6 @@ void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *f
         Fx = F[3*np + 0];
         Fy = F[3*np + 1];
         Fz = F[3*np + 2];
-<<<<<<< HEAD
         g11 = + T[6*np + 0];
         g22 = + T[6*np + 1];
         g33 = + T[6*np + 2];
@@ -159,17 +136,6 @@ void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *f
         g31 = - T[6*np + 4];
         g23 = + T[6*np + 5];
         g32 = - T[6*np + 5];
-=======
-        g11 = + GA[6*np + 0];
-        g22 = + GA[6*np + 1];
-        g33 = + GA[6*np + 2];
-        g12 = + GA[6*np + 3];
-        g21 = - GA[6*np + 3];
-        g13 = + GA[6*np + 4];
-        g31 = - GA[6*np + 4];
-        g23 = + GA[6*np + 5];
-        g32 = - GA[6*np + 5];
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
         for(k = 0; k < ngd; k++){
             kk = indz[ngd*np + k];
             zz = grad_gaussz_dip[ngd*np + k];
@@ -212,11 +178,7 @@ void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *f
 
 __global__
 void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, 
-<<<<<<< HEAD
               Real *Y, Real *T, Real *F, 
-=======
-              Real *Y, Real *GA, Real *F, 
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
               int N, int ngd, 
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
@@ -249,7 +211,6 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
         Fx = F[3*np + 0];
         Fy = F[3*np + 1];
         Fz = F[3*np + 2];
-<<<<<<< HEAD
         g11 = + T[6*np + 0];
         g22 = + T[6*np + 1];
         g33 = + T[6*np + 2];
@@ -259,17 +220,6 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
         g31 = - T[6*np + 4];
         g23 = + T[6*np + 5];
         g32 = - T[6*np + 5];
-=======
-        g11 = + GA[6*np + 0];
-        g22 = + GA[6*np + 1];
-        g33 = + GA[6*np + 2];
-        g12 = + GA[6*np + 3];
-        g21 = - GA[6*np + 3];
-        g13 = + GA[6*np + 4];
-        g31 = - GA[6*np + 4];
-        g23 = + GA[6*np + 5];
-        g32 = - GA[6*np + 5];
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
         for(k = 0; k < ngd; k++){
             zg = zc - ngdh + (k+1);
             kk = zg - NPTS * ((int) floor( ((Real) zg) / ((Real) NPTS)));
@@ -314,7 +264,6 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
             }
         }
     }
-<<<<<<< HEAD
 }
 
 __global__
@@ -438,131 +387,6 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
 __global__
 void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
               Real *T, Real *F, int N, int ngd, 
-=======
-}
-
-__global__
-void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *GA, Real *F, int N, int ngd, 
-              Real pdmag, Real sigmasq, Real sigmadipsq,
-              Real anorm, Real anorm2,
-              Real dx){
-    
-    __shared__ Real Yx, Yy, Yz;
-    __shared__ Real Fx, Fy, Fz;
-    __shared__ Real g11, g22, g33, g12, g21, g13, g31, g23, g32;
-    __shared__ Real xdis_shared[NGD];
-    __shared__ Real ydis_shared[NGD];
-    __shared__ Real zdis_shared[NGD];
-    __shared__ Real gaussx_shared[NGD];
-    __shared__ Real gaussy_shared[NGD];
-    __shared__ Real gaussz_shared[NGD];
-    __shared__ Real grad_gaussx_dip_shared[NGD];
-    __shared__ Real grad_gaussy_dip_shared[NGD];
-    __shared__ Real grad_gaussz_dip_shared[NGD];
-    __shared__ int indx_shared[NGD];
-    __shared__ int indy_shared[NGD];
-    __shared__ int indz_shared[NGD];
-
-    int xc, yc, zc;
-    int xg, yg, zg;
-    Real xx, yy, zz, r2;
-    Real gradx, grady, gradz;
-    Real gx, gy, gz;
-    Real temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
-    Real temp3 = temp2 /sigmasq;
-    Real temp4 = 3.0*temp2;
-    Real temp5;
-    int ind;
-    int ngdh = ngd/2;
-    int ngd3 = ngd*ngd*ngd;
-
-    for(int np = blockIdx.x; np < N; np += gridDim.x){
-
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
-
-        if(threadIdx.x == 0){
-            Yx = Y[3*np + 0];
-            Yy = Y[3*np + 1];
-            Yz = Y[3*np + 2];
-
-            Fx = F[3*np + 0];
-            Fy = F[3*np + 1];
-            Fz = F[3*np + 2];
-
-            g11 = + GA[6*np + 0];
-            g22 = + GA[6*np + 1];
-            g33 = + GA[6*np + 2];
-            g12 = + GA[6*np + 3];
-            g21 = - GA[6*np + 3];
-            g13 = + GA[6*np + 4];
-            g31 = - GA[6*np + 4];
-            g23 = + GA[6*np + 5];
-            g32 = - GA[6*np + 5];
-        }
-        __syncthreads();
-
-        for(int i = threadIdx.x; i < ngd; i += blockDim.x){
-            xg = xc - ngdh + (i+1);
-            yg = yc - ngdh + (i+1);
-            zg = zc - ngdh + (i+1);
-
-            xx = ((Real) xg)*dx - Yx;
-            yy = ((Real) yg)*dx - Yy;
-            zz = ((Real) zg)*dx - Yz;
-
-            // dis
-            xdis_shared[i] = xx;
-            ydis_shared[i] = yy;
-            zdis_shared[i] = zz;
-            // gauss
-            gaussx_shared[i] = anorm*exp(-xx*xx/anorm2);
-            gaussy_shared[i] = anorm*exp(-yy*yy/anorm2);
-            gaussz_shared[i] = anorm*exp(-zz*zz/anorm2);
-            // grad_gauss
-            grad_gaussx_dip_shared[i] = - xx / sigmadipsq;
-            grad_gaussy_dip_shared[i] = - yy / sigmadipsq;
-            grad_gaussz_dip_shared[i] = - zz / sigmadipsq;
-            // ind
-            indx_shared[i] = xg - NPTS * ((int) floor( ((Real) xg) / ((Real) NPTS)));
-            indy_shared[i] = yg - NPTS * ((int) floor( ((Real) yg) / ((Real) NPTS)));
-            indz_shared[i] = zg - NPTS * ((int) floor( ((Real) zg) / ((Real) NPTS)));
-
-        }
-        __syncthreads();
-        
-        for(int t = threadIdx.x; t < ngd3; t += blockDim.x){
-            const int k = t/(ngd*ngd);
-            const int j = (t - k*ngd*ngd)/ngd;
-            const int i = t - k*ngd*ngd - j*ngd;
-  
-            gx = gaussx_shared[i];
-            gy = gaussy_shared[j];
-            gz = gaussz_shared[k];
-
-            gradx = grad_gaussx_dip_shared[i];
-            grady = grad_gaussy_dip_shared[j];
-            gradz = grad_gaussz_dip_shared[k];
-
-            ind = indx_shared[i] + indy_shared[j]*NX + indz_shared[k]*NX*NY;
-            r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
-            temp = gx*gy*gz;
-            temp5 = temp*( 1 + temp3*r2 - temp4);
-
-            atomicAdd(&fx[ind], Fx*temp5 + (g11*gradx + g12*grady + g13*gradz)*temp);
-            atomicAdd(&fy[ind], Fy*temp5 + (g21*gradx + g22*grady + g23*gradz)*temp);
-            atomicAdd(&fz[ind], Fz*temp5 + (g31*gradx + g32*grady + g33*gradz)*temp);
-        }
-    }
-}
-
-__global__
-void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *GA, Real *F, int N, int ngd, 
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
               Real dx){
@@ -592,7 +416,6 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
         Fy = F[3*np + 1];
         Fz = F[3*np + 2];
 
-<<<<<<< HEAD
         g11 = + 0.0;
         g22 = + 0.0;
         g33 = + 0.0;
@@ -602,17 +425,6 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
         g31 = - (-0.5*T[3*np + 1]);
         g23 = + 0.5*T[3*np + 0];
         g32 = - 0.5*T[3*np + 0];
-=======
-        g11 = + GA[6*np + 0];
-        g22 = + GA[6*np + 1];
-        g33 = + GA[6*np + 2];
-        g12 = + GA[6*np + 3];
-        g21 = - GA[6*np + 3];
-        g13 = + GA[6*np + 4];
-        g31 = - GA[6*np + 4];
-        g23 = + GA[6*np + 5];
-        g32 = - GA[6*np + 5];
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
         
         for(int t = threadIdx.x; t < ngd3; t += blockDim.x){
             const int k = t/(ngd*ngd);
@@ -986,7 +798,6 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
             atomicAdd(&WTEMP[3*np + 2], -0.5*(uy_temp*gradx - ux_temp*grady));         
         }
     }
-<<<<<<< HEAD
 }
 
 __global__
@@ -1303,333 +1114,3 @@ Real int_pow(Real base, int power){
     return result;
 }
 
-=======
-}
-
-__global__
-void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
-                                Real *Y,
-                                Real *VTEMP, Real *WTEMP,
-                                int N, int ngd, 
-                                Real pdmag, Real sigmasq, Real sigmadipsq,
-                                Real anorm, Real anorm2,
-                                Real dx){
-
-    int xc, yc, zc;
-    int xg, yg, zg;
-    Real xx, yy, zz, r2;
-    Real gradx, grady, gradz;
-    Real gx, gy, gz;
-    Real norm, temp;
-    Real ux_temp, uy_temp, uz_temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
-    Real temp3 = temp2 / sigmasq;
-    Real temp4 = 3.0*temp2;
-    Real temp5;
-    int ind;
-    int ngdh = ngd/2;
-    int ngd3 = ngd*ngd*ngd;
-
-    norm = dx*dx*dx;
-
-    for(int np = blockIdx.x; np < N; np += gridDim.x){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
-
-        for(int t = threadIdx.x; t < ngd3; t += blockDim.x){
-            const int k = t/(ngd*ngd);
-            const int j = (t - k*ngd*ngd)/ngd;
-            const int i = t - k*ngd*ngd - j*ngd;
-            
-            xg = xc - ngdh + (i+1);
-            yg = yc - ngdh + (j+1);
-            zg = zc - ngdh + (k+1);
-
-            int ii = xg - NPTS * ((int) floor( ((Real) xg) / ((Real) NPTS)));
-            int jj = yg - NPTS * ((int) floor( ((Real) yg) / ((Real) NPTS)));
-            int kk = zg - NPTS * ((int) floor( ((Real) zg) / ((Real) NPTS)));
-
-            xx = ((Real) xg)*dx - Y[3*np + 0];
-            yy = ((Real) yg)*dx - Y[3*np + 1];
-            zz = ((Real) zg)*dx - Y[3*np + 2];
-
-            gx = anorm*exp(-xx*xx/anorm2);
-            gy = anorm*exp(-yy*yy/anorm2);
-            gz = anorm*exp(-zz*zz/anorm2);
-
-            gradx = - xx / sigmadipsq;
-            grady = - yy / sigmadipsq;
-            gradz = - zz / sigmadipsq;
-            
-            ind = ii + jj*NX + kk*NX*NY;
-            r2 = xx*xx + yy*yy + zz*zz;
-            temp = gx*gy*gz*norm;
-            temp5 = (1 + temp3*r2 - temp4);
-
-            ux_temp = ux[ind]*temp;
-            uy_temp = uy[ind]*temp;
-            uz_temp = uz[ind]*temp;
-
-            atomicAdd(&VTEMP[3*np + 0], ux_temp*temp5);
-            atomicAdd(&VTEMP[3*np + 1], uy_temp*temp5);
-            atomicAdd(&VTEMP[3*np + 2], uz_temp*temp5);
-
-            atomicAdd(&WTEMP[3*np + 0], -0.5*(uz_temp*grady - uy_temp*gradz));
-            atomicAdd(&WTEMP[3*np + 1], -0.5*(ux_temp*gradz - uz_temp*gradx));
-            atomicAdd(&WTEMP[3*np + 2], -0.5*(uy_temp*gradx - ux_temp*grady));                 
-        }
-    }
-}
-
-void cufcm_test_force_loop(myCufftReal* fx, myCufftReal* fy, myCufftReal* fz){
-    for(int k=0; k<NZ; k++){
-        for(int j=0; j<NY; j++){
-            for(int i=0; k<NX; i++){
-                const int index = i + j*NX + k*NX*NY;
-
-                fx[index] = 1 + 3*(i+j*k) + 7*(j+2) + 3*(k+2);
-                fy[index] = 1 + 2*(i+j+k) + 3*(j*j) + 2*(k*i);
-                fz[index] = 1 + 3*(i*j) + 7*(j*i) + 4*(k*j);
-            }
-        }
-    }
-}
-
-void cufcm_precompute_gauss_loop(int N, int ngd, Real* Y,
-                    Real* gaussx, Real* gaussy, Real* gaussz,
-                    Real* grad_gaussx_dip, Real* grad_gaussy_dip, Real* grad_gaussz_dip,
-                    Real* gaussgrid,
-                    Real* xdis, Real* ydis, Real* zdis,
-                    int* indx, int* indy, int* indz,
-                    Real sigmadipsq, Real anorm, Real anorm2, Real dx){
-    int np, i, xc, yc, zc;
-    int xg, yg, zg;
-    int ngdh = ngd/2;
-
-    Real xx;
-    Real xxc, yyc, zzc;
-    Real E2x, E2y, E2z, E3;
-    Real anorm3, dxanorm2;
-
-    anorm3 = anorm*anorm*anorm;
-    dxanorm2 = dx/anorm2;
-
-    // part1
-    for(i = 0; i < ngd; i++){
-        gaussgrid[i] = exp(-(i+1-ngdh)*(i+1-ngdh)*dx*dxanorm2);
-    }
-
-    for(np = 0; np < N; np++){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
-
-        xxc = (Real)xc*dx - Y[3*np + 0]; // distance to the nearest point (ksi-Y)
-        yyc = (Real)yc*dx - Y[3*np + 1];
-        zzc = (Real)zc*dx - Y[3*np + 2];
-
-        // part2
-        E2x = exp(-2*xxc*dxanorm2);
-        E2y = exp(-2*yyc*dxanorm2);
-        E2z = exp(-2*zzc*dxanorm2);
-
-        // part3
-        E3 = anorm3*exp(-(xxc*xxc + yyc*yyc + zzc*zzc)/anorm2);
-
-        // old function
-        for(i = 0; i < ngd; i++){
-            xg = xc - ngdh + (i+1); 
-            indx[ngd*np + i] = xg - NX * ((int) floor( ((Real) xg) / ((Real) NX)));
-            xx = ((Real) xg)*dx-Y[3*np + 0];
-            gaussx[ngd*np + i] = E3*int_pow(E2x,i+1-ngdh)*gaussgrid[i];
-            grad_gaussx_dip[ngd*np + i] = - xx / sigmadipsq;
-            xdis[ngd*np + i] = xx*xx;
-
-            yg = yc - ngdh + (i+1);
-            indy[ngd*np + i] = yg - NX * ((int) floor( ((Real) yg) / ((Real) NX)));
-            xx = ((Real) yg)*dx - Y[3*np + 1];
-            gaussy[ngd*np + i] = int_pow(E2y,i+1-ngdh)*gaussgrid[i];
-            grad_gaussy_dip[ngd*np + i] = - xx / sigmadipsq;
-            ydis[ngd*np + i] = xx*xx;
-
-            zg = zc - ngdh + (i+1);
-            indz[ngd*np + i] = zg - NX * ((int) floor( ((Real) zg) / ((Real) NX)));
-            xx = ((Real) zg)*dx-Y[3*np + 2];
-            gaussz[ngd*np + i] = int_pow(E2z,i+1-ngdh)*gaussgrid[i];
-            grad_gaussz_dip[ngd*np + i] = - xx / sigmadipsq;
-            zdis[ngd*np + i] = xx*xx;
-        }
-    }
-    return;
-}
-
-void GA_setup_loop(Real *GA, Real *T, int N){
-    for(int i = 0; i < N; i++){
-        GA[6*i + 0] = 0.0;
-        GA[6*i + 1] = 0.0;
-        GA[6*i + 2] = 0.0;
-        GA[6*i + 3] = 0.5*T[3*i + 2];
-        GA[6*i + 4] = -0.5*T[3*i + 1];
-        GA[6*i + 5] = 0.5*T[3*i + 0];
-    }
-    return;
-}
-
-void cufcm_mono_dipole_distribution_tpp_loop(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
-              Real *GA, Real *F, Real pdmag, Real sigmasq, 
-              Real *gaussx, Real *gaussy, Real *gaussz,
-              Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
-              Real *xdis, Real *ydis, Real *zdis,
-              int *indx, int *indy, int *indz,
-              int ngd){
-    int np, i, j, k, ii, jj, kk;
-    Real xx, yy, zz, r2, temp;
-    Real xx2, yy2, zz2;
-    Real g11, g22, g33, g12, g21, g13, g31, g23, g32;
-    Real gx, gy, gz, Fx, Fy, Fz;
-    Real g11xx, g22yy, g33zz, g12yy, g21xx, g13zz, g31xx, g23zz, g32yy;
-    Real smallx = 1e-18;
-    int ind;
-    Real temp2 = 0.5 * pdmag / sigmasq;
-    Real temp3 = temp2 /sigmasq;
-    Real temp4 = 3.0*temp2;
-    Real temp5;
-
-    for(np = 0; np < N; np++){
-        Fx = F[3*np + 0];
-        Fy = F[3*np + 1];
-        Fz = F[3*np + 2];
-        g11 = + GA[6*np + 0];
-        g22 = + GA[6*np + 1];
-        g33 = + GA[6*np + 2];
-        g12 = + GA[6*np + 3];
-        g21 = - GA[6*np + 3];
-        g13 = + GA[6*np + 4];
-        g31 = - GA[6*np + 4];
-        g23 = + GA[6*np + 5];
-        g32 = - GA[6*np + 5];
-        for(i = 0; i < ngd; i++){
-            ii = indx[ngd*np + i];
-            xx = grad_gaussx_dip[ngd*np + i];
-            xx2 = xdis[ngd*np + i];
-            gx = gaussx[ngd*np + i];
-            g11xx = g11*xx;
-            g21xx = g21*xx;
-            g31xx = g31*xx;
-            for(j = 0; j < ngd; j++){
-                jj = indy[ngd*np + j];
-                yy = grad_gaussy_dip[ngd*np + j];
-                yy2 = ydis[ngd*np + j];
-                gy = gaussy[ngd*np + j];
-                g12yy = g12*yy;
-                g22yy = g22*yy;
-                g32yy = g32*yy;
-                for(k = 0; k < ngd; k++){
-                    kk = indz[ngd*np + k];
-                    zz = grad_gaussz_dip[ngd*np + k];
-                    zz2 = zdis[ngd*np + k];
-                    gz = gaussz[ngd*np + k];
-                    g13zz = g13*zz;
-                    g23zz = g23*zz;
-                    g33zz = g33*zz;
-
-                    ind = ii + jj*NX + kk*NX*NY;
-
-                    r2 = xx2 + yy2 + zz2;
-                    temp = gx*gy*gz;
-                    temp5 = temp*( 1 + temp3*r2 - temp4);
-                    // printf("(%d %d %d) %lf\n", ii, jj, kk, temp);
-
-                    fx[ind] += Fx*temp5 + (g11xx + g12yy + g13zz)*temp + smallx;
-                    fy[ind] += Fy*temp5 + (g21xx + g22yy + g23zz)*temp + smallx;
-                    fz[ind] += Fz*temp5 + (g31xx + g32yy + g33zz)*temp + smallx;
-                }
-            }
-        }
-    }
-}
-
-void cufcm_particle_velocities_loop(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz, int N,
-                               Real *VTEMP, Real *WTEMP,
-                               Real pdmag, Real sigmasq, 
-                               Real *gaussx, Real *gaussy, Real *gaussz,
-                               Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
-                               Real *xdis, Real *ydis, Real *zdis,
-                               int *indx, int *indy, int *indz,
-                               int ngd, Real dx){
-    int np, i, j, k, ii, jj, kk;
-    Real norm, temp;
-    Real gx, gy, gz;
-    Real ux_temp, uy_temp, uz_temp;
-    Real xx, yy, zz;
-    Real xx2, yy2, zz2;
-    Real r2;
-    Real temp2 = 0.5 * pdmag / sigmasq;
-    Real temp3 = temp2 / sigmasq;
-    Real temp4 = 3.0*temp2;
-    Real temp5;
-    int ind;
-
-    norm = dx*dx*dx;
-
-    for(np = 0; np < N; np++){
-        for(i = 0; i < ngd; i++){
-            ii = indx[ngd*np + i];
-            gx = gaussx[ngd*np + i]*norm;
-            xx = grad_gaussx_dip[ngd*np + i];
-            xx2 = xdis[ngd*np + i];
-            for(j = 0; j < ngd; j++){
-                jj = indy[ngd*np + j];
-                gy = gaussy[ngd*np + j];
-                yy = grad_gaussy_dip[ngd*np + j];
-                yy2 = ydis[ngd*np + j];
-                for(k = 0; k < ngd; k++){
-                    kk = indz[ngd*np + k];
-                    gz = gaussz[ngd*np + k];
-                    zz = grad_gaussz_dip[ngd*np + k];
-                    zz2 = zdis[ngd*np + k];
-
-                    ind = ii + jj*NX + kk*NX*NY;
-
-                    r2 = xx2 + yy2 + zz2;
-                    temp = gx*gy*gz;
-                    temp5 = (1 + temp3*r2 - temp4);
-
-                    ux_temp = ux[ind]*temp;
-                    uy_temp = uy[ind]*temp;
-                    uz_temp = uz[ind]*temp;
-
-                    VTEMP[3*np + 0] += ux_temp*temp5;
-                    VTEMP[3*np + 1] += uy_temp*temp5;
-                    VTEMP[3*np + 2] += uz_temp*temp5;
-
-                    WTEMP[3*np + 0] -= 0.5*(uz_temp*yy - uy_temp*zz);
-                    WTEMP[3*np + 1] -= 0.5*(ux_temp*zz - uz_temp*xx);
-                    WTEMP[3*np + 2] -= 0.5*(uy_temp*xx - ux_temp*yy);      
-                }
-            }
-        }
-    }
-}
-
-
-__device__ __host__
-Real int_pow(Real base, int power){
-    /* fast power function for integer powers */
-    Real result = 1;
-    if(power>=0){
-        for(int i = 0; i < power; i++){
-            result = result * base;
-    }
-    }
-    if(power<0){
-        for(int i = 0; i < -power; i++){
-            result = result * base;
-    }
-        result = (Real) 1/result;
-    }
-    return result;
-}
-
->>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
