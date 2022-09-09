@@ -98,25 +98,10 @@ void cufcm_precompute_gauss(int N, int ngd, Real* Y,
     return;
 }
 
-__global__
-void GA_setup(Real *GA, Real *T, int N){
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
-
-    for(int np = index; np < N; np += stride){
-        GA[6*np + 0] = 0.0;
-        GA[6*np + 1] = 0.0;
-        GA[6*np + 2] = 0.0;
-        GA[6*np + 3] = 0.5*T[3*np + 2];
-        GA[6*np + 4] = -0.5*T[3*np + 1];
-        GA[6*np + 5] = 0.5*T[3*np + 0];
-    }
-    return;
-}
 
 __global__
 void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
-              Real *GA, Real *F, Real pdmag, Real sigmasq, 
+              Real *T, Real *F, Real pdmag, Real sigmasq, 
               Real *gaussx, Real *gaussy, Real *gaussz,
               Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
               Real *xdis, Real *ydis, Real *zdis,
@@ -142,15 +127,15 @@ void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *f
         Fx = F[3*np + 0];
         Fy = F[3*np + 1];
         Fz = F[3*np + 2];
-        g11 = + GA[6*np + 0];
-        g22 = + GA[6*np + 1];
-        g33 = + GA[6*np + 2];
-        g12 = + GA[6*np + 3];
-        g21 = - GA[6*np + 3];
-        g13 = + GA[6*np + 4];
-        g31 = - GA[6*np + 4];
-        g23 = + GA[6*np + 5];
-        g32 = - GA[6*np + 5];
+        g11 = + T[6*np + 0];
+        g22 = + T[6*np + 1];
+        g33 = + T[6*np + 2];
+        g12 = + T[6*np + 3];
+        g21 = - T[6*np + 3];
+        g13 = + T[6*np + 4];
+        g31 = - T[6*np + 4];
+        g23 = + T[6*np + 5];
+        g32 = - T[6*np + 5];
         for(k = 0; k < ngd; k++){
             kk = indz[ngd*np + k];
             zz = grad_gaussz_dip[ngd*np + k];
@@ -193,7 +178,7 @@ void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *f
 
 __global__
 void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, 
-              Real *Y, Real *GA, Real *F, 
+              Real *Y, Real *T, Real *F, 
               int N, int ngd, 
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
@@ -226,15 +211,15 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
         Fx = F[3*np + 0];
         Fy = F[3*np + 1];
         Fz = F[3*np + 2];
-        g11 = + GA[6*np + 0];
-        g22 = + GA[6*np + 1];
-        g33 = + GA[6*np + 2];
-        g12 = + GA[6*np + 3];
-        g21 = - GA[6*np + 3];
-        g13 = + GA[6*np + 4];
-        g31 = - GA[6*np + 4];
-        g23 = + GA[6*np + 5];
-        g32 = - GA[6*np + 5];
+        g11 = + T[6*np + 0];
+        g22 = + T[6*np + 1];
+        g33 = + T[6*np + 2];
+        g12 = + T[6*np + 3];
+        g21 = - T[6*np + 3];
+        g13 = + T[6*np + 4];
+        g31 = - T[6*np + 4];
+        g23 = + T[6*np + 5];
+        g32 = - T[6*np + 5];
         for(k = 0; k < ngd; k++){
             zg = zc - ngdh + (k+1);
             kk = zg - NPTS * ((int) floor( ((Real) zg) / ((Real) NPTS)));
@@ -283,7 +268,7 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
 
 __global__
 void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *GA, Real *F, int N, int ngd, 
+              Real *T, Real *F, int N, int ngd, 
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
               Real dx){
@@ -333,15 +318,15 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
             Fy = F[3*np + 1];
             Fz = F[3*np + 2];
 
-            g11 = + GA[6*np + 0];
-            g22 = + GA[6*np + 1];
-            g33 = + GA[6*np + 2];
-            g12 = + GA[6*np + 3];
-            g21 = - GA[6*np + 3];
-            g13 = + GA[6*np + 4];
-            g31 = - GA[6*np + 4];
-            g23 = + GA[6*np + 5];
-            g32 = - GA[6*np + 5];
+            g11 = + 0.0;
+            g22 = + 0.0;
+            g33 = + 0.0;
+            g12 = + 0.5*T[3*np + 2];
+            g21 = - 0.5*T[3*np + 2];
+            g13 = + (-0.5*T[3*np + 1]);
+            g31 = - (-0.5*T[3*np + 1]);
+            g23 = + 0.5*T[3*np + 0];
+            g32 = - 0.5*T[3*np + 0];
         }
         __syncthreads();
 
@@ -401,7 +386,7 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
 
 __global__
 void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *GA, Real *F, int N, int ngd, 
+              Real *T, Real *F, int N, int ngd, 
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
               Real dx){
@@ -431,15 +416,15 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
         Fy = F[3*np + 1];
         Fz = F[3*np + 2];
 
-        g11 = + GA[6*np + 0];
-        g22 = + GA[6*np + 1];
-        g33 = + GA[6*np + 2];
-        g12 = + GA[6*np + 3];
-        g21 = - GA[6*np + 3];
-        g13 = + GA[6*np + 4];
-        g31 = - GA[6*np + 4];
-        g23 = + GA[6*np + 5];
-        g32 = - GA[6*np + 5];
+        g11 = + 0.0;
+        g22 = + 0.0;
+        g33 = + 0.0;
+        g12 = + 0.5*T[3*np + 2];
+        g21 = - 0.5*T[3*np + 2];
+        g13 = + (-0.5*T[3*np + 1]);
+        g31 = - (-0.5*T[3*np + 1]);
+        g23 = + 0.5*T[3*np + 0];
+        g32 = - 0.5*T[3*np + 0];
         
         for(int t = threadIdx.x; t < ngd3; t += blockDim.x){
             const int k = t/(ngd*ngd);
@@ -973,20 +958,8 @@ void cufcm_precompute_gauss_loop(int N, int ngd, Real* Y,
     return;
 }
 
-void GA_setup_loop(Real *GA, Real *T, int N){
-    for(int i = 0; i < N; i++){
-        GA[6*i + 0] = 0.0;
-        GA[6*i + 1] = 0.0;
-        GA[6*i + 2] = 0.0;
-        GA[6*i + 3] = 0.5*T[3*i + 2];
-        GA[6*i + 4] = -0.5*T[3*i + 1];
-        GA[6*i + 5] = 0.5*T[3*i + 0];
-    }
-    return;
-}
-
 void cufcm_mono_dipole_distribution_tpp_loop(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
-              Real *GA, Real *F, Real pdmag, Real sigmasq, 
+              Real *T, Real *F, Real pdmag, Real sigmasq, 
               Real *gaussx, Real *gaussy, Real *gaussz,
               Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
               Real *xdis, Real *ydis, Real *zdis,
@@ -1009,15 +982,15 @@ void cufcm_mono_dipole_distribution_tpp_loop(myCufftReal *fx, myCufftReal *fy, m
         Fx = F[3*np + 0];
         Fy = F[3*np + 1];
         Fz = F[3*np + 2];
-        g11 = + GA[6*np + 0];
-        g22 = + GA[6*np + 1];
-        g33 = + GA[6*np + 2];
-        g12 = + GA[6*np + 3];
-        g21 = - GA[6*np + 3];
-        g13 = + GA[6*np + 4];
-        g31 = - GA[6*np + 4];
-        g23 = + GA[6*np + 5];
-        g32 = - GA[6*np + 5];
+        g11 = + 0.0;
+        g22 = + 0.0;
+        g33 = + 0.0;
+        g12 = + 0.5*T[3*np + 2];
+        g21 = - 0.5*T[3*np + 2];
+        g13 = + (-0.5*T[3*np + 1]);
+        g31 = - (-0.5*T[3*np + 1]);
+        g23 = + 0.5*T[3*np + 0];
+        g32 = - 0.5*T[3*np + 0];
         for(i = 0; i < ngd; i++){
             ii = indx[ngd*np + i];
             xx = grad_gaussx_dip[ngd*np + i];

@@ -13,12 +13,10 @@ void cufcm_precompute_gauss(int N, int ngd, Real* Y,
                     int* indx, int* indy, int* indz,
                     Real sigmadipsq, Real anorm, Real anorm2, Real dx);
 
-__global__
-void GA_setup(Real *GA, Real *T, int N);
 
 __global__
 void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
-              Real *GA, Real *F, Real pdmag, Real sigmasq, 
+              Real *T, Real *F, Real pdmag, Real sigmasq, 
               Real *gaussx, Real *gaussy, Real *gaussz,
               Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
               Real *xdis, Real *ydis, Real *zdis,
@@ -27,7 +25,7 @@ void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *f
 
 __global__
 void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
-              Real *Y, Real *GA, Real *F,
+              Real *Y, Real *T, Real *F,
               int N, int ngd, 
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
@@ -35,14 +33,14 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
 
 __global__
 void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *GA, Real *F, int N, int ngd, 
+              Real *T, Real *F, int N, int ngd, 
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
               Real dx);
 
 __global__
 void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *GA, Real *F, int N, int ngd, 
+              Real *T, Real *F, int N, int ngd, 
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
               Real dx);
@@ -102,10 +100,8 @@ void cufcm_precompute_gauss_loop(int N, int ngd, Real* Y,
                     int* indx, int* indy, int* indz,
                     Real sigmadipsq, Real anorm, Real anorm2, Real dx);
 
-void GA_setup_loop(Real *GA, Real *T, int N);
-
 void cufcm_mono_dipole_distribution_tpp_loop(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, int N,
-              Real *GA, Real *F, Real pdmag, Real sigmasq, 
+              Real *T, Real *F, Real pdmag, Real sigmasq, 
               Real *gaussx, Real *gaussy, Real *gaussz,
               Real *grad_gaussx_dip, Real *grad_gaussy_dip, Real *grad_gaussz_dip,
               Real *xdis, Real *ydis, Real *zdis,

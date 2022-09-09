@@ -14,10 +14,12 @@
 // Linklist
 ///////////////////////////////////////////////////////////////////////////////
 /* Hash functions */
+__host__ __device__
 uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M){
 	return xi + (yi + zi*M)*M;
 }
 
+__host__ __device__
 uint64_t morton_encode_for(unsigned int x, unsigned int y, unsigned int z, int M){
 	uint64_t answer = 0;
 	for (uint64_t i = 0; i < (sizeof(uint64_t)* CHAR_BIT)/3; ++i) {
@@ -42,6 +44,7 @@ inline uint64_t mortonEncode_magicbits(unsigned int x, unsigned int y, unsigned 
 	return answer;
 }
 
+__device__ __host__
 int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xi, yi, zi;
 	xi = fmodf((x+M), M);
@@ -52,6 +55,7 @@ int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, 
 }
 
 /* Linklist functions */
+__device__ __host__
 void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int imap=0, tempmap=0;
 	unsigned int iz = 0, iy = 0, ix = 0;
@@ -77,7 +81,45 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 			}
 		}
 	}
-	
+	return;
+}
+
+__global__
+void bulkmap(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    // int imap=0, tempmap=0;
+
+    for(int i = index; i<M*M*M; i+= stride){
+
+        printf("ERROR kernel does not accept function pointers");
+
+        // const int iz = (i)/(M*M);
+        // const int iy = (i - iz*M)/M;
+        // const int ix = i - iz*(M*M) - iy*M;
+
+        // int xi, yi, zi;
+        // xi = fmodf((ix+M), M);
+        // yi = fmodf((iy+M), M);
+        // zi = fmodf((iz+M), M);
+
+        // tempmap=icell(M, ix, iy, iz, f);
+        // imap=tempmap*13;
+        // map[imap]=icell(M, ix+1, iy, iz, f);
+        // map[imap+1]=icell(M, ix+1, iy+1, iz, f);
+        // map[imap+2]=icell(M, ix, iy+1, iz, f);
+        // map[imap+3]=icell(M, ix-1, iy+1, iz, f);
+        // map[imap+4]=icell(M, ix+1, iy, iz-1, f);
+        // map[imap+5]=icell(M, ix+1, iy+1, iz-1, f);
+        // map[imap+6]=icell(M, ix, iy+1, iz-1, f);
+        // map[imap+7]=icell(M, ix-1, iy+1, iz-1, f);
+        // map[imap+8]=icell(M, ix+1, iy, iz+1, f);
+        // map[imap+9]=icell(M, ix+1, iy+1, iz+1, f);
+        // map[imap+10]=icell(M, ix, iy+1, iz+1, f);
+        // map[imap+11]=icell(M, ix-1, iy+1, iz+1, f);
+        // map[imap+12]=icell(M, ix, iy, iz+1, f);
+    }
 	return;
 }
 
@@ -106,16 +148,7 @@ void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsign
 		list[j] = head[index];
 		head[index] = j;
 
-        // if(j > 499900){
-        //     printf("%d \t(%.3f %.3f %.3f) %d \n", j, 
-        //                                 Y[3*j], Y[3*j+1], Y[3*j+2], head[j]);
-        // }
 	}
-    // for(int j = 499900; j < N; j++){
-	// 	printf("%d \t(%.3f %.3f %.3f) %d \n", j, 
-	// 								Y[3*j], Y[3*j+1], Y[3*j+2], head[j]);
-	// }
-
 	return;
 }
 

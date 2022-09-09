@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 
 	auto time_start = get_time();
 
-	int N = 500000;
+	int N = 1677721;
 
 	int ngd = NGD;
 
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 	int mapsize = 13*ncell;
 
 	/* Monopole */
-	const Real rh = 0.02609300415934458;
+	const Real rh = RH;
 	const Real sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
 	const Real sigmaFCMsq = sigmaFCM*sigmaFCM;
 	const Real anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
@@ -99,6 +99,8 @@ int main(int argc, char** argv) {
 	
     cufftHandle plan, iplan;
 
+	FILE *pfile;
+
 	myCufftReal* fx_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fx_device = malloc_device<myCufftReal>(GRID_SIZE);
 	myCufftReal* fy_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fy_device = malloc_device<myCufftReal>(GRID_SIZE);
 	myCufftReal* fz_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fz_device = malloc_device<myCufftReal>(GRID_SIZE);
@@ -113,47 +115,57 @@ int main(int argc, char** argv) {
     myCufftComplex* uk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
     myCufftComplex* uk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
 
-	Real *aux_host = malloc_host<Real>(3*N);						Real *aux_device = malloc_device<Real>(3*N);
+	Real *aux_host = malloc_host<Real>(3*N);					Real *aux_device = malloc_device<Real>(3*N);
 	Real* Y_host = malloc_host<Real>(3*N);						Real* Y_device = malloc_device<Real>(3*N);
 	Real* F_host = malloc_host<Real>(3*N);						Real* F_device = malloc_device<Real>(3*N);
 	Real* T_host = malloc_host<Real>(3*N);						Real* T_device = malloc_device<Real>(3*N);
 	Real* V_host = malloc_host<Real>(3*N);						Real* V_device = malloc_device<Real>(3*N);
 	Real* W_host = malloc_host<Real>(3*N);						Real* W_device = malloc_device<Real>(3*N);
-	Real* GA_host = malloc_host<Real>(6*N);						Real* GA_device = malloc_device<Real>(6*N);
 
-	Real* gaussx_host = malloc_host<Real>(ngd*N);				Real* gaussx_device = malloc_device<Real>(ngd*N);
-	Real* gaussy_host = malloc_host<Real>(ngd*N);				Real* gaussy_device = malloc_device<Real>(ngd*N);
-	Real* gaussz_host = malloc_host<Real>(ngd*N);				Real* gaussz_device = malloc_device<Real>(ngd*N);
-	Real* grad_gaussx_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussx_dip_device = malloc_device<Real>(ngd*N);
-	Real* grad_gaussy_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussy_dip_device = malloc_device<Real>(ngd*N);
-	Real* grad_gaussz_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussz_dip_device = malloc_device<Real>(ngd*N);
-	Real* gaussgrid_host = malloc_host<Real>(ngd);				Real* gaussgrid_device = malloc_device<Real>(ngd);
-	Real* xdis_host = malloc_host<Real>(ngd*N);					Real* xdis_device = malloc_device<Real>(ngd*N);
-	Real* ydis_host = malloc_host<Real>(ngd*N);					Real* ydis_device = malloc_device<Real>(ngd*N);
-	Real* zdis_host = malloc_host<Real>(ngd*N);					Real* zdis_device = malloc_device<Real>(ngd*N);
-	int* indx_host = malloc_host<int>(ngd*N);					int* indx_device = malloc_device<int>(ngd*N);
-	int* indy_host = malloc_host<int>(ngd*N);					int* indy_device = malloc_device<int>(ngd*N);
-	int* indz_host = malloc_host<int>(ngd*N);					int* indz_device = malloc_device<int>(ngd*N);
+	#if	GRIDDING_TYPE == 0
+
+		Real* gaussx_host = malloc_host<Real>(ngd*N);				Real* gaussx_device = malloc_device<Real>(ngd*N);
+		Real* gaussy_host = malloc_host<Real>(ngd*N);				Real* gaussy_device = malloc_device<Real>(ngd*N);
+		Real* gaussz_host = malloc_host<Real>(ngd*N);				Real* gaussz_device = malloc_device<Real>(ngd*N);
+		Real* grad_gaussx_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussx_dip_device = malloc_device<Real>(ngd*N);
+		Real* grad_gaussy_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussy_dip_device = malloc_device<Real>(ngd*N);
+		Real* grad_gaussz_dip_host = malloc_host<Real>(ngd*N);		Real* grad_gaussz_dip_device = malloc_device<Real>(ngd*N);
+		Real* gaussgrid_host = malloc_host<Real>(ngd);				Real* gaussgrid_device = malloc_device<Real>(ngd);
+		Real* xdis_host = malloc_host<Real>(ngd*N);					Real* xdis_device = malloc_device<Real>(ngd*N);
+		Real* ydis_host = malloc_host<Real>(ngd*N);					Real* ydis_device = malloc_device<Real>(ngd*N);
+		Real* zdis_host = malloc_host<Real>(ngd*N);					Real* zdis_device = malloc_device<Real>(ngd*N);
+		int* indx_host = malloc_host<int>(ngd*N);					int* indx_device = malloc_device<int>(ngd*N);
+		int* indy_host = malloc_host<int>(ngd*N);					int* indy_device = malloc_device<int>(ngd*N);
+		int* indz_host = malloc_host<int>(ngd*N);					int* indz_device = malloc_device<int>(ngd*N);
+
+	#endif
+
+	#if CORRECTION_TYPE == 0
+
+		int* head_host = malloc_host<int>(ncell);					int* head_device = malloc_device<int>(ncell);
+		int* list_host = malloc_host<int>(N);						int* list_device = malloc_device<int>(N);
+
+	#endif
+
+	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
+
+		int* Y_hash_host = malloc_host<int>(N);								int* Y_hash_device = malloc_device<int>(N);	
+		int* F_hash_host = malloc_host<int>(N);								int* F_hash_device = malloc_device<int>(N);
+		int* T_hash_host = malloc_host<int>(N);								int* T_hash_device = malloc_device<int>(N);
+
+	#endif
 
 	int* map_host = malloc_host<int>(mapsize);					int* map_device = malloc_device<int>(mapsize);
-	int* head_host = malloc_host<int>(ncell);					int* head_device = malloc_device<int>(ncell);
-	int* list_host = malloc_host<int>(N);						int* list_device = malloc_device<int>(N);
 
-	int* Y_hash_host = malloc_host<int>(N);								int* Y_hash_device = malloc_device<int>(N);	
-	int* F_hash_host = malloc_host<int>(N);								int* F_hash_device = malloc_device<int>(N);
-	int* T_hash_host = malloc_host<int>(N);								int* T_hash_device = malloc_device<int>(N);
 	int* particle_cellindex_host = malloc_host<int>(N);					int* particle_cellindex_device = malloc_device<int>(N);
 	int* particle_cellhash_host = malloc_host<int>(N);					int* particle_cellhash_device = malloc_device<int>(N);
-	int* Y_index_host = malloc_host<int>(N);							int* Y_index_device = malloc_device<int>(N);	
-	int* F_index_host = malloc_host<int>(N);							int* F_index_device = malloc_device<int>(N);
-	int* T_index_host = malloc_host<int>(N);							int* T_index_device = malloc_device<int>(N);
 	int* particle_index_host = malloc_host<int>(N);						int* particle_index_device = malloc_device<int>(N);
 	int* sortback_index_host = malloc_host<int>(N);						int* sortback_index_device = malloc_device<int>(N);
 	
 	int* cell_start_host = malloc_host<int>(ncell);						int* cell_start_device = malloc_device<int>(ncell);
 	int* cell_end_host = malloc_host<int>(ncell);						int* cell_end_device = malloc_device<int>(ncell);
 
-	bulkmap_loop(map_host, M, HASH_ENCODE_FUNC);
+	bulkmap_loop(map_host, M, linear_encode);
 	copy_to_device<int>(map_host, map_device, mapsize);
 
 	/* Create 3D FFT plans */
@@ -169,6 +181,7 @@ int main(int argc, char** argv) {
 
 	const int num_thread_blocks_GRID = (GRID_SIZE + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	const int num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	const int num_thread_blocks_NX = (NX + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 
 	auto time_cuda_initialisation = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
@@ -181,34 +194,42 @@ int main(int argc, char** argv) {
 	Real* qsq_host = malloc_host<Real>(NX);			Real* qsq_device = malloc_device<Real>(NX);
 	Real* qpadsq_host = malloc_host<Real>(pad);		Real* qpadsq_device = malloc_device<Real>(pad);
 
-	for(int i=0; i<NX; i++){
-		if(i < nptsh || i == nptsh){
-			q_host[i] = (Real) i;
-		}
-		if(i > nptsh){
-			q_host[i] = (Real) (i - NX);
-		}
-		qsq_host[i] = q_host[i]*q_host[i];
-	}
-	
-	for(int i=0; i<pad; i++){
-		qpad_host[i] = (Real) i;
-		qpadsq_host[i] = qpad_host[i]*qpad_host[i];
-	}
-	copy_to_device<Real>(q_host, q_device, NX);
-	copy_to_device<Real>(qpad_host, qpad_device, pad);
-	copy_to_device<Real>(qsq_host, qsq_device, NX);
-	copy_to_device<Real>(qpadsq_host, qpadsq_device, pad);
+	init_wave_vector<<<num_thread_blocks_NX, THREADS_PER_BLOCK>>>(q_device, qsq_device, qpad_device, qpadsq_device, nptsh, pad);
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300-2.dat");
-	read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
-	read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
+	// read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300-2.dat");
+	// read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
+	// read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
+
+	init_pos_gpu(Y_device, rh, N);
+
+	// init_pos(Y_host, rh ,N);
+	// init_force(F_host, rh, N);
+	// init_force(T_host, rh, N);	
+
 	
+	// pfile = fopen("./init_data/N16777216/pos-N16777216-rh008089855.dat", "w");
+	// for(int i = 0; i < N; i++){
+	// 	fprintf(pfile, "%.8f %.8f %.8f\n", Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
+	// }
+	// fclose(pfile);
+
+	// pfile = fopen("./init_data/N16777216/force-N16777216-rh008089855.dat", "w");
+	// for(int i = 0; i < N; i++){
+	// 	fprintf(pfile, "%.8f %.8f %.8f\n", F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2]);
+	// }
+	// fclose(pfile);
+
+	// pfile = fopen("./init_data/N16777216/force-N16777216-rh008089855-2.dat", "w");
+	// for(int i = 0; i < N; i++){
+	// 	fprintf(pfile, "%.8f %.8f %.8f\n", T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2]);
+	// }
+	// fclose(pfile);
+
 	cudaDeviceSynchronize();	auto time_readfile = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Spatial hashing
@@ -216,15 +237,16 @@ int main(int argc, char** argv) {
 	cudaDeviceSynchronize();	time_start = get_time();
 
 	/* CPU Hashing */
+	
 	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
 
 		for(int i = 0; i < N; i++){
 			particle_index_host[i] = i;
 		}
-		create_hash(Y_hash_host, Y_host, N, dx, M, HASH_ENCODE_FUNC);
-		create_hash(F_hash_host, Y_host, N, dx, M, HASH_ENCODE_FUNC);
-		create_hash(T_hash_host, Y_host, N, dx, M, HASH_ENCODE_FUNC);
-		create_hash(particle_cellhash_host, Y_host, N, dx, M, HASH_ENCODE_FUNC);
+		create_hash(Y_hash_host, Y_host, N, dx, M, linear_encode);
+		create_hash(F_hash_host, Y_host, N, dx, M, linear_encode);
+		create_hash(T_hash_host, Y_host, N, dx, M, linear_encode);
+		create_hash(particle_cellhash_host, Y_host, N, dx, M, linear_encode);
 
 	#endif
 	
@@ -247,7 +269,7 @@ int main(int argc, char** argv) {
 
 		// Create Hash (i, j, k) -> Hash
 		particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
-		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, HASH_ENCODE_FUNC);
+		create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, linear_encode);
 
 		// Sort particle index by hash
 		sort_index_by_key(particle_cellhash_device, particle_index_device, N);
@@ -287,7 +309,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
+	// GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
 
 	#if GRIDDING_TYPE == 0
 
@@ -307,41 +329,48 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	#if GRIDDING_TYPE == 0
+	#if SOLVER_MODE == 1
 
-		cufcm_mono_dipole_distribution_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
-											GA_device, F_device, pdmag, sigmaGRIDsq,
-											gaussx_device, gaussy_device, gaussz_device,
-											grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
-											xdis_device, ydis_device, zdis_device,
-											indx_device, indy_device, indz_device,
-											ngd);
+		#if GRIDDING_TYPE == 0
 
-	#elif GRIDDING_TYPE == 1
+			cufcm_mono_dipole_distribution_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
+												T_device, F_device, pdmag, sigmaGRIDsq,
+												gaussx_device, gaussy_device, gaussz_device,
+												grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
+												xdis_device, ydis_device, zdis_device,
+												indx_device, indy_device, indz_device,
+												ngd);
 
-		cufcm_mono_dipole_distribution_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device,
-											Y_device, GA_device, F_device,
-											N, ngd,
-											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-											anormGRID, anormGRID2,
-											dx);
-	#elif GRIDDING_TYPE == 2
+		#elif GRIDDING_TYPE == 1
 
-		cufcm_mono_dipole_distribution_bpp_shared<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
-											Y_device, GA_device, F_device,
-											N, ngd,
-											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-											anormGRID, anormGRID2,
-											dx);
+			cufcm_mono_dipole_distribution_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device,
+												Y_device, T_device, F_device,
+												N, ngd,
+												pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+												anormGRID, anormGRID2,
+												dx);
+		#elif GRIDDING_TYPE == 2
+
+			cufcm_mono_dipole_distribution_bpp_shared<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
+												Y_device, T_device, F_device,
+												N, ngd,
+												pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+												anormGRID, anormGRID2,
+												dx);
+		
+		#elif GRIDDING_TYPE == 3
+
+			cufcm_mono_dipole_distribution_bpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
+												Y_device, GA_device, F_device,
+												N, ngd,
+												pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+												anormGRID, anormGRID2,
+												dx);
+
+		#endif
 	
-	#elif GRIDDING_TYPE == 3
-
-		cufcm_mono_dipole_distribution_bpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
-											Y_device, GA_device, F_device,
-											N, ngd,
-											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-											anormGRID, anormGRID2,
-											dx);
+	#elif SOLVER_MODE == 0
+		
 
 	#endif
 
@@ -392,46 +421,52 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	#if GRIDDING_TYPE == 0
+	#if SOLVER_MODE == 1
 
-		cufcm_particle_velocities_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
-									V_device, W_device,
-									pdmag, sigmaGRIDsq,
-									gaussx_device, gaussy_device, gaussz_device,
-									grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
-									xdis_device, ydis_device, zdis_device,
-									indx_device, indy_device, indz_device,
-									ngd, dx);
+		#if GRIDDING_TYPE == 0
 
-	#elif GRIDDING_TYPE == 1
+			cufcm_particle_velocities_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
+										V_device, W_device,
+										pdmag, sigmaGRIDsq,
+										gaussx_device, gaussy_device, gaussz_device,
+										grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
+										xdis_device, ydis_device, zdis_device,
+										indx_device, indy_device, indz_device,
+										ngd, dx);
 
-		cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
-									Y_device,
-									V_device, W_device,
-									N, ngd,
-									pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-									anormGRID, anormGRID2,
-									dx);
+		#elif GRIDDING_TYPE == 1
 
-	#elif GRIDDING_TYPE == 2
+			cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+										Y_device,
+										V_device, W_device,
+										N, ngd,
+										pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+										anormGRID, anormGRID2,
+										dx);
 
-		cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
-									Y_device,
-									V_device, W_device,
-									N, ngd,
-									pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-									anormGRID, anormGRID2,
-									dx);
+		#elif GRIDDING_TYPE == 2
 
-	#elif GRIDDING_TYPE == 3
+			cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+										Y_device,
+										V_device, W_device,
+										N, ngd,
+										pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+										anormGRID, anormGRID2,
+										dx);
 
-		cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
-									Y_device,
-									V_device, W_device,
-									N, ngd,
-									pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-									anormGRID, anormGRID2,
-									dx);
+		#elif GRIDDING_TYPE == 3
+
+			cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+										Y_device,
+										V_device, W_device,
+										N, ngd,
+										pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+										anormGRID, anormGRID2,
+										dx);
+
+		#endif
+
+	#elif SOLVER_MODE == 0
 
 	#endif
 
@@ -441,33 +476,42 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	#if CORRECTION_TYPE == 0
+	#if SOLVER_MODE == 1
 
-		cufcm_pair_correction_linklist<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
-							map_device, head_device, list_device,
-							ncell, Rrefsq,
-							pdmag,
-							sigmaGRID, sigmaGRIDsq,
-							sigmaFCM, sigmaFCMsq,
-							sigmaFCMdip, sigmaFCMdipsq);
+		#if CORRECTION_TYPE == 0
+
+			cufcm_pair_correction_linklist<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+								map_device, head_device, list_device,
+								ncell, Rrefsq,
+								pdmag,
+								sigmaGRID, sigmaGRIDsq,
+								sigmaFCM, sigmaFCMsq,
+								sigmaFCMdip, sigmaFCMdipsq);
+		
+		#elif CORRECTION_TYPE == 1
+
+			cufcm_pair_correction_spatial_hashing_tpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+								particle_cellhash_device, cell_start_device, cell_end_device,
+								map_device,
+								ncell, Rrefsq,
+								pdmag,
+								sigmaGRID, sigmaGRIDsq,
+								sigmaFCM, sigmaFCMsq,
+								sigmaFCMdip, sigmaFCMdipsq);
+
+		#endif
+
 	
-	#elif CORRECTION_TYPE == 1
 
-		cufcm_pair_correction_spatial_hashing_tpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
-							particle_cellhash_device, cell_start_device, cell_end_device,
-							map_device,
-							ncell, Rrefsq,
-							pdmag,
-							sigmaGRID, sigmaGRIDsq,
-							sigmaFCM, sigmaFCMsq,
-							sigmaFCMdip, sigmaFCMdipsq);
+		cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
+								StokesMob, ModStokesMob,
+								PDStokesMob, BiLapMob,
+								WT1Mob, WT2Mob);
+	
+	#elif SOLVER_MODE == 0
+		
 
 	#endif
-
-	cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
-							   StokesMob, ModStokesMob,
-							   PDStokesMob, BiLapMob,
-							   WT1Mob, WT2Mob);
 
 	cudaDeviceSynchronize();	auto time_correction = get_time() - time_start;
 
@@ -482,9 +526,6 @@ int main(int argc, char** argv) {
 
 		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(W_device, aux_device, 3*N);
 		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, W_device, aux_device, N);
-
-		copy_to_host<Real>(V_device, V_host, 3*N);
-		copy_to_host<Real>(W_device, W_host, 3*N);
 
 	#endif
 
@@ -504,8 +545,6 @@ int main(int argc, char** argv) {
 		quicksort(T_hash_host, W_host, 0, N - 1);
 
 	#endif
-	
-
 
 	/* Print */
 	for(int i = N-10; i < N; i++){
@@ -542,6 +581,37 @@ int main(int argc, char** argv) {
 
 	std::cout << "--------------\nFreeing memory\n--------------\n";
 
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Write to file
+	///////////////////////////////////////////////////////////////////////////////
+	#if OUTPUT_TO_FILE == 1
+
+		pfile = fopen("./data/simulation_data.dat", "a");
+		for(int i = 0; i < N; i++){
+			fprintf(pfile, "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
+			Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2], 
+			F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2], 
+			V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2], 
+			W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
+			}
+		fprintf(pfile, "\n");
+		fclose(pfile);
+
+		pfile = fopen("./data/simulation_timing.dat", "a");
+		fprintf(pfile, "%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n", 
+		time_cuda_initialisation, time_readfile,
+		time_hashing, time_linklist,
+		time_precompute_gauss,
+		time_spreading,
+		time_FFT,
+		time_gathering,
+		time_correction);
+		fprintf(pfile, "\n");
+		fclose(pfile);
+		
+	#endif
+
 	///////////////////////////////////////////////////////////////////////////////
 	// Finish
 	///////////////////////////////////////////////////////////////////////////////
@@ -556,25 +626,33 @@ int main(int argc, char** argv) {
 	cudaFree(T_device);
 	cudaFree(V_device);
 	cudaFree(W_device);
-	cudaFree(GA_device);
 
-	cudaFree(gaussx_device);
-	cudaFree(gaussy_device);
-	cudaFree(gaussz_device);
-	cudaFree(grad_gaussx_dip_device);
-	cudaFree(grad_gaussy_dip_device);
-	cudaFree(grad_gaussz_dip_device);
-	cudaFree(gaussgrid_device);
-	cudaFree(xdis_device);
-	cudaFree(ydis_device);
-	cudaFree(zdis_device);
-	cudaFree(indx_device);
-	cudaFree(indy_device);
-	cudaFree(indz_device);
+	#if	GRIDDING_TYPE == 0
+
+		cudaFree(gaussx_device);
+		cudaFree(gaussy_device);
+		cudaFree(gaussz_device);
+		cudaFree(grad_gaussx_dip_device);
+		cudaFree(grad_gaussy_dip_device);
+		cudaFree(grad_gaussz_dip_device);
+		cudaFree(gaussgrid_device);
+		cudaFree(xdis_device);
+		cudaFree(ydis_device);
+		cudaFree(zdis_device);
+		cudaFree(indx_device);
+		cudaFree(indy_device);
+		cudaFree(indz_device);
+
+	#endif
+	
+	#if CORRECTION_TYPE == 0
+
+		cudaFree(head_device);
+		cudaFree(list_device);
+
+	#endif
 
 	cudaFree(map_device);
-	cudaFree(head_device);
-	cudaFree(list_device);
 
 	cudaFree(q_device);
 	cudaFree(qpad_device);

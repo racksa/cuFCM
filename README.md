@@ -14,9 +14,12 @@ to check available nodes, and then type
 export CUDA_VISIBLE_DEVICES= x
 ```
 
-to select the available node. Compile and run with
+to select the available node. 
+
+Compile and run with
 
 ```bash
 make clean CUFCM
 ./CUFCM
 ```
+
