@@ -1,6 +1,9 @@
 #include "CUFCM_data.hpp"
 #include <cstdio>
+<<<<<<< HEAD
 #include <cstdlib>
+=======
+>>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 #include "config.hpp"
 
 void read_init_data(Real *Y, int N, const char *file_name){
@@ -20,6 +23,7 @@ void read_init_data(Real *Y, int N, const char *file_name){
     fclose(ifile);
 
     return;
+<<<<<<< HEAD
 }
 
 void init_pos(Real *Y, Real rad, int N){
@@ -155,4 +159,6 @@ void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, i
 		qpadsq[i] = qpad[i]*qpad[i];
 	}
     return;
+=======
+>>>>>>> d63b6cadcf22d8a392c4971f5119fad9eae22dd3
 }
