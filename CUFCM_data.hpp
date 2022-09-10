@@ -16,3 +16,9 @@ void init_pos_gpu(Real *Y, Real rad, int N);
 
 __global__
 void check_overlap(Real x, Real y, Real z, Real *Y, Real rad, int np, int *check);
+
+__global__
+void init_force_kernel(Real *F, Real rad, int N, curandState *states);
+
+__global__
+void append(Real x, Real y, Real z, Real *Y, int np);

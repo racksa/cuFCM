@@ -3,24 +3,29 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+
 #define PI 3.14159265358979
 #define PI2 6.28318530717959
 #define PI2sqrt 2.5066282746310002
 #define TWOoverPIsqrt 0.7978845608028654
 #define PI2sqrt_inv 0.3989422804014327
 
-#define NX 256.0
-#define NY 256.0
-#define NZ 256.0
-#define NPTS 256.0
+#define SOLVER_MODE 1
+// 0 = FCM
+// 1 = Fast FCM
 
 // #define RH 0.008089855908506678
-// #define RH 0.010192579749743977
 #define RH 0.02609300415934458
 
 #define NGD 9
 #define SIGMA_FAC 1.55917641
 #define RREF_FAC 5.21186960
+
+
+#define NX 256.0
+#define NY 256.0
+#define NZ 256.0
+#define NPTS 256.0
 
 // #define NGD 11
 // #define SIGMA_FAC 1.75207280;
@@ -49,9 +54,9 @@
 
 #define HASH_ENCODE_FUNC linear_encode
 
-#define SOLVER_MODE 1
-// 0 = FCM
-// 1 = Fast FCM
+#define INIT_FROM_FILE 1
+// 0 = Generate random packing
+// 1 = Read initial data from file
 
 #define GRIDDING_TYPE 2
 // 0 = Thread per particle (TPP) register

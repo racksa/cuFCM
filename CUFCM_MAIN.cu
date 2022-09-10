@@ -3,6 +3,8 @@
 // Include CUDA runtime and CUFFT
 #include <cuda_runtime.h>
 #include <cufft.h>
+#include <curand_kernel.h>
+#include <curand.h>
 
 #include <cub/device/device_radix_sort.cuh>
 
@@ -25,6 +27,7 @@ int main(int argc, char** argv) {
 
 	auto time_start = get_time();
 
+	// int N = 16777216;
 	int N = 500000;
 
 	int ngd = NGD;
@@ -183,6 +186,9 @@ int main(int argc, char** argv) {
 	const int num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	const int num_thread_blocks_NX = (NX + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 
+	curandState *dev_random;
+	cudaMalloc((void**)&dev_random, num_thread_blocks_N*THREADS_PER_BLOCK*sizeof(curandState));
+
 	auto time_cuda_initialisation = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
 	// Wave vector initialisation
@@ -201,34 +207,48 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300-2.dat");
-	read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
-	read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
+	#if INIT_FROM_FILE == 1
 
-	// init_pos_gpu(Y_device, rh, N);
+		read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300-2.dat");
+		read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
+		read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");
 
-	// init_pos(Y_host, rh ,N);
-	// init_force(F_host, rh, N);
-	// init_force(T_host, rh, N);	
+		// read_init_data(Y_host, N, "./init_data/N16777216/pos-N16777216-rh008089855.dat");
+		// read_init_data(F_host, N, "./init_data/N16777216/force-N16777216-rh008089855.dat");
+		// read_init_data(T_host, N, "./init_data/N16777216/force-N16777216-rh008089855-2.dat");
 
-	
-	// pfile = fopen("./init_data/N16777216/pos-N16777216-rh008089855.dat", "w");
-	// for(int i = 0; i < N; i++){
-	// 	fprintf(pfile, "%.8f %.8f %.8f\n", Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
-	// }
-	// fclose(pfile);
+	#elif INIT_FROM_FILE == 0
 
-	// pfile = fopen("./init_data/N16777216/force-N16777216-rh008089855.dat", "w");
-	// for(int i = 0; i < N; i++){
-	// 	fprintf(pfile, "%.8f %.8f %.8f\n", F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2]);
-	// }
-	// fclose(pfile);
+		init_pos_gpu(Y_device, rh, N);
+		init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, rh, N, dev_random);
+		init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, rh, N, dev_random);
 
-	// pfile = fopen("./init_data/N16777216/force-N16777216-rh008089855-2.dat", "w");
-	// for(int i = 0; i < N; i++){
-	// 	fprintf(pfile, "%.8f %.8f %.8f\n", T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2]);
-	// }
-	// fclose(pfile);
+		printf("Copying to host...\n");
+		copy_to_host<Real>(Y_device, Y_host, 3*N);
+		copy_to_host<Real>(F_device, F_host, 3*N);
+		copy_to_host<Real>(T_device, T_host, 3*N);
+		
+		printf("Writing position data...\n");
+		pfile = fopen("./init_data/new/pos_data.dat", "w");
+		for(int i = 0; i < N; i++){
+			fprintf(pfile, "%.8f %.8f %.8f\n", Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
+		}
+		fclose(pfile);
+		printf("Writing force data...\n");
+		pfile = fopen("./init_data/new/force_data.dat", "w");
+		for(int i = 0; i < N; i++){
+			fprintf(pfile, "%.8f %.8f %.8f\n", F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2]);
+		}
+		fclose(pfile);
+		printf("Writing torque data...\n");
+		pfile = fopen("./init_data/new/torque_data.dat", "w");
+		for(int i = 0; i < N; i++){
+			fprintf(pfile, "%.8f %.8f %.8f\n", T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2]);
+		}
+		fclose(pfile);
+		printf("Finished writing...\n");
+
+	#endif
 
 	cudaDeviceSynchronize();	auto time_readfile = get_time() - time_start;
 	///////////////////////////////////////////////////////////////////////////////
@@ -529,6 +549,9 @@ int main(int argc, char** argv) {
 
 	#endif
 
+	copy_to_host<Real>(Y_device, Y_host, 3*N);
+	copy_to_host<Real>(F_device, F_host, 3*N);
+	copy_to_host<Real>(T_device, T_host, 3*N);
 	copy_to_host<Real>(V_device, V_host, 3*N);
 	copy_to_host<Real>(W_device, W_host, 3*N);
 
