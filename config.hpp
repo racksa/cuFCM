@@ -21,12 +21,6 @@
 #define SIGMA_FAC 1.55917641
 #define RREF_FAC 5.21186960
 
-
-#define NX 256.0
-#define NY 256.0
-#define NZ 256.0
-#define NPTS 256.0
-
 // #define NGD 11
 // #define SIGMA_FAC 1.75207280;
 // #define RREF_FAC 6.69738570;
@@ -42,6 +36,14 @@
 // #define NGD 18
 // #define SIGMA_FAC 2.24239977;
 // #define RREF_FAC 11.19847000;
+
+
+
+#define NX 256.0
+#define NY 256.0
+#define NZ 256.0
+#define NPTS 256.0
+
 
 #define GRID_SIZE (NX*NY*NZ)
 #define FFT_GRID_SIZE ((NX/2+1)*NY*NZ)
@@ -69,17 +71,21 @@
 // 1 = Spatial hashing and sorting
 // 2 = Spatial hashing and sorting (GPU)    **default
 
-#define SORT_BACK 1
-// 0 = Do not sort back
-// 1 = Sort back    **default
-
 #define CORRECTION_TYPE 1
 // 0 = Linklist
 // 1 = Spatial hashing (TPP)  (must have Spatial hashing == 2)    **default
 
+#define SORT_BACK 1
+// 0 = Do not sort back
+// 1 = Sort back    **default
+
 #define OUTPUT_TO_FILE 1
 // 0 = Dont write to file
 // 1 = Write to file
+
+#define CHECK_ERROR 1
+// 0 = Dont check error
+// 1 = Check error
 
 #define USE_DOUBLE_PRECISION true
 

@@ -18,6 +18,7 @@
 #include "util/CUFCM_linklist.hpp"
 #include "util/CUFCM_print.hpp"
 #include "util/CUFCM_hashing.hpp"
+#include "util/maths_util.hpp"
 
 
 int main(int argc, char** argv) {
@@ -547,6 +548,19 @@ int main(int argc, char** argv) {
 		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(W_device, aux_device, 3*N);
 		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, W_device, aux_device, N);
 
+		#if OUTPUT_TO_FILE == 1
+
+			copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+			sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
+
+			copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
+			sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, F_device, aux_device, N);
+
+			copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
+			sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, T_device, aux_device, N);
+
+		#endif
+
 	#endif
 
 	copy_to_host<Real>(Y_device, Y_host, 3*N);
@@ -607,29 +621,40 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	#if OUTPUT_TO_FILE == 1
 
-		pfile = fopen("./data/simulation_data.dat", "a");
-		for(int i = 0; i < N; i++){
-			fprintf(pfile, "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
-			Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2], 
-			F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2], 
-			V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2], 
-			W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-			}
-		fprintf(pfile, "\n");
-		fclose(pfile);
-
-		pfile = fopen("./data/simulation_timing.dat", "a");
-		fprintf(pfile, "%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n", 
-		time_cuda_initialisation, time_readfile,
-		time_hashing, time_linklist,
-		time_precompute_gauss,
-		time_spreading,
-		time_FFT,
-		time_gathering,
-		time_correction);
-		fprintf(pfile, "\n");
-		fclose(pfile);
+		write_data(Y_host, F_host, V_host, W_host, N, "./data/simulation_data.dat");
 		
+		write_timing(time_cuda_initialisation, 
+				time_readfile,
+				time_hashing, 
+				time_linklist,
+				time_precompute_gauss,
+				time_spreading,
+				time_FFT,
+				time_gathering,
+				time_correction,
+				"./data/simulation_timing.dat");
+		
+	#endif
+	///////////////////////////////////////////////////////////////////////////////
+	// Check error
+	///////////////////////////////////////////////////////////////////////////////
+	#if CHECK_ERROR == 1
+
+		Real* Y_validation = malloc_host<Real>(3*N);
+		Real* F_validation = malloc_host<Real>(3*N);
+		Real* V_validation = malloc_host<Real>(3*N);
+		Real* W_validation = malloc_host<Real>(3*N);
+
+		read_validate_data(Y_validation,
+						   F_validation,
+						   V_validation,
+						   W_validation, N, "./data/refdata/ref_data_N500000");
+
+		std::cout << "-------\nError\n-------\n";
+		std::cout << "%Y error:\t" << percentage_error_magnitude(Y_host, Y_validation, N) << "\n";
+		std::cout << "%V error:\t" << percentage_error_magnitude(V_host, V_validation, N) << "\n";
+		std::cout << "%W error:\t" << percentage_error_magnitude(W_host, W_validation, N) << "\n";
+
 	#endif
 	///////////////////////////////////////////////////////////////////////////////
 	// Finish

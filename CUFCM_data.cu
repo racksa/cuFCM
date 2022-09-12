@@ -23,6 +23,64 @@ void read_init_data(Real *Y, int N, const char *file_name){
     return;
 }
 
+void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name){
+    FILE *ifile;
+    ifile = fopen(file_name, "r");
+    for(int np = 0; np < N; np++){
+        if(fscanf(ifile, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+        &Y[3*np + 0],
+        &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2],
+        &F[3*np + 0], &F[3*np + 1], &F[3*np + 2],
+        &V[3*np + 0], &V[3*np + 1], &V[3*np + 2],
+        &W[3*np + 0], &W[3*np + 1], &W[3*np + 2]) == 0){
+            printf("fscanf error: Unable to read data");
+        }
+    }
+    fclose(ifile);
+
+    return;
+}
+
+void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name){
+    FILE *pfile;
+    pfile = fopen(file_name, "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
+        Y[3*i + 0], Y[3*i + 1], Y[3*i + 2], 
+        F[3*i + 0], F[3*i + 1], F[3*i + 2], 
+        V[3*i + 0], V[3*i + 1], V[3*i + 2], 
+        W[3*i + 0], W[3*i + 1], W[3*i + 2]);
+        }
+    fprintf(pfile, "\n");
+    fclose(pfile);
+}
+
+void write_timing(Real time_cuda_initialisation, 
+                    Real time_readfile,
+                    Real time_hashing, 
+                    Real time_linklist,
+                    Real time_precompute_gauss,
+                    Real time_spreading,
+                    Real time_FFT,
+                    Real time_gathering,
+                    Real time_correction,
+                    const char *file_name){
+    FILE *pfile;
+    pfile = fopen(file_name, "a");
+    fprintf(pfile, "%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n", 
+    time_cuda_initialisation, 
+    time_readfile,
+    time_hashing, 
+    time_linklist,
+    time_precompute_gauss,
+    time_spreading,
+    time_FFT,
+    time_gathering,
+    time_correction);
+    fprintf(pfile, "\n");
+    fclose(pfile);
+}
+
 void init_pos(Real *Y, Real rad, int N){
     int check = 0;
     Real rsq = 0.0, xi = 0.0, yi = 0.0, zi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rsqcheck = 4.0*rad*rad;
@@ -100,7 +158,6 @@ void init_pos_gpu(Real *Y, Real rad, int N){
 
 __global__
 void append(Real x, Real y, Real z, Real *Y, int np){
-    // printf("successful np %d\n", np);
     Y[3*np + 0] = x;
     Y[3*np + 1] = y;
     Y[3*np + 2] = z;
