@@ -848,19 +848,20 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
 __global__
 void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
               Real *T, Real *F, int N, int ngd, 
-              Real pdmag, Real sigmasq, Real sigmadipsq,
+              Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
+              Real anormdip, Real anormdip2,
               Real dx){
     
     __shared__ Real Yx, Yy, Yz;
     __shared__ Real Fx, Fy, Fz;
     __shared__ Real g11, g22, g33, g12, g21, g13, g31, g23, g32;
-    __shared__ Real xdis_shared[NGD];
-    __shared__ Real ydis_shared[NGD];
-    __shared__ Real zdis_shared[NGD];
     __shared__ Real gaussx_shared[NGD];
     __shared__ Real gaussy_shared[NGD];
     __shared__ Real gaussz_shared[NGD];
+    __shared__ Real gaussx_dip_shared[NGD];
+    __shared__ Real gaussy_dip_shared[NGD];
+    __shared__ Real gaussz_dip_shared[NGD];
     __shared__ Real grad_gaussx_dip_shared[NGD];
     __shared__ Real grad_gaussy_dip_shared[NGD];
     __shared__ Real grad_gaussz_dip_shared[NGD];
@@ -870,14 +871,10 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
 
     int xc, yc, zc;
     int xg, yg, zg;
-    Real xx, yy, zz, r2;
+    Real xx, yy, zz;
     Real gradx, grady, gradz;
-    Real gx, gy, gz;
-    Real temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
-    Real temp3 = temp2 /sigmasq;
-    Real temp4 = 3.0*temp2;
-    Real temp5;
+    Real gx, gy, gz, gxdip, gydip, gzdip;
+    Real temp, tempdip;
     int ind;
     int ngdh = ngd/2;
     int ngd3 = ngd*ngd*ngd;
@@ -917,15 +914,15 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
             xx = ((Real) xg)*dx - Yx;
             yy = ((Real) yg)*dx - Yy;
             zz = ((Real) zg)*dx - Yz;
-
-            // dis
-            xdis_shared[i] = xx;
-            ydis_shared[i] = yy;
-            zdis_shared[i] = zz;
+            
             // gauss
             gaussx_shared[i] = anorm*exp(-xx*xx/anorm2);
             gaussy_shared[i] = anorm*exp(-yy*yy/anorm2);
             gaussz_shared[i] = anorm*exp(-zz*zz/anorm2);
+            // gauss dip
+            gaussx_dip_shared[i] = anormdip*exp(-xx*xx/anormdip2);
+            gaussy_dip_shared[i] = anormdip*exp(-yy*yy/anormdip2);
+            gaussz_dip_shared[i] = anormdip*exp(-zz*zz/anormdip2);
             // grad_gauss
             grad_gaussx_dip_shared[i] = - xx / sigmadipsq;
             grad_gaussy_dip_shared[i] = - yy / sigmadipsq;
@@ -934,7 +931,6 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
             indx_shared[i] = xg - NPTS * ((int) floor( ((Real) xg) / ((Real) NPTS)));
             indy_shared[i] = yg - NPTS * ((int) floor( ((Real) yg) / ((Real) NPTS)));
             indz_shared[i] = zg - NPTS * ((int) floor( ((Real) zg) / ((Real) NPTS)));
-
         }
         __syncthreads();
         
@@ -947,18 +943,21 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
             gy = gaussy_shared[j];
             gz = gaussz_shared[k];
 
+            gxdip = gaussx_dip_shared[i];
+            gydip = gaussy_dip_shared[j];
+            gzdip = gaussz_dip_shared[k];
+
             gradx = grad_gaussx_dip_shared[i];
             grady = grad_gaussy_dip_shared[j];
             gradz = grad_gaussz_dip_shared[k];
 
             ind = indx_shared[i] + indy_shared[j]*NX + indz_shared[k]*NX*NY;
-            r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
             temp = gx*gy*gz;
-            temp5 = temp*( 1 + temp3*r2 - temp4);
+            tempdip = gxdip*gydip*gzdip;
 
-            atomicAdd(&fx[ind], Fx*temp5 + (g11*gradx + g12*grady + g13*gradz)*temp);
-            atomicAdd(&fy[ind], Fy*temp5 + (g21*gradx + g22*grady + g23*gradz)*temp);
-            atomicAdd(&fz[ind], Fz*temp5 + (g31*gradx + g32*grady + g33*gradz)*temp);
+            atomicAdd(&fx[ind], Fx*temp + (g11*gradx + g12*grady + g13*gradz)*tempdip);
+            atomicAdd(&fy[ind], Fy*temp + (g21*gradx + g22*grady + g23*gradz)*tempdip);
+            atomicAdd(&fz[ind], Fz*temp + (g31*gradx + g32*grady + g33*gradz)*tempdip);
         }
     }
 }
@@ -968,16 +967,17 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
                                 Real *Y,
                                 Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
-                                Real pdmag, Real sigmasq, Real sigmadipsq,
+                                Real sigmasq, Real sigmadipsq,
                                 Real anorm, Real anorm2,
+                                Real anormdip, Real anormdip2,
                                 Real dx){
 
-    __shared__ Real xdis_shared[NGD];
-    __shared__ Real ydis_shared[NGD];
-    __shared__ Real zdis_shared[NGD];
     __shared__ Real gaussx_shared[NGD];
     __shared__ Real gaussy_shared[NGD];
     __shared__ Real gaussz_shared[NGD];
+    __shared__ Real gaussx_dip_shared[NGD];
+    __shared__ Real gaussy_dip_shared[NGD];
+    __shared__ Real gaussz_dip_shared[NGD];
     __shared__ Real grad_gaussx_dip_shared[NGD];
     __shared__ Real grad_gaussy_dip_shared[NGD];
     __shared__ Real grad_gaussz_dip_shared[NGD];
@@ -987,15 +987,10 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
 
     int xc, yc, zc;
     int xg, yg, zg;
-    Real xx, yy, zz, r2;
+    Real xx, yy, zz;
     Real gradx, grady, gradz;
-    Real gx, gy, gz;
-    Real norm, temp;
-    Real ux_temp, uy_temp, uz_temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
-    Real temp3 = temp2 / sigmasq;
-    Real temp4 = 3.0*temp2;
-    Real temp5;
+    Real gx, gy, gz, gxdip, gydip, gzdip;
+    Real norm, temp, tempdip;
     int ind;
     int ngdh = ngd/2;
     int ngd3 = ngd*ngd*ngd;
@@ -1016,14 +1011,14 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
             yy = ((Real) yg)*dx - Y[3*np + 1];
             zz = ((Real) zg)*dx - Y[3*np + 2];
 
-            // dis
-            xdis_shared[i] = xx;
-            ydis_shared[i] = yy;
-            zdis_shared[i] = zz;
             // gauss
             gaussx_shared[i] = anorm*exp(-xx*xx/anorm2);
             gaussy_shared[i] = anorm*exp(-yy*yy/anorm2);
             gaussz_shared[i] = anorm*exp(-zz*zz/anorm2);
+            // gauss dip
+            gaussx_dip_shared[i] = anormdip*exp(-xx*xx/anormdip2);
+            gaussy_dip_shared[i] = anormdip*exp(-yy*yy/anormdip2);
+            gaussz_dip_shared[i] = anormdip*exp(-zz*zz/anormdip2);
             // grad_gauss
             grad_gaussx_dip_shared[i] = - xx / sigmadipsq;
             grad_gaussy_dip_shared[i] = - yy / sigmadipsq;
@@ -1045,26 +1040,25 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
             gy = gaussy_shared[j];
             gz = gaussz_shared[k];
 
+            gxdip = gaussx_dip_shared[i];
+            gydip = gaussy_dip_shared[j];
+            gzdip = gaussz_dip_shared[k];
+
             gradx = grad_gaussx_dip_shared[i];
             grady = grad_gaussy_dip_shared[j];
             gradz = grad_gaussz_dip_shared[k];
             
             ind = indx_shared[i] + indy_shared[j]*NX + indz_shared[k]*NX*NY;
-            r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
             temp = gx*gy*gz*norm;
-            temp5 = (1 + temp3*r2 - temp4);
+            tempdip = gxdip*gydip*gzdip*norm;
 
-            ux_temp = ux[ind]*temp;
-            uy_temp = uy[ind]*temp;
-            uz_temp = uz[ind]*temp;
+            atomicAdd(&VTEMP[3*np + 0], ux[ind]*temp);
+            atomicAdd(&VTEMP[3*np + 1], uy[ind]*temp);
+            atomicAdd(&VTEMP[3*np + 2], uz[ind]*temp);
 
-            atomicAdd(&VTEMP[3*np + 0], ux_temp*temp5);
-            atomicAdd(&VTEMP[3*np + 1], uy_temp*temp5);
-            atomicAdd(&VTEMP[3*np + 2], uz_temp*temp5);
-
-            atomicAdd(&WTEMP[3*np + 0], -0.5*(uz_temp*grady - uy_temp*gradz));
-            atomicAdd(&WTEMP[3*np + 1], -0.5*(ux_temp*gradz - uz_temp*gradx));
-            atomicAdd(&WTEMP[3*np + 2], -0.5*(uy_temp*gradx - ux_temp*grady));         
+            atomicAdd(&WTEMP[3*np + 0], -0.5*(uz[ind]*grady - uy[ind]*gradz)*tempdip);
+            atomicAdd(&WTEMP[3*np + 1], -0.5*(ux[ind]*gradz - uz[ind]*gradx)*tempdip);
+            atomicAdd(&WTEMP[3*np + 2], -0.5*(uy[ind]*gradx - ux[ind]*grady)*tempdip);         
         }
     }
 }

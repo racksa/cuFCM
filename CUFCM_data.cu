@@ -9,13 +9,13 @@ void read_init_data(Real *Y, int N, const char *file_name){
     ifile = fopen(file_name, "r");
     for(int np = 0; np < N; np++){
         #if USE_DOUBLE_PRECISION == true
-        if(fscanf(ifile, "%lf %lf %lf", &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2]) == 0){
-            printf("fscanf error: Unable to read data");
-        }
+            if(fscanf(ifile, "%lf %lf %lf", &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2]) == 0){
+                printf("fscanf error: Unable to read data");
+            }
         #else
-        if(fscanf(ifile, "%f %f %f", &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2]) == 0){
-            printf("fscanf error: Unable to read data");
-        }
+            if(fscanf(ifile, "%f %f %f", &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2]) == 0){
+                printf("fscanf error: Unable to read data");
+            }
         #endif
     }
     fclose(ifile);
@@ -27,14 +27,25 @@ void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *f
     FILE *ifile;
     ifile = fopen(file_name, "r");
     for(int np = 0; np < N; np++){
-        if(fscanf(ifile, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-        &Y[3*np + 0],
-        &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2],
-        &F[3*np + 0], &F[3*np + 1], &F[3*np + 2],
-        &V[3*np + 0], &V[3*np + 1], &V[3*np + 2],
-        &W[3*np + 0], &W[3*np + 1], &W[3*np + 2]) == 0){
-            printf("fscanf error: Unable to read data");
-        }
+        #if USE_DOUBLE_PRECISION == true
+            if(fscanf(ifile, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            &Y[3*np + 0],
+            &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2],
+            &F[3*np + 0], &F[3*np + 1], &F[3*np + 2],
+            &V[3*np + 0], &V[3*np + 1], &V[3*np + 2],
+            &W[3*np + 0], &W[3*np + 1], &W[3*np + 2]) == 0){
+                printf("fscanf error: Unable to read data");
+            }
+        #else
+            if(fscanf(ifile, "%f %f %f %f %f %f %f %f %f %f %f %f %f",
+            &Y[3*np + 0],
+            &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2],
+            &F[3*np + 0], &F[3*np + 1], &F[3*np + 2],
+            &V[3*np + 0], &V[3*np + 1], &V[3*np + 2],
+            &W[3*np + 0], &W[3*np + 1], &W[3*np + 2]) == 0){
+                printf("fscanf error: Unable to read data");
+            }
+        #endif
     }
     fclose(ifile);
 

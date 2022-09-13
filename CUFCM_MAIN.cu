@@ -33,10 +33,10 @@ int main(int argc, char** argv) {
 
 	int ngd = NGD;
 
-	Real sigma_fac = SIGMA_FAC;
-	Real Rref_fac = RREF_FAC;
+	const Real dx = (PI2)/(NX);
+	const Real rh = RH;
 
-	Real dx = (PI2)/(NX);
+	Real Rref_fac = RREF_FAC;	
 
 	/* Link list */
 	Real Rref = Rref_fac*dx;
@@ -49,51 +49,83 @@ int main(int argc, char** argv) {
 	int ncell = M*M*M;
 	int mapsize = 13*ncell;
 
-	/* Monopole */
-	const Real rh = RH;
-	const Real sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
-	const Real sigmaFCMsq = sigmaFCM*sigmaFCM;
-	const Real anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
-	const Real anormFCM2 = 2.0*sigmaFCMsq;
+	#if SOLVER_MODE == 1
 
-	const Real sigmaGRID = sigmaFCM * sigma_fac;
-	const Real sigmaGRIDsq = sigmaGRID * sigmaGRID;
-	const Real anormGRID = 1.0/sqrt(2.0*PI*sigmaGRIDsq);
-	const Real anormGRID2 = 2.0*sigmaGRIDsq;
+		Real sigma_fac = SIGMA_FAC;
 
-	const Real gammaGRID = sqrt(2.0)*sigmaGRID;
-	const Real pdmag = sigmaFCMsq - sigmaGRIDsq;
+		/* Monopole */
+		const Real sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
+		const Real sigmaFCMsq = sigmaFCM*sigmaFCM;
+		const Real anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
+		const Real anormFCM2 = 2.0*sigmaFCMsq;
 
-	/* Dipole */
-	const Real sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
-	const Real sigmaFCMdipsq = sigmaFCMdip*sigmaFCMdip;
-	const Real anormFCMdip = 1.0/sqrt(2.0*PI*sigmaFCMdipsq);
-	const Real anormFCMdip2 = 2.0*sigmaFCMdipsq;
+		const Real sigmaGRID = sigmaFCM * sigma_fac;
+		const Real sigmaGRIDsq = sigmaGRID * sigmaGRID;
+		const Real anormGRID = 1.0/sqrt(2.0*PI*sigmaGRIDsq);
+		const Real anormGRID2 = 2.0*sigmaGRIDsq;
 
-	const Real sigma_dip_fac = sigmaGRID/sigmaFCMdip;
-	// sigma_dip_fac = 1;
+		const Real gammaGRID = sqrt(2.0)*sigmaGRID;
+		const Real pdmag = sigmaFCMsq - sigmaGRIDsq;
+		/* Dipole */
+		const Real sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
+		const Real sigmaFCMdipsq = sigmaFCMdip*sigmaFCMdip;
+		const Real anormFCMdip = 1.0/sqrt(2.0*PI*sigmaFCMdipsq);
+		const Real anormFCMdip2 = 2.0*sigmaFCMdipsq;
 
-	const Real sigmaGRIDdip = sigmaFCMdip * sigma_dip_fac;
-	const Real sigmaGRIDdipsq = sigmaGRIDdip * sigmaGRIDdip;
-	const Real anormGRIDdip = 1.0/sqrt(2.0*PI*sigmaGRIDdipsq);
-	const Real anormGRIDdip2 = 2.0*sigmaGRIDdipsq;
+		const Real sigma_dip_fac = sigmaGRID/sigmaFCMdip;
 
-	/* Self corrections */
-	const Real StokesMob = 1.0/(6.0*PI*rh);
-	const Real ModStokesMob = 1.0/(6.0*PI*sigmaGRID*sqrt(PI));
+		const Real sigmaGRIDdip = sigmaFCMdip * sigma_dip_fac;
+		const Real sigmaGRIDdipsq = sigmaGRIDdip * sigmaGRIDdip;
+		const Real anormGRIDdip = 1.0/sqrt(2.0*PI*sigmaGRIDdipsq);
+		const Real anormGRIDdip2 = 2.0*sigmaGRIDdipsq;
 
-	Real PDStokesMob = 2.0/pow(2.0*PI, 1.5);
-	PDStokesMob = PDStokesMob/pow(gammaGRID, 3.0);
-	PDStokesMob = PDStokesMob*pdmag/3.0;
+		/* Self corrections */
+		const Real StokesMob = 1.0/(6.0*PI*rh);
+		const Real ModStokesMob = 1.0/(6.0*PI*sigmaGRID*sqrt(PI));
 
-	Real BiLapMob = 1.0/pow(4.0*PI*sigmaGRIDsq, 1.5);
-	BiLapMob = BiLapMob/(4.0*sigmaGRIDsq)*pdmag*pdmag;
+		Real PDStokesMob = 2.0/pow(2.0*PI, 1.5);
+		PDStokesMob = PDStokesMob/pow(gammaGRID, 3.0);
+		PDStokesMob = PDStokesMob*pdmag/3.0;
 
-	const Real WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
-	const Real WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
+		Real BiLapMob = 1.0/pow(4.0*PI*sigmaGRIDsq, 1.5);
+		BiLapMob = BiLapMob/(4.0*sigmaGRIDsq)*pdmag*pdmag;
 
-	
+		const Real WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
+		const Real WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
 
+	#elif SOLVER_MODE == 0
+		/* Monopole */
+		const Real sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
+		const Real sigmaFCMsq = sigmaFCM*sigmaFCM;
+		const Real anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
+		const Real anormFCM2 = 2.0*sigmaFCMsq;
+
+		/* Dipole */
+		const Real sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
+		const Real sigmaFCMdipsq = sigmaFCMdip*sigmaFCMdip;
+		const Real anormFCMdip = 1.0/sqrt(2.0*PI*sigmaFCMdipsq);
+		const Real anormFCMdip2 = 2.0*sigmaFCMdipsq;
+
+	#endif
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Print simulation information
+	///////////////////////////////////////////////////////////////////////////////
+	std::cout << "-------\nSimulation\n-------\n";
+	std::cout << "Particle number:\t" << N << "\n";
+	std::cout << "Particle radius:\t" << RH << "\n";
+	#if SOLVER_MODE == 1
+		std::cout << "Solver\t\t\t" << "<Fast FCM>" << "\n";
+	#elif SOLVER_MODE == 0
+		std::cout << "Solver\t" << "<Regular FCM>" << " s\n";
+	#endif
+	std::cout << "Grid points:\t\t" << NX << "\n";
+    std::cout << "Grid support:\t\t" << NGD << "\n";
+	#if SOLVER_MODE == 1
+		std::cout << "Sigma/dx:\t\t" << sigma_fac << "\n";
+	#endif
+    
+    std::cout << std::endl;
 
 	///////////////////////////////////////////////////////////////////////////////
 	// CUDA initialisation
@@ -102,22 +134,6 @@ int main(int argc, char** argv) {
 	time_start = get_time();
 	
     cufftHandle plan, iplan;
-
-	FILE *pfile;
-
-	myCufftReal* fx_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fx_device = malloc_device<myCufftReal>(GRID_SIZE);
-	myCufftReal* fy_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fy_device = malloc_device<myCufftReal>(GRID_SIZE);
-	myCufftReal* fz_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* fz_device = malloc_device<myCufftReal>(GRID_SIZE);
-    myCufftComplex* fk_x_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_x_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-    myCufftComplex* fk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-    myCufftComplex* fk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-
-	myCufftReal* ux_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* ux_device = malloc_device<myCufftReal>(GRID_SIZE);
-	myCufftReal* uy_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* uy_device = malloc_device<myCufftReal>(GRID_SIZE);
-	myCufftReal* uz_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* uz_device = malloc_device<myCufftReal>(GRID_SIZE);
-    myCufftComplex* uk_x_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_x_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-    myCufftComplex* uk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-    myCufftComplex* uk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
 
 	Real *aux_host = malloc_host<Real>(3*N);					Real *aux_device = malloc_device<Real>(3*N);
 	Real* Y_host = malloc_host<Real>(3*N);						Real* Y_device = malloc_device<Real>(3*N);
@@ -159,13 +175,12 @@ int main(int argc, char** argv) {
 
 	#endif
 
-	int* map_host = malloc_host<int>(mapsize);					int* map_device = malloc_device<int>(mapsize);
-
+	int* map_host = malloc_host<int>(mapsize);							int* map_device = malloc_device<int>(mapsize);
 	int* particle_cellindex_host = malloc_host<int>(N);					int* particle_cellindex_device = malloc_device<int>(N);
 	int* particle_cellhash_host = malloc_host<int>(N);					int* particle_cellhash_device = malloc_device<int>(N);
 	int* particle_index_host = malloc_host<int>(N);						int* particle_index_device = malloc_device<int>(N);
 	int* sortback_index_host = malloc_host<int>(N);						int* sortback_index_device = malloc_device<int>(N);
-	
+
 	int* cell_start_host = malloc_host<int>(ncell);						int* cell_start_device = malloc_device<int>(ncell);
 	int* cell_end_host = malloc_host<int>(ncell);						int* cell_end_device = malloc_device<int>(ncell);
 
@@ -202,7 +217,6 @@ int main(int argc, char** argv) {
 	Real* qpadsq_host = malloc_host<Real>(pad);		Real* qpadsq_device = malloc_device<Real>(pad);
 
 	init_wave_vector<<<num_thread_blocks_NX, THREADS_PER_BLOCK>>>(q_device, qsq_device, qpad_device, qpadsq_device, nptsh, pad);
-
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
@@ -257,8 +271,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	/* CPU Hashing */
-	
+	/* CPU Hashing */	
 	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
 
 		for(int i = 0; i < N; i++){
@@ -294,7 +307,7 @@ int main(int argc, char** argv) {
 
 		// Sort particle index by hash
 		sort_index_by_key(particle_cellhash_device, particle_index_device, N);
-		
+
 		// Sort pos/force/torque by particle index
 		copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
 		sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
@@ -305,11 +318,10 @@ int main(int argc, char** argv) {
 
 		// Find cell starting/ending points
 		create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
-		
+
 	#endif
 
 	cudaDeviceSynchronize();	auto time_hashing = get_time() - time_start;
-
 	///////////////////////////////////////////////////////////////////////////////
 	// Link
 	///////////////////////////////////////////////////////////////////////////////
@@ -330,7 +342,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
 
-	// GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(GA_device, T_device, N);
+	// GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, T_device, N);
 
 	#if GRIDDING_TYPE == 0
 
@@ -345,6 +357,17 @@ int main(int argc, char** argv) {
 	#endif
 	
 	cudaDeviceSynchronize();	auto time_precompute_gauss = get_time() - time_start;
+	myCufftReal* fx_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* hx_device = malloc_device<myCufftReal>(GRID_SIZE);
+	myCufftReal* fy_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* hy_device = malloc_device<myCufftReal>(GRID_SIZE);
+	myCufftReal* fz_host = malloc_host<myCufftReal>(GRID_SIZE);					myCufftReal* hz_device = malloc_device<myCufftReal>(GRID_SIZE);
+    myCufftComplex* fk_x_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_x_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+    myCufftComplex* fk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+    myCufftComplex* fk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+
+    myCufftComplex* uk_x_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_x_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+    myCufftComplex* uk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+    myCufftComplex* uk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+
 	///////////////////////////////////////////////////////////////////////////////
 	// Spreading
 	///////////////////////////////////////////////////////////////////////////////
@@ -354,7 +377,7 @@ int main(int argc, char** argv) {
 
 		#if GRIDDING_TYPE == 0
 
-			cufcm_mono_dipole_distribution_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, N,
+			cufcm_mono_dipole_distribution_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, N,
 												T_device, F_device, pdmag, sigmaGRIDsq,
 												gaussx_device, gaussy_device, gaussz_device,
 												grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
@@ -364,7 +387,7 @@ int main(int argc, char** argv) {
 
 		#elif GRIDDING_TYPE == 1
 
-			cufcm_mono_dipole_distribution_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device,
+			cufcm_mono_dipole_distribution_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
 												Y_device, T_device, F_device,
 												N, ngd,
 												pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
@@ -372,7 +395,7 @@ int main(int argc, char** argv) {
 												dx);
 		#elif GRIDDING_TYPE == 2
 
-			cufcm_mono_dipole_distribution_bpp_shared<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
+			cufcm_mono_dipole_distribution_bpp_shared<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, 
 												Y_device, T_device, F_device,
 												N, ngd,
 												pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
@@ -381,8 +404,8 @@ int main(int argc, char** argv) {
 		
 		#elif GRIDDING_TYPE == 3
 
-			cufcm_mono_dipole_distribution_bpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(fx_device, fy_device, fz_device, 
-												Y_device, GA_device, F_device,
+			cufcm_mono_dipole_distribution_bpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, 
+												Y_device, T_device, F_device,
 												N, ngd,
 												pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 												anormGRID, anormGRID2,
@@ -392,6 +415,13 @@ int main(int argc, char** argv) {
 	
 	#elif SOLVER_MODE == 0
 		
+		cufcm_mono_dipole_distribution_regular_fcm<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, 
+												Y_device, T_device, F_device,
+												N, ngd,
+												sigmaFCMsq, sigmaFCMdipsq,
+												anormFCM, anormFCM2,
+												anormFCMdip, anormFCMdip2,
+												dx);
 
 	#endif
 
@@ -400,15 +430,15 @@ int main(int argc, char** argv) {
 	// FFT
 	///////////////////////////////////////////////////////////////////////////////
 	cudaDeviceSynchronize();	time_start = get_time();
-	if (cufftExecReal2Complex(plan, fx_device, fk_x_device) != CUFFT_SUCCESS){
+	if (cufftExecReal2Complex(plan, hx_device, fk_x_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Forward failed (fx)\n");
 		return 0;	
 	}
-	if (cufftExecReal2Complex(plan, fy_device, fk_y_device) != CUFFT_SUCCESS){
+	if (cufftExecReal2Complex(plan, hy_device, fk_y_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Forward failed (fy)\n");
 		return 0;	
 	}
-	if (cufftExecReal2Complex(plan, fz_device, fk_z_device) != CUFFT_SUCCESS){
+	if (cufftExecReal2Complex(plan, hz_device, fk_z_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Forward failed (fz)\n");
 		return 0;	
 	}
@@ -423,15 +453,15 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// IFFT
 	///////////////////////////////////////////////////////////////////////////////
-	if (cufftExecComplex2Real(iplan, uk_x_device, ux_device) != CUFFT_SUCCESS){
+	if (cufftExecComplex2Real(iplan, uk_x_device, hx_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Backward failed (fx)\n");
 		return 0;	
 	}
-	if (cufftExecComplex2Real(iplan, uk_y_device, uy_device) != CUFFT_SUCCESS){
+	if (cufftExecComplex2Real(iplan, uk_y_device, hy_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecD2Z Backward failed (fy)\n");
 		return 0;	
 	}
-	if (cufftExecComplex2Real(iplan, uk_z_device, uz_device) != CUFFT_SUCCESS){
+	if (cufftExecComplex2Real(iplan, uk_z_device, hz_device) != CUFFT_SUCCESS){
 		printf("CUFFT error: ExecZ2D Backward failed (fz)\n");
 		return 0;	
 	}
@@ -446,7 +476,7 @@ int main(int argc, char** argv) {
 
 		#if GRIDDING_TYPE == 0
 
-			cufcm_particle_velocities_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device, N,
+			cufcm_particle_velocities_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, N,
 										V_device, W_device,
 										pdmag, sigmaGRIDsq,
 										gaussx_device, gaussy_device, gaussz_device,
@@ -457,7 +487,7 @@ int main(int argc, char** argv) {
 
 		#elif GRIDDING_TYPE == 1
 
-			cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+			cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
 										Y_device,
 										V_device, W_device,
 										N, ngd,
@@ -467,7 +497,7 @@ int main(int argc, char** argv) {
 
 		#elif GRIDDING_TYPE == 2
 
-			cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+			cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
 										Y_device,
 										V_device, W_device,
 										N, ngd,
@@ -477,7 +507,7 @@ int main(int argc, char** argv) {
 
 		#elif GRIDDING_TYPE == 3
 
-			cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(ux_device, uy_device, uz_device,
+			cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
 										Y_device,
 										V_device, W_device,
 										N, ngd,
@@ -488,6 +518,15 @@ int main(int argc, char** argv) {
 		#endif
 
 	#elif SOLVER_MODE == 0
+
+		cufcm_particle_velocities_regular_fcm<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
+										Y_device,
+										V_device, W_device,
+										N, ngd,
+										sigmaFCMsq, sigmaFCMdipsq,
+										anormFCM, anormFCM2,
+										anormFCMdip, anormFCMdip2,
+										dx);
 
 	#endif
 
@@ -584,18 +623,18 @@ int main(int argc, char** argv) {
 	#endif
 
 	/* Print */
-	for(int i = N-10; i < N; i++){
-		printf("%d V ( ", i);
-		for(int n = 0; n < 3; n++){
-			printf("%.8f ", V_host[3*i + n]);
-		}
-		printf(")     \t");
-		printf("W ( ");
-		for(int n = 0; n < 3; n++){
-			printf("%.8f ", W_host[3*i + n]);
-		}
-		printf(")\n");
-	}
+	// for(int i = N-10; i < N; i++){
+	// 	printf("%d V ( ", i);
+	// 	for(int n = 0; n < 3; n++){
+	// 		printf("%.8f ", V_host[3*i + n]);
+	// 	}
+	// 	printf(")     \t");
+	// 	printf("W ( ");
+	// 	for(int n = 0; n < 3; n++){
+	// 		printf("%.8f ", W_host[3*i + n]);
+	// 	}
+	// 	printf(")\n");
+	// }
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
@@ -663,9 +702,9 @@ int main(int argc, char** argv) {
 	
 	cufftDestroy(plan);
 	cufftDestroy(iplan);
-	cudaFree(fx_device); cudaFree(fy_device); cudaFree(fz_device); 
+	cudaFree(hx_device); cudaFree(hy_device); cudaFree(hz_device); 
 	cudaFree(fk_x_device); cudaFree(fk_y_device); cudaFree(fk_z_device);
-	cudaFree(ux_device); cudaFree(uy_device); cudaFree(uz_device); 
+	cudaFree(hx_device); cudaFree(hy_device); cudaFree(hz_device); 
 	cudaFree(uk_x_device); cudaFree(uk_y_device); cudaFree(uk_z_device);
 	cudaFree(Y_device);
 	cudaFree(F_device);

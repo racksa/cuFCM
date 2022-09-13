@@ -17,32 +17,41 @@
 // #define RH 0.008089855908506678
 #define RH 0.02609300415934458
 
-#define NGD 9
-#define SIGMA_FAC 1.55917641
-#define RREF_FAC 5.21186960
+#if SOLVER_MODE == 1
 
-// #define NGD 11
-// #define SIGMA_FAC 1.75207280;
-// #define RREF_FAC 6.69738570;
+    #define NGD 9
+    #define SIGMA_FAC 1.55917641
+    #define RREF_FAC 5.21186960
 
-// #define NGD 13
-// #define SIGMA_FAC 1.92479594;
-// #define RREF_FAC 8.18540500;
+    // #define NGD 11
+    // #define SIGMA_FAC 1.75207280;
+    // #define RREF_FAC 6.69738570;
 
-// #define NGD 15
-// #define SIGMA_FAC 2.08834941;
-// #define RREF_FAC 9.66631420;
+    // #define NGD 13
+    // #define SIGMA_FAC 1.92479594;
+    // #define RREF_FAC 8.18540500;
 
-// #define NGD 18
-// #define SIGMA_FAC 2.24239977;
-// #define RREF_FAC 11.19847000;
+    // #define NGD 15
+    // #define SIGMA_FAC 2.08834941;
+    // #define RREF_FAC 9.66631420;
 
+    // #define NGD 18
+    // #define SIGMA_FAC 2.24239977;
+    // #define RREF_FAC 11.19847000;
 
+    #define NPTS 256.0
 
-#define NX 256.0
-#define NY 256.0
-#define NZ 256.0
-#define NPTS 256.0
+#elif SOLVER_MODE == 0
+
+    #define NPTS 600.0
+    #define NGD 20
+    #define RREF_FAC 5.21186960
+
+#endif
+
+#define NX NPTS
+#define NY NPTS
+#define NZ NPTS
 
 
 #define GRID_SIZE (NX*NY*NZ)
@@ -87,7 +96,7 @@
 // 0 = Dont check error
 // 1 = Check error
 
-#define USE_DOUBLE_PRECISION true
+#define USE_DOUBLE_PRECISION false
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;
