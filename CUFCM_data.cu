@@ -230,7 +230,7 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states){
 
     Real rnd1, rnd2, rnd3;
 
-    for(int j = 0; j < N; j += stride){
+    for(int j = index; j < N; j += stride){
         rnd1 = curand_uniform (&states[index]);
         rnd2 = curand_uniform (&states[index]);
         rnd3 = curand_uniform (&states[index]);
@@ -240,7 +240,6 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states){
     }
     return;
 }
-
 
 __global__
 void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, int pad){

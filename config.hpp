@@ -5,6 +5,7 @@
 
 
 #define PI 3.14159265358979
+#define PIsqrt 1.7724538509055159
 #define PI2 6.28318530717959
 #define PI2sqrt 2.5066282746310002
 #define TWOoverPIsqrt 0.7978845608028654
@@ -14,37 +15,79 @@
 // 0 = FCM
 // 1 = Fast FCM
 
+#define TOL 0
+// 0 = 10^-3
+// 1 = 10^-4
+// 2 = 10^-5
+// 3 = 10^-6
+
+#define ENABLE_REPEAT 1
+// 0 = Dont repeat
+// 1 = Reapeat measurement
+
 // #define RH 0.008089855908506678
 #define RH 0.02609300415934458
 
 #if SOLVER_MODE == 1
 
-    #define NGD 9
-    #define SIGMA_FAC 1.55917641
-    #define RREF_FAC 5.21186960
-
-    // #define NGD 11
-    // #define SIGMA_FAC 1.75207280;
-    // #define RREF_FAC 6.69738570;
-
-    // #define NGD 13
-    // #define SIGMA_FAC 1.92479594;
-    // #define RREF_FAC 8.18540500;
-
-    // #define NGD 15
-    // #define SIGMA_FAC 2.08834941;
-    // #define RREF_FAC 9.66631420;
-
-    // #define NGD 18
-    // #define SIGMA_FAC 2.24239977;
-    // #define RREF_FAC 11.19847000;
-
     #define NPTS 256.0
+    #define DX (PI2/NPTS)
+
+    #if TOL == 0
+        #define ALPHA 0.9352    /* SIGMA/dx */
+        #define BETA 9.706      /* (NGD.DX)/SIGMA */
+        #define GAMMA 5.573     /* RC/SIGMA */
+    #elif TOL == 1
+        #define ALPHA 1.0509    /* SIGMA/dx */
+        #define BETA 10.873     /* (NGD.DX)/SIGMA */
+        #define GAMMA 6.373     /* RC/SIGMA */
+    #elif TOL == 2
+        #define ALPHA 1.1545    /* SIGMA/dx */
+        #define BETA 11.773     /* (NGD.DX)/SIGMA */
+        #define GAMMA 7.090     /* RC/SIGMA */
+    #elif TOL == 3
+        #define ALPHA 1.2526    /* SIGMA/dx */
+        #define BETA 12.639     /* (NGD.DX)/SIGMA */
+        #define GAMMA 7.717     /* RC/SIGMA */
+    #endif
+    // #define ALPHA 1.3450    /* SIGMA/dx */
+    // #define BETA 13.410     /* (NGD.DX)/SIGMA */
+    // #define GAMMA 8.326     /* RC/SIGMA */
+
+    #define SIGMA_FCM (RH/PIsqrt)
+    #define SIGMA (DX*ALPHA)
+    #define SIGMA_FAC (SIGMA/SIGMA_FCM)
+    #define NGD (int)(BETA*ALPHA)
+    #define RREF_FAC (GAMMA*ALPHA)
 
 #elif SOLVER_MODE == 0
 
-    #define NPTS 600.0
-    #define NGD 20
+    #define SIGMA (RH/PIsqrt)
+    #define SIGMA_FAC 1
+
+    #if TOL == 0
+        #define ALPHA 1.0409    /* SIGMA/dx */
+        #define BETA 10.873     /* (NGD.DX)/SIGMA */
+    #elif TOL == 1
+        #define ALPHA 1.1545    /* SIGMA/dx */
+        #define BETA 11.773     /* (NGD.DX)/SIGMA */
+    #elif TOL == 2
+        #define ALPHA 1.2526    /* SIGMA/dx */
+        #define BETA 12.639     /* (NGD.DX)/SIGMA */
+    #elif TOL == 3
+        #define ALPHA 1.3850    /* SIGMA/dx */
+        #define BETA 13.410     /* (NGD.DX)/SIGMA */
+    #endif
+    
+    #define DX_C (SIGMA/ALPHA)
+    #define NPTS ((int)(PI2/DX_C)%2 == 0? (int)(PI2/DX_C) : (int)(PI2/DX_C) + 1)
+    #define DX (PI2/NPTS)
+    #define NGD (int)(BETA*ALPHA)
+
+    // #define NPTS 500
+    // #define DX (PI2/NPTS)
+    // #define NGD 20
+
     #define RREF_FAC 5.21186960
 
 #endif
@@ -54,7 +97,7 @@
 #define NZ NPTS
 
 
-#define GRID_SIZE (NX*NY*NZ)
+#define GRID_SIZE (int)(NX*NY*NZ)
 #define FFT_GRID_SIZE ((NX/2+1)*NY*NZ)
 
 #define THREADS_PER_BLOCK 32
@@ -88,7 +131,7 @@
 // 0 = Do not sort back
 // 1 = Sort back    **default
 
-#define OUTPUT_TO_FILE 1
+#define OUTPUT_TO_FILE 0
 // 0 = Dont write to file
 // 1 = Write to file
 

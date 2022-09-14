@@ -100,9 +100,9 @@ void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *f
     Real g11, g22, g33, g12, g21, g13, g31, g23, g32;
     Real gx, gy, gz, Fx, Fy, Fz;
     Real g11xx, g22yy, g33zz, g12yy, g21xx, g13zz, g31xx, g23zz, g32yy;
-    Real temp2 = 0.5 * pdmag / sigmasq;
+    Real temp2 = (Real)0.5 * pdmag / sigmasq;
     Real temp3 = temp2 /sigmasq;
-    Real temp4 = 3.0*temp2;
+    Real temp4 = (Real)3.0*temp2;
     Real temp5;
     int ind;
 
@@ -179,9 +179,9 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
     Real gx, gy, gz, Fx, Fy, Fz;
     Real g11xx, g22yy, g33zz, g12yy, g21xx, g13zz, g31xx, g23zz, g32yy;
     Real temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
+    Real temp2 = (Real)0.5 * pdmag / sigmasq;
     Real temp3 = temp2 /sigmasq;
-    Real temp4 = 3.0*temp2;
+    Real temp4 = (Real)3.0*temp2;
     Real temp5;
     int ind;
     int ngdh = ngd/2;
@@ -278,9 +278,9 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
     Real gradx, grady, gradz;
     Real gx, gy, gz;
     Real temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
+    Real temp2 = (Real)0.5 * pdmag / sigmasq;
     Real temp3 = temp2 /sigmasq;
-    Real temp4 = 3.0*temp2;
+    Real temp4 = (Real)3.0*temp2;
     Real temp5;
     int ind;
     int ngdh = ngd/2;
@@ -467,7 +467,7 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         q2 = q[indj];
         q3 = q[indk];
         qq = qsq[indi] + qsq[indj] + qsq[indk];
-        norm = 1.0/(qq);
+        norm = (Real)1.0/(qq);
 
         f1_re = fk_x[i].x;
         f1_im = fk_x[i].y;
@@ -477,12 +477,12 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         f3_im = fk_z[i].y;
 
         if(i==0){
-            f1_re = 0;
-            f1_im = 0;
-            f2_re = 0;
-            f2_im = 0;
-            f3_re = 0;
-            f3_im = 0;
+            f1_re = (Real)0.0;
+            f1_im = (Real)0.0;
+            f2_re = (Real)0.0;
+            f2_im = (Real)0.0;
+            f3_re = (Real)0.0;
+            f3_im = (Real)0.0;
         }
 
         kdotf_re = (q1*f1_re+q2*f2_re+q3*f3_re)*norm;
@@ -495,20 +495,13 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)GRID_SIZE);
         uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)GRID_SIZE);
 
-        // // uk_x[i].x = f1_re;
-        // // uk_x[i].y = f1_im;
-        // // uk_y[i].x = f2_re;
-        // // uk_y[i].y = f2_im;
-        // // uk_z[i].x = f3_re;
-        // // uk_z[i].y = f3_im;
-
         if(i==0){
-            uk_x[0].x = 0;
-            uk_x[0].y = 0;
-            uk_y[0].x = 0;
-            uk_y[0].y = 0;
-            uk_z[0].x = 0;
-            uk_z[0].y = 0;
+            uk_x[0].x = (Real)0.0;
+            uk_x[0].y = (Real)0.0;
+            uk_y[0].x = (Real)0.0;
+            uk_y[0].y = (Real)0.0;
+            uk_z[0].x = (Real)0.0;
+            uk_z[0].y = (Real)0.0;
         }
     }// End of striding loop over filament segment velocities.
     __syncthreads();
@@ -534,9 +527,9 @@ void cufcm_particle_velocities_tpp_register(myCufftReal *ux, myCufftReal *uy, my
     Real xx, yy, zz;
     Real xx2, yy2, zz2;
     Real r2;
-    Real temp2 = 0.5 * pdmag / sigmasq;
+    Real temp2 = (Real)0.5 * pdmag / sigmasq;
     Real temp3 = temp2 / sigmasq;
-    Real temp4 = 3.0*temp2;
+    Real temp4 = (Real)3.0*temp2;
     Real temp5;
     int ind;
 
@@ -601,9 +594,9 @@ void cufcm_particle_velocities_tpp_recompute(myCufftReal *ux, myCufftReal *uy, m
     Real gx, gy, gz;
     Real norm, temp;
     Real ux_temp, uy_temp, uz_temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
+    Real temp2 = (Real)0.5 * pdmag / sigmasq;
     Real temp3 = temp2 / sigmasq;
-    Real temp4 = 3.0*temp2;
+    Real temp4 = (Real)3.0*temp2;
     Real temp5;
     int ind;
     int ngdh = ngd/2;
@@ -689,9 +682,9 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
     Real gx, gy, gz;
     Real norm, temp;
     Real ux_temp, uy_temp, uz_temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
+    Real temp2 = (Real)0.5 * pdmag / sigmasq;
     Real temp3 = temp2 / sigmasq;
-    Real temp4 = 3.0*temp2;
+    Real temp4 = (Real)3.0*temp2;
     Real temp5;
     int ind;
     int ngdh = ngd/2;
@@ -699,6 +692,7 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
 
     norm = dx*dx*dx;
 
+    // TODO change to reduction
     for(int np = blockIdx.x; np < N; np += gridDim.x){
         xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
         yc = (int) (Y[3*np + 1]/dx);
@@ -782,9 +776,9 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
     Real gx, gy, gz;
     Real norm, temp;
     Real ux_temp, uy_temp, uz_temp;
-    Real temp2 = 0.5 * pdmag / sigmasq;
+    Real temp2 = (Real)0.5 * pdmag / sigmasq;
     Real temp3 = temp2 / sigmasq;
-    Real temp4 = 3.0*temp2;
+    Real temp4 = (Real)3.0*temp2;
     Real temp5;
     int ind;
     int ngdh = ngd/2;
@@ -1149,9 +1143,9 @@ void cufcm_mono_dipole_distribution_tpp_loop(myCufftReal *fx, myCufftReal *fy, m
     Real g11xx, g22yy, g33zz, g12yy, g21xx, g13zz, g31xx, g23zz, g32yy;
     Real smallx = 1e-18;
     int ind;
-    Real temp2 = 0.5 * pdmag / sigmasq;
+    Real temp2 = (Real)0.5 * pdmag / sigmasq;
     Real temp3 = temp2 /sigmasq;
-    Real temp4 = 3.0*temp2;
+    Real temp4 = (Real)3.0*temp2;
     Real temp5;
 
     for(np = 0; np < N; np++){

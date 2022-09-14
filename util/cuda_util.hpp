@@ -83,6 +83,13 @@ T* malloc_pinned(size_t N, T value=T()) {
     return ptr;
 } 
 
+// reset cuda array
+template <typename T>
+void reset_device(T *p, size_t n) {
+    auto status = cudaMemset(p, (T)0, n*sizeof(T));
+    cuda_check_status(status);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // copying memory
 ///////////////////////////////////////////////////////////////////////////////
