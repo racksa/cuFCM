@@ -21,7 +21,7 @@
 // 2 = 10^-5
 // 3 = 10^-6
 
-#define ENABLE_REPEAT 1
+#define ENABLE_REPEAT 0
 // 0 = Dont repeat
 // 1 = Reapeat measurement
 
@@ -157,6 +157,8 @@
     #define cufftReal2Complex CUFFT_R2C
     #define cufftExecReal2Complex cufftExecR2C
     #define cufftExecComplex2Real cufftExecC2R
+    
 #endif
 
+#define NGD_UAMMD 9
 #endif

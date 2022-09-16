@@ -9,6 +9,8 @@ void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *f
 
 void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name);
 
+void write_init_data(Real *Y, Real *F, Real *T, int N);
+
 void write_timing(Real time_cuda_initialisation, 
                     Real time_readfile,
                     Real time_hashing, 
@@ -24,6 +26,12 @@ __global__
 void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, int pad);
 
 void init_pos(Real *Y, Real rad, int N);
+
+__global__
+void init_pos_random_overlapping(Real *Y, int N, curandState *states);
+
+__global__
+void init_pos_lattice_random(Real *Y, Real rad, int N, curandState *states);
 
 void init_force(Real *F, Real rad, int N);
 

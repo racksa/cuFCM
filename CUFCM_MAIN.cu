@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 
 	auto time_start = get_time();
 
-	int repeat = 100;
+	int repeat = 1;
 
 	// int N = 16777216;
 	int N = 500000;
@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
 	#if SOLVER_MODE == 1
 		std::cout << "Solver:\t\t\t" << "<Fast FCM>" << "\n";
 	#elif SOLVER_MODE == 0
-		std::cout << "Solver:\t\t\t" << "<Regular FCM>" << " s\n";
+		std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
 	#endif
 	std::cout << "Grid points:\t\t" << NX << "\n";
     std::cout << "Grid support:\t\t" << NGD << "\n";
@@ -264,7 +264,9 @@ int main(int argc, char** argv) {
 
 	#elif INIT_FROM_FILE == 0
 
-		init_pos_gpu(Y_device, rh, N);
+		// init_pos_gpu(Y_device, rh, N);
+		// init_pos_random_overlapping<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, dev_random);
+		init_pos_lattice_random<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N, dev_random);
 		init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, rh, N, dev_random);
 		init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, rh, N, dev_random);
 
@@ -272,26 +274,8 @@ int main(int argc, char** argv) {
 		copy_to_host<Real>(Y_device, Y_host, 3*N);
 		copy_to_host<Real>(F_device, F_host, 3*N);
 		copy_to_host<Real>(T_device, T_host, 3*N);
-		
-		printf("Writing position data...\n");
-		pfile = fopen("./init_data/new/pos_data.dat", "w");
-		for(int i = 0; i < N; i++){
-			fprintf(pfile, "%.8f %.8f %.8f\n", Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
-		}
-		fclose(pfile);
-		printf("Writing force data...\n");
-		pfile = fopen("./init_data/new/force_data.dat", "w");
-		for(int i = 0; i < N; i++){
-			fprintf(pfile, "%.8f %.8f %.8f\n", F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2]);
-		}
-		fclose(pfile);
-		printf("Writing torque data...\n");
-		pfile = fopen("./init_data/new/torque_data.dat", "w");
-		for(int i = 0; i < N; i++){
-			fprintf(pfile, "%.8f %.8f %.8f\n", T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2]);
-		}
-		fclose(pfile);
-		printf("Finished writing...\n");
+
+		write_init_data(Y_host, F_host, T_host, N);
 
 	#endif
 

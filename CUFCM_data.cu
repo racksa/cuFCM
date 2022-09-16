@@ -66,6 +66,30 @@ void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name
     fclose(pfile);
 }
 
+void write_init_data(Real *Y, Real *F, Real *T, int N){
+    FILE *pfile;
+    printf("Writing position data...\n");
+    pfile = fopen("./init_data/new/pos_data.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "%.8f %.8f %.8f\n", Y[3*i + 0], Y[3*i + 1], Y[3*i + 2]);
+    }
+    fclose(pfile);
+    printf("Writing force data...\n");
+    pfile = fopen("./init_data/new/force_data.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "%.8f %.8f %.8f\n", F[3*i + 0], F[3*i + 1], F[3*i + 2]);
+    }
+    fclose(pfile);
+    printf("Writing torque data...\n");
+    pfile = fopen("./init_data/new/torque_data.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "%.8f %.8f %.8f\n", T[3*i + 0], T[3*i + 1], T[3*i + 2]);
+    }
+    fclose(pfile);
+    printf("Finished writing...\n");
+}
+
+
 void write_timing(Real time_cuda_initialisation, 
                     Real time_readfile,
                     Real time_hashing, 
@@ -130,6 +154,7 @@ void init_pos(Real *Y, Real rad, int N){
     return;
 }
 
+
 void init_pos_gpu(Real *Y, Real rad, int N){
 
     Real x, y, z;
@@ -163,6 +188,58 @@ void init_pos_gpu(Real *Y, Real rad, int N){
             }
             
         }
+    }
+    return;
+}
+
+__global__
+void init_pos_random_overlapping(Real *Y, int N, curandState *states){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    int seed = index; // different seed per thread
+    curand_init(seed, index, 0, &states[index]);
+    Real rnd1, rnd2, rnd3;
+
+    for(int np = index; np < N; np += stride){
+        rnd1 = curand_uniform (&states[index]);
+        rnd2 = curand_uniform (&states[index]);
+        rnd3 = curand_uniform (&states[index]);
+        Y[3*np + 0] = PI2*rnd1;
+        Y[3*np + 1] = PI2*rnd2;
+        Y[3*np + 2] = PI2*rnd3;
+    }
+    return;
+}
+
+__global__
+void init_pos_lattice_random(Real *Y, Real rad, int N, curandState *states){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    int seed = index; // different seed per thread
+    curand_init(seed, index, 0, &states[index]);
+
+    Real rnd1, rnd2, rnd3;
+    int NP = ceil(cbrtf(N));
+    Real dpx = PI2/(Real)NP;
+    Real gaph = (dpx - (Real)2.0*rad)/(Real)2.0;
+
+    if(dpx < rad && index == 0){
+        printf("Particle overlapping\n");
+    }
+
+    for(int np = index; np < N; np += stride){
+        const int k = np/(NP*NP);
+        const int j = (np - k*NP*NP)/NP;
+        const int i = np - k*NP*NP - j*NP;
+
+        rnd1 = curand_uniform (&states[index]);
+        rnd2 = curand_uniform (&states[index]);
+        rnd3 = curand_uniform (&states[index]);
+        Y[3*np + 0] = 0.5*dpx + i*dpx + rnd1*gaph;
+        Y[3*np + 1] = 0.5*dpx + j*dpx + rnd2*gaph;
+        Y[3*np + 2] = 0.5*dpx + k*dpx + rnd3*gaph;
     }
     return;
 }
