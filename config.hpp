@@ -15,7 +15,7 @@
 // 0 = FCM
 // 1 = Fast FCM
 
-#define TOL 0
+#define TOL 2
 // 0 = 10^-3
 // 1 = 10^-4
 // 2 = 10^-5
@@ -112,7 +112,7 @@
 // 0 = Generate random packing
 // 1 = Read initial data from file
 
-#define GRIDDING_TYPE 2
+#define GRIDDING_TYPE 3
 // 0 = Thread per particle (TPP) register
 // 1 = Thread per particle (TPP) recompute
 // 2 = Block per particle (BPP) shared  **default
@@ -131,7 +131,7 @@
 // 0 = Do not sort back
 // 1 = Sort back    **default
 
-#define OUTPUT_TO_FILE 0
+#define OUTPUT_TO_FILE 1
 // 0 = Dont write to file
 // 1 = Write to file
 

@@ -1,3 +1,4 @@
+
 #include <iostream>
 // Include CUDA runtime and CUFFT
 #include <cuda_runtime.h>
@@ -39,9 +40,9 @@ void cufcm_precompute_gauss(int N, int ngd, Real* Y,
     }
 
     for(int np = index; np < N; np += stride){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         xxc = (Real)xc*dx - Y[3*np + 0]; // distance to the nearest point (ksi-Y)
         yyc = (Real)yc*dx - Y[3*np + 1];
@@ -57,21 +58,21 @@ void cufcm_precompute_gauss(int N, int ngd, Real* Y,
 
         // old function
         for(i = 0; i < ngd; i++){
-            xg = xc - ngdh + (i+1); 
+            xg = xc - ngdh + (i); 
             indx[ngd*np + i] = xg - NX * ((int) floor( ((Real) xg) / ((Real) NX)));
             xx = ((Real) xg)*dx-Y[3*np + 0];
             gaussx[ngd*np + i] = E3*int_pow(E2x,i+1-ngdh)*gaussgrid[i];
             grad_gaussx_dip[ngd*np + i] = - xx / sigmadipsq;
             xdis[ngd*np + i] = xx*xx;
 
-            yg = yc - ngdh + (i+1);
+            yg = yc - ngdh + (i);
             indy[ngd*np + i] = yg - NX * ((int) floor( ((Real) yg) / ((Real) NX)));
             xx = ((Real) yg)*dx - Y[3*np + 1];
             gaussy[ngd*np + i] = int_pow(E2y,i+1-ngdh)*gaussgrid[i];
             grad_gaussy_dip[ngd*np + i] = - xx / sigmadipsq;
             ydis[ngd*np + i] = xx*xx;
 
-            zg = zc - ngdh + (i+1);
+            zg = zc - ngdh + (i);
             indz[ngd*np + i] = zg - NX * ((int) floor( ((Real) zg) / ((Real) NX)));
             xx = ((Real) zg)*dx-Y[3*np + 2];
             gaussz[ngd*np + i] = int_pow(E2z,i+1-ngdh)*gaussgrid[i];
@@ -187,9 +188,9 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
     int ngdh = ngd/2;
 
     for(int np = index; np < N; np += stride){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         Fx = F[3*np + 0];
         Fy = F[3*np + 1];
@@ -204,7 +205,7 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
         g23 = + T[6*np + 5];
         g32 = - T[6*np + 5];
         for(k = 0; k < ngd; k++){
-            zg = zc - ngdh + (k+1);
+            zg = zc - ngdh + (k);
             kk = zg - NPTS * ((int) floor( ((Real) zg) / ((Real) NPTS)));
             zz = ((Real) zg)*dx - Y[3*np + 2];
             zz2 = zz*zz;
@@ -214,7 +215,7 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
             g23zz = g23*zz;
             g33zz = g33*zz;
             for(j = 0; j < ngd; j++){
-                yg = yc - ngdh + (j+1);
+                yg = yc - ngdh + (j);
                 jj = yg - NPTS * ((int) floor( ((Real) yg) / ((Real) NPTS)));
                 yy = ((Real) yg)*dx - Y[3*np + 1];
                 yy2 = yy*yy;
@@ -224,7 +225,7 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
                 g22yy = g22*yy;
                 g32yy = g32*yy;
                 for(i = 0; i < ngd; i++){
-                    xg = xc - ngdh + (i+1);
+                    xg = xc - ngdh + (i);
                     ii = xg - NPTS * ((int) floor( ((Real) xg) / ((Real) NPTS)));
                     xx = ((Real) xg)*dx - Y[3*np + 0];
                     xx2 = xx*xx;
@@ -288,9 +289,9 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
 
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         if(threadIdx.x == 0){
             Yx = Y[3*np + 0];
@@ -314,9 +315,9 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
         __syncthreads();
 
         for(int i = threadIdx.x; i < ngd; i += blockDim.x){
-            xg = xc - ngdh + (i+1);
-            yg = yc - ngdh + (i+1);
-            zg = zc - ngdh + (i+1);
+            xg = xc - ngdh + (i);
+            yg = yc - ngdh + (i);
+            zg = zc - ngdh + (i);
 
             xx = ((Real) xg)*dx - Yx;
             yy = ((Real) yg)*dx - Yy;
@@ -391,9 +392,9 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
     int ngd3 = ngd*ngd*ngd;
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         Fx = F[3*np + 0];
         Fy = F[3*np + 1];
@@ -414,9 +415,9 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
             const int j = (t - k*ngd*ngd)/ngd;
             const int i = t - k*ngd*ngd - j*ngd;
             
-            xg = xc - ngdh + (i+1);
-            yg = yc - ngdh + (j+1);
-            zg = zc - ngdh + (k+1);
+            xg = xc - ngdh + (i);
+            yg = yc - ngdh + (j);
+            zg = zc - ngdh + (k);
 
             int ii = xg - NPTS * ((int) floor( ((Real) xg) / ((Real) NPTS)));
             int jj = yg - NPTS * ((int) floor( ((Real) yg) / ((Real) NPTS)));
@@ -604,26 +605,26 @@ void cufcm_particle_velocities_tpp_recompute(myCufftReal *ux, myCufftReal *uy, m
     norm = dx*dx*dx;
 
     for(int np = index; np < N; np += stride){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         for(k = 0; k < ngd; k++){
-            zg = zc - ngdh + (k+1);
+            zg = zc - ngdh + (k);
             kk = zg - NPTS * ((int) floor( ((Real) zg) / ((Real) NPTS)));
             zz = ((Real) zg)*dx - Y[3*np + 2];
             zz2 = zz*zz;
             gz = anorm*exp(-zz*zz/anorm2);
             zz = - zz / sigmadipsq;
             for(j = 0; j < ngd; j++){
-                yg = yc - ngdh + (j+1);
+                yg = yc - ngdh + (j);
                 jj = yg - NPTS * ((int) floor( ((Real) yg) / ((Real) NPTS)));
                 yy = ((Real) yg)*dx - Y[3*np + 1];
                 yy2 = yy*yy;
                 gy = anorm*exp(-yy*yy/anorm2);
                 yy = - yy / sigmadipsq;
                 for(i = 0; i < ngd; i++){
-                    xg = xc - ngdh + (i+1);
+                    xg = xc - ngdh + (i);
                     ii = xg - NPTS * ((int) floor( ((Real) xg) / ((Real) NPTS)));
                     xx = ((Real) xg)*dx - Y[3*np + 0];
                     xx2 = xx*xx;
@@ -694,14 +695,14 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
 
     // TODO change to reduction
     for(int np = blockIdx.x; np < N; np += gridDim.x){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         for(int i = threadIdx.x; i < ngd; i += blockDim.x){
-            xg = xc - ngdh + (i+1);
-            yg = yc - ngdh + (i+1);
-            zg = zc - ngdh + (i+1);
+            xg = xc - ngdh + (i);
+            yg = yc - ngdh + (i);
+            zg = zc - ngdh + (i);
 
             xx = ((Real) xg)*dx - Y[3*np + 0];
             yy = ((Real) yg)*dx - Y[3*np + 1];
@@ -787,18 +788,18 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
     norm = dx*dx*dx;
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         for(int t = threadIdx.x; t < ngd3; t += blockDim.x){
             const int k = t/(ngd*ngd);
             const int j = (t - k*ngd*ngd)/ngd;
             const int i = t - k*ngd*ngd - j*ngd;
             
-            xg = xc - ngdh + (i+1);
-            yg = yc - ngdh + (j+1);
-            zg = zc - ngdh + (k+1);
+            xg = xc - ngdh + (i);
+            yg = yc - ngdh + (j);
+            zg = zc - ngdh + (k);
 
             int ii = xg - NPTS * ((int) floor( ((Real) xg) / ((Real) NPTS)));
             int jj = yg - NPTS * ((int) floor( ((Real) yg) / ((Real) NPTS)));
@@ -875,9 +876,9 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
 
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         if(threadIdx.x == 0){
             Yx = Y[3*np + 0];
@@ -901,9 +902,9 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
         __syncthreads();
 
         for(int i = threadIdx.x; i < ngd; i += blockDim.x){
-            xg = xc - ngdh + (i+1);
-            yg = yc - ngdh + (i+1);
-            zg = zc - ngdh + (i+1);
+            xg = xc - ngdh + (i);
+            yg = yc - ngdh + (i);
+            zg = zc - ngdh + (i);
 
             xx = ((Real) xg)*dx - Yx;
             yy = ((Real) yg)*dx - Yy;
@@ -992,14 +993,14 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
     norm = dx*dx*dx;
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         for(int i = threadIdx.x; i < ngd; i += blockDim.x){
-            xg = xc - ngdh + (i+1);
-            yg = yc - ngdh + (i+1);
-            zg = zc - ngdh + (i+1);
+            xg = xc - ngdh + (i);
+            yg = yc - ngdh + (i);
+            zg = zc - ngdh + (i);
 
             xx = ((Real) xg)*dx - Y[3*np + 0];
             yy = ((Real) yg)*dx - Y[3*np + 1];
@@ -1085,9 +1086,9 @@ void cufcm_precompute_gauss_loop(int N, int ngd, Real* Y,
     }
 
     for(np = 0; np < N; np++){
-        xc = (int) (Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = (int) (Y[3*np + 1]/dx);
-        zc = (int) (Y[3*np + 2]/dx);
+        xc = round(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
+        yc = round(Y[3*np + 1]/dx);
+        zc = round(Y[3*np + 2]/dx);
 
         xxc = (Real)xc*dx - Y[3*np + 0]; // distance to the nearest point (ksi-Y)
         yyc = (Real)yc*dx - Y[3*np + 1];
@@ -1103,21 +1104,21 @@ void cufcm_precompute_gauss_loop(int N, int ngd, Real* Y,
 
         // old function
         for(i = 0; i < ngd; i++){
-            xg = xc - ngdh + (i+1); 
+            xg = xc - ngdh + (i); 
             indx[ngd*np + i] = xg - NX * ((int) floor( ((Real) xg) / ((Real) NX)));
             xx = ((Real) xg)*dx-Y[3*np + 0];
             gaussx[ngd*np + i] = E3*int_pow(E2x,i+1-ngdh)*gaussgrid[i];
             grad_gaussx_dip[ngd*np + i] = - xx / sigmadipsq;
             xdis[ngd*np + i] = xx*xx;
 
-            yg = yc - ngdh + (i+1);
+            yg = yc - ngdh + (i);
             indy[ngd*np + i] = yg - NX * ((int) floor( ((Real) yg) / ((Real) NX)));
             xx = ((Real) yg)*dx - Y[3*np + 1];
             gaussy[ngd*np + i] = int_pow(E2y,i+1-ngdh)*gaussgrid[i];
             grad_gaussy_dip[ngd*np + i] = - xx / sigmadipsq;
             ydis[ngd*np + i] = xx*xx;
 
-            zg = zc - ngdh + (i+1);
+            zg = zc - ngdh + (i);
             indz[ngd*np + i] = zg - NX * ((int) floor( ((Real) zg) / ((Real) NX)));
             xx = ((Real) zg)*dx-Y[3*np + 2];
             gaussz[ngd*np + i] = int_pow(E2z,i+1-ngdh)*gaussgrid[i];
