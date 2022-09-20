@@ -15,13 +15,13 @@
 // 0 = FCM
 // 1 = Fast FCM
 
-#define TOL 2
+#define TOL 0
 // 0 = 10^-3
 // 1 = 10^-4
 // 2 = 10^-5
 // 3 = 10^-6
 
-#define ENABLE_REPEAT 0
+#define ENABLE_REPEAT 1
 // 0 = Dont repeat
 // 1 = Reapeat measurement
 
@@ -112,11 +112,18 @@
 // 0 = Generate random packing
 // 1 = Read initial data from file
 
-#define GRIDDING_TYPE 3
+#define SPREAD_TYPE 2
+// 0 = Thread per particle (TPP) register
+// 1 = Thread per particle (TPP) recompute
+// 2 = Block per particle (BPP) shared  **default
+// 3 = Block per particle (BPP) recompute   
+
+#define GATHER_TYPE 2
 // 0 = Thread per particle (TPP) register
 // 1 = Thread per particle (TPP) recompute
 // 2 = Block per particle (BPP) shared  **default
 // 3 = Block per particle (BPP) recompute
+
 
 #define SPATIAL_HASHING 2
 // 0 = Spatial hashing for correction, but without sorting

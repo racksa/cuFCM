@@ -314,9 +314,10 @@ void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* 
     const int stride = blockDim.x*gridDim.x;
 
     int icell = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
-    Real xi = 0.0, yi = 0.0, zi = 0.0, vxi = 0.0, vyi = 0.0, vzi = 0.0, wxi = 0.0, wyi = 0.0, wzi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rijsq = 0.0, rij = 0.0;
-    Real pdmagsq_quarter = pdmag * pdmag * 0.25;
-    Real quatemp = 0.0;
+    Real xi = (Real)0.0, yi = (Real)0.0, zi = (Real)0.0, vxi = (Real)0.0, vyi = (Real)0.0, vzi = (Real)0.0;
+    Real wxi = (Real)0.0, wyi = (Real)0.0, wzi = (Real)0.0, xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0, rijsq = (Real)0.0, rij = (Real)0.0;
+    Real pdmagsq_quarter = pdmag * pdmag * (Real)0.25;
+    Real quatemp = (Real)0.0;
     Real temp1VF, temp2VF;
     Real tempVTWF;
     Real temp1WT, temp2WT;
@@ -469,7 +470,7 @@ void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* 
                     // ------------WF+VT------------
                     fFCMtemp_VTWF = f(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, expS_VTWF_FCM, erfS_VTWF_FCM);
                     ftemp = f(rij, rijsq, gamma, gammasq, expS, erfS);
-                    quatemp = 0.25*pdmag/(gammasq)*gaussgam;
+                    quatemp = (Real)0.25*pdmag/(gammasq)*gaussgam;
 
                     tempVTWF = (fFCMtemp_VTWF - ftemp + quatemp);
 
@@ -489,9 +490,9 @@ void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* 
                     wyi = wyi + 0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
                     wzi = wzi + 0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
 
-                    atomicAdd(&W[3*j + 0], 0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
-                    atomicAdd(&W[3*j + 1], 0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
-                    atomicAdd(&W[3*j + 2], 0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
+                    atomicAdd(&W[3*j + 0], (Real)0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
+                    atomicAdd(&W[3*j + 1], (Real)0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
+                    atomicAdd(&W[3*j + 2], (Real)0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
                     
                     vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
                     vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );

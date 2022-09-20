@@ -175,21 +175,31 @@ int main(){
                                               anorm, anorm2,
                                               dx, n.x);
   cudaDeviceSynchronize();
-  auto time_fcm = get_time() - time_start;
-  std::cout << "cufcm spread time\t" << time_fcm << std::endl;
-
-
+  auto time_fcm_shared = get_time() - time_start;
+  std::cout << "cufcm spread time (shared)\t" << time_fcm_shared << std::endl;
 
   cudaDeviceSynchronize();	time_start = get_time();
-  cufcm_mono_distribution_regular_fxfyfz<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
-                                              Y_device, 
-                                              F3_device, numberParticles, support,
+  cufcm_mono_distribution_single_fx_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, Y_device, 
+                                              F_device, numberParticles, support,
                                               sigmasq,
                                               anorm, anorm2,
                                               dx, n.x);
   cudaDeviceSynchronize();
-  auto time_fcm_3d = get_time() - time_start;
-  std::cout << "cufcm 3d spread time\t" << time_fcm_3d << std::endl;
+  auto time_fcm_recompute = get_time() - time_start;
+  std::cout << "cufcm spread time (recompute)\t" << time_fcm_recompute << std::endl;
+
+
+
+  // cudaDeviceSynchronize();	time_start = get_time();
+  // cufcm_mono_distribution_regular_fxfyfz<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
+  //                                             Y_device, 
+  //                                             F3_device, numberParticles, support,
+  //                                             sigmasq,
+  //                                             anorm, anorm2,
+  //                                             dx, n.x);
+  // cudaDeviceSynchronize();
+  // auto time_fcm_3d = get_time() - time_start;
+  // std::cout << "cufcm 3d spread time\t" << time_fcm_3d << std::endl;
 
 
 
@@ -200,13 +210,13 @@ int main(){
   Real error = 0;
   for(int t = 0; t<n.x; t++){
       real temp = gridData[t];
-      error += abs(hy_host[t] - temp );
+      error += abs(hx_host[t] - temp );
 
       if(t<10){
         const int k = t/(n.x*n.y);
         const int j = (t - k*n.x*n.y)/n.x;
         const int i = t - k*n.x*n.y - j*n.x;
-        printf("[%d %d %d]\t uammd_grid[%d] %.8f \t cufcm_grid[%d] %.8f\n", i, j, k, t, temp, t, hy_host[t]);
+        printf("[%d %d %d]\t uammd_grid[%d] %.8f \t cufcm_grid[%d] %.8f\n", i, j, k, t, temp, t, hx_host[t]);
 
       }
     }

@@ -81,6 +81,68 @@ void cufcm_mono_distribution_single_fx(Real *fx, Real *Y,
     }
 }
 
+
+__global__
+void cufcm_mono_distribution_single_fx_recompute(Real *fx, Real *Y,
+              Real *F, int N, int ngd, 
+              Real sigmasq,
+              Real anorm, Real anorm2,
+              Real dx, int npts){
+
+    int xc, yc, zc;
+    int xg, yg, zg;
+    Real xx, yy, zz;
+    Real gx, gy, gz;
+    Real temp;
+    int ind;
+    int ngdh = ngd/2;
+    int ngd3 = ngd*ngd*ngd;
+
+    Real Yx, Yy, Yz;
+    Real Fx;
+
+    for(int np = blockIdx.x; np < N; np += gridDim.x){
+
+        Yx = Y[3*np + 0];
+        Yy = Y[3*np + 1];
+        Yz = Y[3*np + 2];
+
+        Fx = F[np];
+
+        xc = round(Yx/dx); // the index of the nearest grid point to the particle
+        yc = round(Yy/dx);
+        zc = round(Yz/dx);
+
+        for(int t = threadIdx.x; t < ngd3; t += blockDim.x){
+            const int k = t/(ngd*ngd);
+            const int j = (t - k*ngd*ngd)/ngd;
+            const int i = t - k*ngd*ngd - j*ngd;
+
+            xg = xc - ngdh + (i);
+            yg = yc - ngdh + (j);
+            zg = zc - ngdh + (k);
+
+            xx = ((Real) xg)*dx - Yx;
+            yy = ((Real) yg)*dx - Yy;
+            zz = ((Real) zg)*dx - Yz;
+  
+            gx = anorm*exp(-xx*xx/anorm2);
+            gy = anorm*exp(-yy*yy/anorm2);
+            gz = anorm*exp(-zz*zz/anorm2);
+
+            int ii = xg - npts * ((int) floor( ((Real) xg) / ((Real) npts)));
+            int jj = yg - npts * ((int) floor( ((Real) yg) / ((Real) npts)));
+            int kk = zg - npts * ((int) floor( ((Real) zg) / ((Real) npts)));
+
+            ind = ii + jj*npts + kk*npts*npts;
+
+            temp = gx*gy*gz;
+
+            atomicAdd(&fx[ind], Fx*temp);
+        }
+    }
+}
+
 __global__
 void cufcm_mono_distribution_regular_fxfyfz(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
               Real *Y,

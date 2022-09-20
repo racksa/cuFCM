@@ -148,9 +148,3 @@ void cufcm_test_force(myCufftReal* fx, myCufftReal* fy, myCufftReal* fz);
 __global__
 void normalise_array(myCufftReal* ux, myCufftReal* uy, myCufftReal* uz);
 
-__global__
-void cufcm_mono_dipole_distribution_single_fx(myCufftReal *fx, Real *Y,
-              Real *F, int N, int ngd, 
-              Real sigmasq,
-              Real anorm, Real anorm2,
-              Real dx);

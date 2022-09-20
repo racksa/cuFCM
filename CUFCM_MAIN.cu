@@ -29,11 +29,12 @@ int main(int argc, char** argv) {
 
 	auto time_start = get_time();
 
-	int repeat = 1;
+	int repeat = 100;
 
 	// int N = 16777216;
 	int N = 500000;
 	int ngd = NGD;
+	int npts = NPTS;
 
 	const Real dx = DX;
 	const Real rh = RH;
@@ -178,7 +179,7 @@ int main(int argc, char** argv) {
 	int* cell_start_host = malloc_host<int>(ncell);						int* cell_start_device = malloc_device<int>(ncell);
 	int* cell_end_host = malloc_host<int>(ncell);						int* cell_end_device = malloc_device<int>(ncell);
 
-	#if	GRIDDING_TYPE == 0
+	#if	GATHER_TYPE == 0
 
 		Real* gaussx_host = malloc_host<Real>(ngd*N);				Real* gaussx_device = malloc_device<Real>(ngd*N);
 		Real* gaussy_host = malloc_host<Real>(ngd*N);				Real* gaussy_device = malloc_device<Real>(ngd*N);
@@ -370,7 +371,7 @@ int main(int argc, char** argv) {
 
 		// GA_setup<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, T_device, N);
 
-		#if GRIDDING_TYPE == 0
+		#if GATHER_TYPE == 0
 
 			cufcm_precompute_gauss<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(N, ngd, Y_device,
 						gaussx_device, gaussy_device, gaussz_device,
@@ -390,7 +391,7 @@ int main(int argc, char** argv) {
 
 		#if SOLVER_MODE == 1
 
-			#if GRIDDING_TYPE == 0
+			#if SPREAD_TYPE == 0
 
 				cufcm_mono_dipole_distribution_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, N,
 													T_device, F_device, pdmag, sigmaGRIDsq,
@@ -400,7 +401,7 @@ int main(int argc, char** argv) {
 													indx_device, indy_device, indz_device,
 													ngd);
 
-			#elif GRIDDING_TYPE == 1
+			#elif SPREAD_TYPE == 1
 
 				cufcm_mono_dipole_distribution_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
 													Y_device, T_device, F_device,
@@ -408,7 +409,8 @@ int main(int argc, char** argv) {
 													pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 													anormGRID, anormGRID2,
 													dx);
-			#elif GRIDDING_TYPE == 2
+
+			#elif SPREAD_TYPE == 2
 
 				cufcm_mono_dipole_distribution_bpp_shared<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, 
 													Y_device, T_device, F_device,
@@ -417,7 +419,7 @@ int main(int argc, char** argv) {
 													anormGRID, anormGRID2,
 													dx);
 				
-			#elif GRIDDING_TYPE == 3
+			#elif SPREAD_TYPE == 3
 
 				cufcm_mono_dipole_distribution_bpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, 
 													Y_device, T_device, F_device,
@@ -487,7 +489,7 @@ int main(int argc, char** argv) {
 
 		#if SOLVER_MODE == 1
 
-			#if GRIDDING_TYPE == 0
+			#if GATHER_TYPE == 0
 
 				cufcm_particle_velocities_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, N,
 											V_device, W_device,
@@ -498,7 +500,7 @@ int main(int argc, char** argv) {
 											indx_device, indy_device, indz_device,
 											ngd, dx);
 
-			#elif GRIDDING_TYPE == 1
+			#elif GATHER_TYPE == 1
 
 				cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
 											Y_device,
@@ -508,7 +510,7 @@ int main(int argc, char** argv) {
 											anormGRID, anormGRID2,
 											dx);
 
-			#elif GRIDDING_TYPE == 2
+			#elif GATHER_TYPE == 2
 
 				cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
 											Y_device,
@@ -518,7 +520,7 @@ int main(int argc, char** argv) {
 											anormGRID, anormGRID2,
 											dx);
 
-			#elif GRIDDING_TYPE == 3
+			#elif GATHER_TYPE == 3
 
 				cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
 											Y_device,
@@ -748,7 +750,7 @@ int main(int argc, char** argv) {
 	free(uk_z_host);		cudaFree(uk_z_device);
 	
 
-	#if	GRIDDING_TYPE == 0
+	#if	GATHER_TYPE == 0
 
 		cudaFree(gaussx_device);
 		cudaFree(gaussy_device);
