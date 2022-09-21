@@ -8,8 +8,10 @@
 #define PIsqrt 1.7724538509055159
 #define PI2 6.28318530717959
 #define PI2sqrt 2.5066282746310002
+#define sqrt2oPI 0.7978845608028654
 #define TWOoverPIsqrt 0.7978845608028654
 #define PI2sqrt_inv 0.3989422804014327
+#define SQRT2 1.4142135623730951
 
 #define SOLVER_MODE 1
 // 0 = FCM
@@ -25,86 +27,7 @@
 // 0 = Dont repeat
 // 1 = Reapeat measurement
 
-// #define RH 0.008089855908506678
-#define RH 0.02609300415934458
-
-#if SOLVER_MODE == 1
-
-    #define NPTS (256.0)
-    #define DX (PI2/NPTS)
-
-    #if TOL == 0
-        #define ALPHA 0.9352    /* SIGMA/dx */
-        #define BETA 9.706      /* (NGD.DX)/SIGMA */
-        #define GAMMA 5.573     /* RC/SIGMA */
-    #elif TOL == 1
-        #define ALPHA 1.0509    /* SIGMA/dx */
-        #define BETA 10.873     /* (NGD.DX)/SIGMA */
-        #define GAMMA 6.373     /* RC/SIGMA */
-    #elif TOL == 2
-        #define ALPHA 1.1545    /* SIGMA/dx */
-        #define BETA 11.773     /* (NGD.DX)/SIGMA */
-        #define GAMMA 7.090     /* RC/SIGMA */
-    #elif TOL == 3
-        #define ALPHA 1.2526    /* SIGMA/dx */
-        #define BETA 12.639     /* (NGD.DX)/SIGMA */
-        #define GAMMA 7.717     /* RC/SIGMA */
-    #endif
-    // #define ALPHA 1.3450    /* SIGMA/dx */
-    // #define BETA 13.410     /* (NGD.DX)/SIGMA */
-    // #define GAMMA 8.326     /* RC/SIGMA */
-
-    #define SIGMA_FCM (RH/PIsqrt)
-    #define SIGMA (DX*ALPHA)
-    #define SIGMA_FAC (SIGMA/SIGMA_FCM)
-    #define NGD (int)(BETA*ALPHA)
-    #define RREF_FAC (GAMMA*ALPHA)
-
-#elif SOLVER_MODE == 0
-
-    #define SIGMA (RH/PIsqrt)
-    #define SIGMA_FAC 1
-
-    #if TOL == 0
-        #define ALPHA 1.0409    /* SIGMA/dx */
-        #define BETA 10.873     /* (NGD.DX)/SIGMA */
-    #elif TOL == 1
-        #define ALPHA 1.1545    /* SIGMA/dx */
-        #define BETA 11.773     /* (NGD.DX)/SIGMA */
-    #elif TOL == 2
-        #define ALPHA 1.2526    /* SIGMA/dx */
-        #define BETA 12.639     /* (NGD.DX)/SIGMA */
-    #elif TOL == 3
-        #define ALPHA 1.3850    /* SIGMA/dx */
-        #define BETA 13.410     /* (NGD.DX)/SIGMA */
-    #endif
-    
-    #define DX_C (SIGMA/ALPHA)
-    #define NPTS ((int)(PI2/DX_C)%2 == 0? (int)(PI2/DX_C) : (int)(PI2/DX_C) + 1)
-    #define DX (PI2/NPTS)
-    #define NGD (int)(BETA*ALPHA)
-
-    // #define NPTS 500
-    // #define DX (PI2/NPTS)
-    // #define NGD 20
-
-    #define RREF_FAC 5.21186960
-
-#endif
-
-#define NX NPTS
-#define NY NPTS
-#define NZ NPTS
-
-
-#define GRID_SIZE (int)(NX*NY*NZ)
-#define FFT_GRID_SIZE ((NX/2+1)*NY*NZ)
-
 #define THREADS_PER_BLOCK 32
-
-#define BATCH 10
-
-#define RANK 1
 
 #define HASH_ENCODE_FUNC linear_encode
 

@@ -10,10 +10,13 @@ UAMMDINCLUDEFLAGS=-I$(CUDA_ROOT)/include -I$(UAMMD_ROOT)/src -I$(UAMMD_ROOT)/src
 
 
 CUFCM : CUFCM_MAIN.cu
-	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) -o CUFCM $(LINK)
+	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) $(LINK) -o bin/CUFCM
+
+WITHOUT_NAME : CUFCM_MAIN.cu
+	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) $(LINK)
 
 clean :
-	rm -f CUFCM
+	rm -f bin/CUFCM
 
 
 # UAMMD makefile

@@ -15,6 +15,7 @@
 
 
 #include "config.hpp"
+#include "fcmmacro.hpp"
 #include "CUFCM_INCORPORATE.hpp"
 
 #include "util/cuda_util.hpp"

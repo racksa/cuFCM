@@ -32,7 +32,7 @@ Real percentage_error(Real *data, Real *ref_data, int N){
 }
 
 Real percentage_error_magnitude(Real *data, Real *ref_data, int N){
-    Real ret;
+    Real ret = Real(0.0);
 
     for(int np = 0; np < N; np++){
         Real x = data[3*np];

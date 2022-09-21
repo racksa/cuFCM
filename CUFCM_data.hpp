@@ -1,5 +1,6 @@
 #pragma once
 #include "config.hpp"
+#include "fcmmacro.hpp"
 #include <curand_kernel.h>
 #include <curand.h>
 

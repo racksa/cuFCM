@@ -1,6 +1,7 @@
 #include "CUFCM_data.hpp"
 #include <cstdio>
 #include "config.hpp"
+#include "fcmmacro.hpp"
 #include <curand_kernel.h>
 #include <curand.h>
 

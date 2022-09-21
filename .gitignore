@@ -6,3 +6,4 @@
 *
 # Unignore all with extensions
 !*.*
+/bin

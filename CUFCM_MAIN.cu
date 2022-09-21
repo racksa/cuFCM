@@ -11,6 +11,7 @@
 
 
 #include "config.hpp"
+#include "fcmmacro.hpp"
 #include "CUFCM_FCM.hpp"
 #include "CUFCM_CORRECTION.hpp"
 #include "CUFCM_data.hpp"
@@ -34,10 +35,10 @@ int main(int argc, char** argv) {
 	// int N = 16777216;
 	const int N = 500000;
 	const int ngd = NGD;
-	const int npts = NPTS;
-	const Real nx = NX;
-	const Real ny = NY;
-	const Real nz = NZ;
+
+	const Real nx = (Real) NX;
+	const Real ny = (Real) NY;
+	const Real nz = (Real) NZ;
 
 	const Real dx = DX;
 	const Real rh = RH;
@@ -156,7 +157,7 @@ int main(int argc, char** argv) {
 	
     cufftHandle plan, iplan;
 
-	Real *aux_host = malloc_host<Real>(3*N);					Real *aux_device = malloc_device<Real>(3*N);
+	Real* aux_host = malloc_host<Real>(3*N);					Real* aux_device = malloc_device<Real>(3*N);
 	Real* Y_host = malloc_host<Real>(3*N);						Real* Y_device = malloc_device<Real>(3*N);
 	Real* F_host = malloc_host<Real>(3*N);						Real* F_device = malloc_device<Real>(3*N);
 	Real* T_host = malloc_host<Real>(3*N);						Real* T_device = malloc_device<Real>(3*N);
@@ -326,6 +327,7 @@ int main(int argc, char** argv) {
 			quicksort_1D(particle_cellhash_host, particle_index_host, 0, N - 1);	
 
 		#endif
+
 
 		copy_to_device<Real>(Y_host, Y_device, 3*N);
 		copy_to_device<Real>(F_host, F_device, 3*N);
@@ -621,39 +623,39 @@ int main(int argc, char** argv) {
 		#endif
 	}
 
-		copy_to_host<Real>(Y_device, Y_host, 3*N);
-		copy_to_host<Real>(F_device, F_host, 3*N);
-		copy_to_host<Real>(T_device, T_host, 3*N);
+	copy_to_host<Real>(Y_device, Y_host, 3*N);
+	copy_to_host<Real>(F_device, F_host, 3*N);
+	copy_to_host<Real>(T_device, T_host, 3*N);
+	copy_to_host<Real>(V_device, V_host, 3*N);
+	copy_to_host<Real>(W_device, W_host, 3*N);
+
+	#if SPATIAL_HASHING == 1 and SORT_BACK == 1
+
 		copy_to_host<Real>(V_device, V_host, 3*N);
 		copy_to_host<Real>(W_device, W_host, 3*N);
 
-		#if SPATIAL_HASHING == 1 and SORT_BACK == 1
-
-			copy_to_host<Real>(V_device, V_host, 3*N);
-			copy_to_host<Real>(W_device, W_host, 3*N);
-
-			for(int i = 0; i < N; i++){
-				F_hash_host[i] = particle_index_host[i];
-				T_hash_host[i] = particle_index_host[i];
-			}
-			quicksort(F_hash_host, V_host, 0, N - 1);
-			quicksort(T_hash_host, W_host, 0, N - 1);
-
-		#endif
-
-		/* Print */
-		for(int i = N-10; i < N; i++){
-			printf("%d V ( ", i);
-			for(int n = 0; n < 3; n++){
-				printf("%.8f ", V_host[3*i + n]);
-			}
-			printf(")     \t");
-			printf("W ( ");
-			for(int n = 0; n < 3; n++){
-				printf("%.8f ", W_host[3*i + n]);
-			}
-			printf(")\n");
+		for(int i = 0; i < N; i++){
+			F_hash_host[i] = particle_index_host[i];
+			T_hash_host[i] = particle_index_host[i];
 		}
+		quicksort(F_hash_host, V_host, 0, N - 1);
+		quicksort(T_hash_host, W_host, 0, N - 1);
+
+	#endif
+
+	/* Print */
+	for(int i = N-10; i < N; i++){
+		printf("%d V ( ", i);
+		for(int n = 0; n < 3; n++){
+			printf("%.8f ", V_host[3*i + n]);
+		}
+		printf(")     \t");
+		printf("W ( ");
+		for(int n = 0; n < 3; n++){
+			printf("%.8f ", W_host[3*i + n]);
+		}
+		printf(")\n");
+	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
@@ -701,8 +703,6 @@ int main(int argc, char** argv) {
 				time_correction,
 				"./data/simulation_timing.dat");
 		
-		cudaDeviceSynchronize();
-		
 	#endif
 	///////////////////////////////////////////////////////////////////////////////
 	// Check error
@@ -724,11 +724,11 @@ int main(int argc, char** argv) {
 			for(int n = 0; n < 3; n++){
 				printf("%.8f ", V_validation[3*i + n]);
 			}
-			// printf(")     \t");
-			// printf("W ( ");
-			// for(int n = 0; n < 3; n++){
-			// 	printf("%.8f ", W_host[3*i + n]);
-			// }
+			printf(")     \t");
+			printf("W ( ");
+			for(int n = 0; n < 3; n++){
+				printf("%.8f ", W_host[3*i + n]);
+			}
 			printf(")\n");
 		}
 
