@@ -33,16 +33,14 @@ Real percentage_error(Real *data, Real *ref_data, int N){
 
 Real percentage_error_magnitude(Real *data, Real *ref_data, int N){
     Real ret;
-    Real x_ref, y_ref, z_ref;
-    Real x, y, z;
 
     for(int np = 0; np < N; np++){
-        x = data[3*np];
-        y = data[3*np + 1];
-        z = data[3*np + 2];
-        x_ref = ref_data[3*np];
-        y_ref = ref_data[3*np + 1];
-        z_ref = ref_data[3*np + 2];
+        Real x = data[3*np];
+        Real y = data[3*np + 1];
+        Real z = data[3*np + 2];
+        Real x_ref = ref_data[3*np];
+        Real y_ref = ref_data[3*np + 1];
+        Real z_ref = ref_data[3*np + 2];
 
         ret += sqrt( (x - x_ref)*(x - x_ref) + 
                      (y - y_ref)*(y - y_ref) + 

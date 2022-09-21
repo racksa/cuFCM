@@ -30,7 +30,7 @@
 
 #if SOLVER_MODE == 1
 
-    #define NPTS 256.0
+    #define NPTS (256.0)
     #define DX (PI2/NPTS)
 
     #if TOL == 0

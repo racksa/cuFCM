@@ -8,54 +8,54 @@
 
 __device__ __host__
 Real f(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
-	return 1.0/(8.0*PI*pow(r, 3)) * ( erfS - r/sigma*sqrt(2.0/PI) * expS );
+	return (Real)1.0/((Real)8.0*PI*pow(r, 3)) * ( erfS - r/sigma*sqrt(2.0/PI) * expS );
 }
 
 __device__ __host__
 Real dfdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
-	return -3.0/r*f(r, rsq, sigma, sigmasq, expS, erfS) + 1.0/(8.0*PI*pow(r, 3)) * (rsq/(sigmasq*sigma)) * sqrt(2.0/PI) * expS;
+	return (Real)-3.0/r*f(r, rsq, sigma, sigmasq, expS, erfS) + (Real)1.0/((Real)8.0*PI*pow(r, 3)) * (rsq/(sigmasq*sigma)) * sqrt((Real)2.0/PI) * expS;
 }
 
 // S_ij = A(r) delta_ij + B(r) x_ix_j
 __device__ __host__
 Real A(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
-	return 1.0/(8.0*PI*r) * ((1.0 + sigmasq/rsq)*erfS- (2.0*sigma/r)/sqrt(PI2) * expS);
+	return (Real)1.0/((Real)8.0*PI*r) * (((Real)1.0 + sigmasq/rsq)*erfS- ((Real)2.0*sigma/r)/sqrt(PI2) * expS);
 }
 
 __device__ __host__
 Real B(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
-	return 1.0/(8.0*PI*pow(r, 3)) * ((1.0 - 3.0*sigmasq/rsq)*erfS + (6.0*sigma/r)/sqrt(PI2) * expS);
+	return (Real)1.0/((Real)8.0*PI*pow(r, 3)) * (((Real)1.0 - (Real)3.0*sigmasq/rsq)*erfS + ((Real)6.0*sigma/r)/sqrt(PI2) * expS);
 }
 
 __device__ __host__
 Real dAdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
-	return -1.0/(8.0*PI*pow(r, 2)) * ((1.0+3.0*sigmasq/rsq)*erfS - (4.0*r/sigma + 6*sigma/r)/sqrt(PI2) * expS );
+	return (Real)-1.0/((Real)8.0*PI*pow(r, 2)) * (((Real)1.0+(Real)3.0*sigmasq/rsq)*erfS - ((Real)4.0*r/sigma + (Real)6.0*sigma/r)/sqrt(PI2) * expS );
 }
 
 __device__ __host__
 Real dBdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
-	return -1.0/(8.0*PI*pow(r, 4)) * ((3.0-15.0*sigmasq/rsq)*erfS + (4.0*r/sigma + 30.0*sigma/r)/sqrt(PI2) * expS);
+	return (Real)-1.0/((Real)8.0*PI*pow(r, 4)) * (((Real)3.0-(Real)15.0*sigmasq/rsq)*erfS + ((Real)4.0*r/sigma + (Real)30.0*sigma/r)/sqrt(PI2) * expS);
 }
 
 // D_ij = C(r) delta_ij + F(r) x_ix_j
 __device__ __host__
 Real C(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS){
-	return 1.0/(4.0*PI*pow(r, 3))*erfS - (1.0 + sigmasq/rsq)*gaussgam;
+	return (Real)1.0/((Real)4.0*PI*pow(r, 3))*erfS - ((Real)1.0 + sigmasq/rsq)*gaussgam;
 }
 
 __device__ __host__
 Real D(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS){
-	return -3.0/(4.0*PI*pow(r, 5))*erfS + (1.0/rsq + 3.0*sigmasq/pow(r, 4))*gaussgam;
+	return (Real)-3.0/((Real)4.0*PI*pow(r, 5))*erfS + ((Real)1.0/rsq + (Real)3.0*sigmasq/pow(r, 4))*gaussgam;
 }
 
 __device__ __host__
 Real P(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam){
-	return (1.0 - rsq/4.0/sigmasq) * gaussgam / sigmasq;
+	return ((Real)1.0 - rsq/(Real)4.0/sigmasq) * gaussgam / sigmasq;
 }
 
 __device__ __host__
 Real Q(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam){
-	return 1.0/4.0 * gaussgam / sigmasq / sigmasq;
+	return (Real)1.0/(Real)4.0 * gaussgam / sigmasq / sigmasq;
 }
 
 __global__

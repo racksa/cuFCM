@@ -32,9 +32,12 @@ int main(int argc, char** argv) {
 	int repeat = 100;
 
 	// int N = 16777216;
-	int N = 500000;
-	int ngd = NGD;
-	int npts = NPTS;
+	const int N = 500000;
+	const int ngd = NGD;
+	const int npts = NPTS;
+	const Real nx = NX;
+	const Real ny = NY;
+	const Real nz = NZ;
 
 	const Real dx = DX;
 	const Real rh = RH;
@@ -139,6 +142,9 @@ int main(int argc, char** argv) {
 		std::cout << "Sigma/sigma:\t\t" << sigma_fac << "\n";
 	#endif
 	std::cout << "Cell number:\t\t" << M << "\n";
+	#if ENABLE_REPEAT == 1
+		std::cout << "Repeat number:\t\t" << repeat << "\n";
+	#endif
     
     std::cout << std::endl;
 
@@ -399,7 +405,7 @@ int main(int argc, char** argv) {
 													grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
 													xdis_device, ydis_device, zdis_device,
 													indx_device, indy_device, indz_device,
-													ngd);
+													ngd, nx, ny, nz);
 
 			#elif SPREAD_TYPE == 1
 
@@ -408,7 +414,7 @@ int main(int argc, char** argv) {
 													N, ngd,
 													pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 													anormGRID, anormGRID2,
-													dx);
+													dx, nx, ny, nz);
 
 			#elif SPREAD_TYPE == 2
 
@@ -417,7 +423,7 @@ int main(int argc, char** argv) {
 													N, ngd,
 													pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 													anormGRID, anormGRID2,
-													dx);
+													dx, nx, ny, nz);
 				
 			#elif SPREAD_TYPE == 3
 
@@ -426,7 +432,7 @@ int main(int argc, char** argv) {
 													N, ngd,
 													pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 													anormGRID, anormGRID2,
-													dx);
+													dx, nx, ny, nz);
 
 			#endif
 		
@@ -438,7 +444,7 @@ int main(int argc, char** argv) {
 													sigmaFCMsq, sigmaFCMdipsq,
 													anormFCM, anormFCM2,
 													anormFCMdip, anormFCMdip2,
-													dx);
+													dx, nx, ny, nz);
 
 		#endif
 
@@ -464,7 +470,7 @@ int main(int argc, char** argv) {
 		///////////////////////////////////////////////////////////////////////////////
 		cufcm_flow_solve<<<num_thread_blocks_GRID, THREADS_PER_BLOCK>>>(fk_x_device, fk_y_device, fk_z_device,
 																uk_x_device, uk_y_device, uk_z_device,
-																q_device, qpad_device, qsq_device, qpadsq_device);
+																q_device, qpad_device, qsq_device, qpadsq_device, nx, ny, nz);
 		///////////////////////////////////////////////////////////////////////////////
 		// IFFT
 		///////////////////////////////////////////////////////////////////////////////
@@ -498,7 +504,7 @@ int main(int argc, char** argv) {
 											grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
 											xdis_device, ydis_device, zdis_device,
 											indx_device, indy_device, indz_device,
-											ngd, dx);
+											ngd, dx, nx, ny, nz);
 
 			#elif GATHER_TYPE == 1
 
@@ -508,7 +514,7 @@ int main(int argc, char** argv) {
 											N, ngd,
 											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 											anormGRID, anormGRID2,
-											dx);
+											dx, nx, ny, nz);
 
 			#elif GATHER_TYPE == 2
 
@@ -518,7 +524,7 @@ int main(int argc, char** argv) {
 											N, ngd,
 											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 											anormGRID, anormGRID2,
-											dx);
+											dx, nx, ny, nz);
 
 			#elif GATHER_TYPE == 3
 
@@ -528,7 +534,7 @@ int main(int argc, char** argv) {
 											N, ngd,
 											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 											anormGRID, anormGRID2,
-											dx);
+											dx, nx, ny, nz);
 
 			#endif
 
@@ -541,7 +547,7 @@ int main(int argc, char** argv) {
 											sigmaFCMsq, sigmaFCMdipsq,
 											anormFCM, anormFCM2,
 											anormFCMdip, anormFCMdip2,
-											dx);
+											dx, nx, ny, nz);
 
 		#endif
 
@@ -636,18 +642,18 @@ int main(int argc, char** argv) {
 		#endif
 
 		/* Print */
-		// for(int i = N-10; i < N; i++){
-		// 	printf("%d V ( ", i);
-		// 	for(int n = 0; n < 3; n++){
-		// 		printf("%.8f ", V_host[3*i + n]);
-		// 	}
-		// 	printf(")     \t");
-		// 	printf("W ( ");
-		// 	for(int n = 0; n < 3; n++){
-		// 		printf("%.8f ", W_host[3*i + n]);
-		// 	}
-		// 	printf(")\n");
-		// }
+		for(int i = N-10; i < N; i++){
+			printf("%d V ( ", i);
+			for(int n = 0; n < 3; n++){
+				printf("%.8f ", V_host[3*i + n]);
+			}
+			printf(")     \t");
+			printf("W ( ");
+			for(int n = 0; n < 3; n++){
+				printf("%.8f ", W_host[3*i + n]);
+			}
+			printf(")\n");
+		}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
@@ -695,6 +701,8 @@ int main(int argc, char** argv) {
 				time_correction,
 				"./data/simulation_timing.dat");
 		
+		cudaDeviceSynchronize();
+		
 	#endif
 	///////////////////////////////////////////////////////////////////////////////
 	// Check error
@@ -710,6 +718,19 @@ int main(int argc, char** argv) {
 						   F_validation,
 						   V_validation,
 						   W_validation, N, "./data/refdata/ref_data_N500000");
+
+		for(int i = N-10; i < N; i++){
+			printf("%d V_validation ( ", i);
+			for(int n = 0; n < 3; n++){
+				printf("%.8f ", V_validation[3*i + n]);
+			}
+			// printf(")     \t");
+			// printf("W ( ");
+			// for(int n = 0; n < 3; n++){
+			// 	printf("%.8f ", W_host[3*i + n]);
+			// }
+			printf(")\n");
+		}
 
 		std::cout << "-------\nError\n-------\n";
 		std::cout << "%Y error:\t" << percentage_error_magnitude(Y_host, Y_validation, N) << "\n";
