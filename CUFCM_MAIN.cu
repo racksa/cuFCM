@@ -32,6 +32,10 @@ int main(int argc, char** argv) {
 
 	int repeat = 100;
 
+	Real alpha = ALPHA;
+	Real beta = BETA;
+	Real lambda = LAMBDA;
+
 	// int N = 16777216;
 	const int N = 500000;
 	const int ngd = NGD;
@@ -43,7 +47,7 @@ int main(int argc, char** argv) {
 	const Real dx = DX;
 	const Real rh = RH;
 
-	Real Rref_fac = RREF_FAC;	
+	Real Rref_fac = RREF_FAC;
 
 	/* Link list */
 	Real Rref = Rref_fac*dx;
@@ -644,18 +648,18 @@ int main(int argc, char** argv) {
 	#endif
 
 	/* Print */
-	for(int i = N-10; i < N; i++){
-		printf("%d V ( ", i);
-		for(int n = 0; n < 3; n++){
-			printf("%.8f ", V_host[3*i + n]);
-		}
-		printf(")     \t");
-		printf("W ( ");
-		for(int n = 0; n < 3; n++){
-			printf("%.8f ", W_host[3*i + n]);
-		}
-		printf(")\n");
-	}
+	// for(int i = N-10; i < N; i++){
+	// 	printf("%d V ( ", i);
+	// 	for(int n = 0; n < 3; n++){
+	// 		printf("%.8f ", V_host[3*i + n]);
+	// 	}
+	// 	printf(")     \t");
+	// 	printf("W ( ");
+	// 	for(int n = 0; n < 3; n++){
+	// 		printf("%.8f ", W_host[3*i + n]);
+	// 	}
+	// 	printf(")\n");
+	// }
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
@@ -719,18 +723,18 @@ int main(int argc, char** argv) {
 						   V_validation,
 						   W_validation, N, "./data/refdata/ref_data_N500000");
 
-		for(int i = N-10; i < N; i++){
-			printf("%d V_validation ( ", i);
-			for(int n = 0; n < 3; n++){
-				printf("%.8f ", V_validation[3*i + n]);
-			}
-			printf(")     \t");
-			printf("W ( ");
-			for(int n = 0; n < 3; n++){
-				printf("%.8f ", W_host[3*i + n]);
-			}
-			printf(")\n");
-		}
+		// for(int i = N-10; i < N; i++){
+		// 	printf("%d V_validation ( ", i);
+		// 	for(int n = 0; n < 3; n++){
+		// 		printf("%.8f ", V_validation[3*i + n]);
+		// 	}
+		// 	printf(")     \t");
+		// 	printf("W ( ");
+		// 	for(int n = 0; n < 3; n++){
+		// 		printf("%.8f ", W_host[3*i + n]);
+		// 	}
+		// 	printf(")\n");
+		// }
 
 		std::cout << "-------\nError\n-------\n";
 		std::cout << "%Y error:\t" << percentage_error_magnitude(Y_host, Y_validation, N) << "\n";
