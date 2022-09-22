@@ -1,6 +1,5 @@
 #pragma once
 #include "config.hpp"
-#include "fcmmacro.hpp"
 #include <curand_kernel.h>
 #include <curand.h>
 
@@ -24,7 +23,7 @@ void write_timing(Real time_cuda_initialisation,
                     const char *file_name);
 
 __global__
-void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, int pad);
+void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, int pad, Real nx, Real ny, Real nz);
 
 void init_pos(Real *Y, Real rad, int N);
 

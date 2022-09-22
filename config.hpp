@@ -35,17 +35,19 @@
 // 0 = Generate random packing
 // 1 = Read initial data from file
 
-#define SPREAD_TYPE 2
-// 0 = Thread per particle (TPP) register
-// 1 = Thread per particle (TPP) recompute
-// 2 = Block per particle (BPP) shared  **default
-// 3 = Block per particle (BPP) recompute   
-
-#define GATHER_TYPE 2
+#define SPREAD_TYPE 4
 // 0 = Thread per particle (TPP) register
 // 1 = Thread per particle (TPP) recompute
 // 2 = Block per particle (BPP) shared  **default
 // 3 = Block per particle (BPP) recompute
+// 4 = Block per particle (BPP) shared dynamic
+
+#define GATHER_TYPE 4
+// 0 = Thread per particle (TPP) register
+// 1 = Thread per particle (TPP) recompute
+// 2 = Block per particle (BPP) shared  **default
+// 3 = Block per particle (BPP) recompute
+// 4 = Block per particle (BPP) shared dynamic
 
 
 #define SPATIAL_HASHING 2
@@ -53,9 +55,13 @@
 // 1 = Spatial hashing and sorting
 // 2 = Spatial hashing and sorting (GPU)    **default
 
-#define CORRECTION_TYPE 1
+#if SOLVER_MODE == 1 and SPATIAL_HASHING != 2
+    #define CORRECTION_TYPE 0
+#else
+    #define CORRECTION_TYPE 1
 // 0 = Linklist
-// 1 = Spatial hashing (TPP)  (must have Spatial hashing == 2)    **default
+// 1 = Spatial hashing (TPP)  (must have SPATIAL_HASHING == 2)    **default
+#endif
 
 #define SORT_BACK 1
 // 0 = Do not sort back
@@ -63,11 +69,11 @@
 
 #define OUTPUT_TO_FILE 1
 // 0 = Dont write to file
-// 1 = Write to file
+// 1 = Write to file    **default
 
 #define CHECK_ERROR 1
 // 0 = Dont check error
-// 1 = Check error
+// 1 = Check error  **default
 
 #define USE_DOUBLE_PRECISION false
 

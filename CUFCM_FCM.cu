@@ -5,7 +5,7 @@
 #include <cufft.h>
 
 #include "config.hpp"
-#include "fcmmacro.hpp"
+#include "config_fcm.hpp"
 #include "CUFCM_FCM.hpp"
 #include <cub/cub.cuh>
 
@@ -287,15 +287,15 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
             Fy = F[3*np + 1];
             Fz = F[3*np + 2];
 
-            g11 = + (Real)0.0;
-            g22 = + (Real)0.0;
-            g33 = + (Real)0.0;
-            g12 = + (Real)0.5*T[3*np + 2];
-            g21 = - (Real)0.5*T[3*np + 2];
-            g13 = + ((Real)-0.5*T[3*np + 1]);
-            g31 = - ((Real)-0.5*T[3*np + 1]);
-            g23 = + (Real)0.5*T[3*np + 0];
-            g32 = - (Real)0.5*T[3*np + 0];
+            g11 = + Real(0.0);
+            g22 = + Real(0.0);
+            g33 = + Real(0.0);
+            g12 = + Real(0.5)*T[3*np + 2];
+            g21 = - Real(0.5)*T[3*np + 2];
+            g13 = + Real(-0.5)*T[3*np + 1];
+            g31 = - Real(-0.5)*T[3*np + 1];
+            g23 = + Real(0.5)*T[3*np + 0];
+            g32 = - Real(0.5)*T[3*np + 0];
         }
         __syncthreads();
 
@@ -328,9 +328,9 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
             }
             /* ind */
             if(i>=3*ngd){
-                indx_shared[i-3*ngd] = xg - (double) nx * floor( xg / (double) nx);
-                indy_shared[i-3*ngd] = yg - (double) ny * floor( yg / (double) ny);
-                indz_shared[i-3*ngd] = zg - (double) nz * floor( zg / (double) nz);
+                indx_shared[i-3*ngd] = xg - double(nx) * floor( xg / double(nx) );
+                indy_shared[i-3*ngd] = yg - double(ny) * floor( yg / double(ny) );
+                indz_shared[i-3*ngd] = zg - double(nz) * floor( zg / double(nz) );
             }
         }
         __syncthreads();
@@ -433,6 +433,114 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
             atomicAdd(&fx[ind], Fx*temp5 + (g11*gradx + g12*grady + g13*gradz)*temp);
             atomicAdd(&fy[ind], Fy*temp5 + (g21*gradx + g22*grady + g23*gradz)*temp);
             atomicAdd(&fz[ind], Fz*temp5 + (g31*gradx + g32*grady + g33*gradz)*temp);
+        }
+    }
+}
+
+__global__
+void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
+              Real *T, Real *F, int N, int ngd, 
+              Real pdmag, Real sigmasq, Real sigmadipsq,
+              Real anorm, Real anorm2,
+              Real dx, Real nx, Real ny, Real nz){
+
+    int ngdh = ngd/2;
+
+    extern __shared__ int s[];
+    int *indx_shared = s;
+    int *indy_shared = (int*)&indx_shared[ngd];
+    int *indz_shared = (int*)&indy_shared[ngd];
+    Real *xdis_shared = (Real*)&indz_shared[ngd];    
+    Real *ydis_shared = (Real*)&xdis_shared[ngd];
+    Real *zdis_shared = (Real*)&ydis_shared[ngd];
+    Real *gaussx_shared = (Real*)&zdis_shared[ngd]; 
+    Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
+    Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
+    Real *grad_gaussx_dip_shared = (Real*)&gaussz_shared[ngd];
+    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
+    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
+    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+    Real *F_shared = (Real*)&Y_shared[3];
+    Real *g_shared = (Real*)&F_shared[3];
+
+    for(int np = blockIdx.x; np < N; np += gridDim.x){
+
+        if(threadIdx.x == 0){
+            Y_shared[0] = Y[3*np + 0];
+            Y_shared[1] = Y[3*np + 1];
+            Y_shared[2] = Y[3*np + 2];
+
+            F_shared[0] = F[3*np + 0];
+            F_shared[1] = F[3*np + 1];
+            F_shared[2] = F[3*np + 2];
+
+            g_shared[0] = + Real(0.0);
+            g_shared[1] = + Real(0.0);
+            g_shared[2] = + Real(0.0);
+            g_shared[3] = + Real(0.5)*T[3*np + 2];
+            g_shared[4] = - Real(0.5)*T[3*np + 2];
+            g_shared[5] = + Real(-0.5)*T[3*np + 1];
+            g_shared[6] = - Real(-0.5)*T[3*np + 1];
+            g_shared[7] = + Real(0.5)*T[3*np + 0];
+            g_shared[8] = - Real(0.5)*T[3*np + 0];
+        }
+        __syncthreads();
+
+        for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
+            Real xg = rintf(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
+            Real yg = rintf(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
+            Real zg = rintf(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+
+            Real xx = xg*dx - Y_shared[0];
+            Real yy = yg*dx - Y_shared[1];
+            Real zz = zg*dx - Y_shared[2];
+            /* dis */
+            if(i<ngd){ 
+                xdis_shared[i] = xx;
+                ydis_shared[i] = yy;
+                zdis_shared[i] = zz;
+            }
+            /* gauss */
+            if(i>=ngd && i<2*ngd){
+                gaussx_shared[i-ngd] = anorm*expf(-xx*xx/anorm2);
+                gaussy_shared[i-ngd] = anorm*expf(-yy*yy/anorm2);
+                gaussz_shared[i-ngd] = anorm*expf(-zz*zz/anorm2);
+            }
+            /* grad_gauss */
+            if(i>=2*ngd && i<3*ngd){
+                grad_gaussx_dip_shared[i-2*ngd] = - xx / sigmadipsq;
+                grad_gaussy_dip_shared[i-2*ngd] = - yy / sigmadipsq;
+                grad_gaussz_dip_shared[i-2*ngd] = - zz / sigmadipsq;
+            }
+            /* ind */
+            if(i>=3*ngd){
+                indx_shared[i-3*ngd] = xg - double(nx) * floorf( xg / double(nx) );
+                indy_shared[i-3*ngd] = yg - double(ny) * floorf( yg / double(ny) );
+                indz_shared[i-3*ngd] = zg - double(nz) * floorf( zg / double(nz) );
+            }
+        }
+        __syncthreads();
+        
+        for(int t = threadIdx.x; t < ngd*ngd*ngd; t += blockDim.x){
+            const int k = t/(ngd*ngd);
+            const int j = (t - k*ngd*ngd)/ngd;
+            const int i = t - k*ngd*ngd - j*ngd;
+
+            Real gradx = grad_gaussx_dip_shared[i];
+            Real grady = grad_gaussy_dip_shared[j];
+            Real gradz = grad_gaussz_dip_shared[k];
+
+            int ind = indx_shared[i] + indy_shared[j]*double(nx) + indz_shared[k]*double(nx)*double(ny);
+            Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
+            Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
+            Real temp2 = Real(0.5) * pdmag / sigmasq;
+            Real temp3 = temp2 /sigmasq;
+            Real temp4 = Real(3.0)*temp2;
+            Real temp5 = temp*( Real(1.0) + temp3*r2 - temp4);
+
+            atomicAdd(&fx[ind], F_shared[0]*temp5 + (g_shared[0]*gradx + g_shared[3]*grady + g_shared[5]*gradz)*temp);
+            atomicAdd(&fy[ind], F_shared[1]*temp5 + (g_shared[4]*gradx + g_shared[1]*grady + g_shared[7]*gradz)*temp);
+            atomicAdd(&fz[ind], F_shared[2]*temp5 + (g_shared[6]*gradx + g_shared[8]*grady + g_shared[2]*gradz)*temp);
         }
     }
 }
@@ -685,7 +793,6 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            
             Real xg = rintf(Yx/dx) - ngdh + fmodf(i, ngd);
             Real yg = rintf(Yy/dx) - ngdh + fmodf(i, ngd);
             Real zg = rintf(Yz/dx) - ngdh + fmodf(i, ngd);
@@ -713,9 +820,9 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
             }
             /* ind */
             if(i>=3*ngd){
-                indx_shared[i-3*ngd] = xg - nx * floorf( xg / (Real) nx);
-                indy_shared[i-3*ngd] = yg - ny * floorf( yg / (Real) ny);
-                indz_shared[i-3*ngd] = zg - nz * floorf( zg / (Real) nz);
+                indx_shared[i-3*ngd] = xg - nx * floorf( xg / nx);
+                indy_shared[i-3*ngd] = yg - ny * floorf( yg / ny);
+                indz_shared[i-3*ngd] = zg - nz * floorf( zg / nz);
             }
         }
         __syncthreads();
@@ -879,6 +986,130 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
     }
 }
 
+__global__
+void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+                                Real *Y,
+                                Real *VTEMP, Real *WTEMP,
+                                int N, int ngd, 
+                                Real pdmag, Real sigmasq, Real sigmadipsq,
+                                Real anorm, Real anorm2,
+                                Real dx, Real nx, Real ny, Real nz){
+    
+    int ngdh = ngd/2;
+    Real norm = dx*dx*dx;
+    Real Vx = (Real) 0.0, Vy = (Real) 0.0, Vz = (Real) 0.0, Wx = (Real) 0.0, Wy = (Real) 0.0, Wz = (Real) 0.0;
+
+    extern __shared__ int s[];
+    int *indx_shared = s;
+    int *indy_shared = (int*)&indx_shared[ngd];
+    int *indz_shared = (int*)&indy_shared[ngd];
+    Real *xdis_shared = (Real*)&indz_shared[ngd];    
+    Real *ydis_shared = (Real*)&xdis_shared[ngd];
+    Real *zdis_shared = (Real*)&ydis_shared[ngd];
+    Real *gaussx_shared = (Real*)&zdis_shared[ngd]; 
+    Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
+    Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
+    Real *grad_gaussx_dip_shared = (Real*)&gaussz_shared[ngd];
+    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
+    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
+    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+    // Specialize BlockReduce
+    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    // Allocate shared memory for BlockReduce
+    __shared__ typename BlockReduce::TempStorage temp_storage;
+    
+    // TODO change to reduction
+    for(int np = blockIdx.x; np < N; np += gridDim.x){
+        if(threadIdx.x == 0){
+            Y_shared[0] = Y[3*np + 0];
+            Y_shared[1] = Y[3*np + 1];
+            Y_shared[2] = Y[3*np + 2];
+        }
+        __syncthreads();
+
+        for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
+            Real xg = rintf(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
+            Real yg = rintf(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
+            Real zg = rintf(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+
+            Real xx = xg*dx - Y_shared[0];
+            Real yy = yg*dx - Y_shared[1];
+            Real zz = zg*dx - Y_shared[2];
+            /* dis */
+            if(i<ngd){ 
+                xdis_shared[i] = xx;
+                ydis_shared[i] = yy;
+                zdis_shared[i] = zz;
+            }
+            /* gauss */
+            if(i>=ngd && i<2*ngd){
+                gaussx_shared[i-ngd] = anorm*expf(-xx*xx/anorm2);
+                gaussy_shared[i-ngd] = anorm*expf(-yy*yy/anorm2);
+                gaussz_shared[i-ngd] = anorm*expf(-zz*zz/anorm2);
+            }
+            /* grad_gauss */
+            if(i>=2*ngd && i<3*ngd){
+                grad_gaussx_dip_shared[i-2*ngd] = - xx / sigmadipsq;
+                grad_gaussy_dip_shared[i-2*ngd] = - yy / sigmadipsq;
+                grad_gaussz_dip_shared[i-2*ngd] = - zz / sigmadipsq;
+            }
+            /* ind */
+            if(i>=3*ngd){
+                indx_shared[i-3*ngd] = xg - nx * floorf( xg / nx);
+                indy_shared[i-3*ngd] = yg - ny * floorf( yg / ny);
+                indz_shared[i-3*ngd] = zg - nz * floorf( zg / nz);
+            }
+        }
+        __syncthreads();
+
+        for(int t = threadIdx.x; t < ngd*ngd*ngd; t += blockDim.x){
+            const int k = t/(ngd*ngd);
+            const int j = (t - k*ngd*ngd)/ngd;
+            const int i = t - k*ngd*ngd - j*ngd;
+
+            Real gradx = grad_gaussx_dip_shared[i];
+            Real grady = grad_gaussy_dip_shared[j];
+            Real gradz = grad_gaussz_dip_shared[k];
+
+            int ind = indx_shared[i] + indy_shared[j]*nx + indz_shared[k]*nx*ny;
+            Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
+            Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
+            Real temp2 = Real(0.5) * pdmag / sigmasq;
+            Real temp3 = temp2 /sigmasq;
+            Real temp4 = Real(3.0)*temp2;
+            Real temp5 = temp*( Real(1.0) + temp3*r2 - temp4);
+
+            Real ux_temp = ux[ind]*temp;
+            Real uy_temp = uy[ind]*temp;
+            Real uz_temp = uz[ind]*temp;
+
+            Vx += ux_temp*temp5;
+            Vy += uy_temp*temp5;
+            Vz += uz_temp*temp5;
+            Wx += (Real)-0.5*(uz_temp*grady - uy_temp*gradz);
+            Wy += (Real)-0.5*(ux_temp*gradz - uz_temp*gradx);
+            Wz += (Real)-0.5*(uy_temp*gradx - ux_temp*grady);
+        }
+        
+        // Reduction
+        Real total_Vx = BlockReduce(temp_storage).Sum(Vx);
+        Real total_Vy = BlockReduce(temp_storage).Sum(Vy);
+        Real total_Vz = BlockReduce(temp_storage).Sum(Vz);
+        Real total_Wx = BlockReduce(temp_storage).Sum(Wx);
+        Real total_Wy = BlockReduce(temp_storage).Sum(Wy);
+        Real total_Wz = BlockReduce(temp_storage).Sum(Wz);
+    
+        if(threadIdx.x==0){
+            VTEMP[3*np + 0] = total_Vx;  
+            VTEMP[3*np + 1] = total_Vy;
+            VTEMP[3*np + 2] = total_Vz;
+            WTEMP[3*np + 0] = total_Wx;
+            WTEMP[3*np + 1] = total_Wy;
+            WTEMP[3*np + 2] = total_Wz;
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Regular FCM
 ///////////////////////////////////////////////////////////////////////////////
@@ -889,67 +1120,69 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
               Real anorm, Real anorm2,
               Real anormdip, Real anormdip2,
               Real dx, Real nx, Real ny, Real nz){
-    
-    __shared__ int indx_shared[NGD];
-    __shared__ int indy_shared[NGD];
-    __shared__ int indz_shared[NGD];
-    __shared__ Real gaussx_shared[NGD];
-    __shared__ Real gaussy_shared[NGD];
-    __shared__ Real gaussz_shared[NGD];
-    __shared__ Real gaussx_dip_shared[NGD];
-    __shared__ Real gaussy_dip_shared[NGD];
-    __shared__ Real gaussz_dip_shared[NGD];
-    __shared__ Real grad_gaussx_dip_shared[NGD];
-    __shared__ Real grad_gaussy_dip_shared[NGD];
-    __shared__ Real grad_gaussz_dip_shared[NGD];
-    __shared__ Real Yx, Yy, Yz;
-    __shared__ Real Fx, Fy, Fz;
-    __shared__ Real g11, g22, g33, g12, g21, g13, g31, g23, g32;
 
+    int ngdh = ngd/2;
+
+    extern __shared__ int s[];
+    int *indx_shared = s;
+    int *indy_shared = (int*)&indx_shared[ngd];
+    int *indz_shared = (int*)&indy_shared[ngd];
+    Real *gaussx_shared = (Real*)&indz_shared[ngd]; 
+    Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
+    Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
+    Real *gaussx_dip_shared = (Real*)&gaussz_shared[ngd]; 
+    Real *gaussy_dip_shared = (Real*)&gaussx_dip_shared[ngd];
+    Real *gaussz_dip_shared = (Real*)&gaussy_dip_shared[ngd];
+    Real *grad_gaussx_dip_shared = (Real*)&gaussz_dip_shared[ngd];
+    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
+    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
+    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+    Real *F_shared = (Real*)&Y_shared[3];
+    Real *g_shared = (Real*)&F_shared[3];
+    
     for(int np = blockIdx.x; np < N; np += gridDim.x){
 
         if(threadIdx.x == 0){
-            Yx = Y[3*np + 0];
-            Yy = Y[3*np + 1];
-            Yz = Y[3*np + 2];
+            Y_shared[0] = Y[3*np + 0];
+            Y_shared[1] = Y[3*np + 1];
+            Y_shared[2] = Y[3*np + 2];
 
-            Fx = F[3*np + 0];
-            Fy = F[3*np + 1];
-            Fz = F[3*np + 2];
+            F_shared[0] = F[3*np + 0];
+            F_shared[1] = F[3*np + 1];
+            F_shared[2] = F[3*np + 2];
 
-            g11 = + (Real)0.0;
-            g22 = + (Real)0.0;
-            g33 = + (Real)0.0;
-            g12 = + (Real)0.5*T[3*np + 2];
-            g21 = - (Real)0.5*T[3*np + 2];
-            g13 = + ((Real)-0.5*T[3*np + 1]);
-            g31 = - ((Real)-0.5*T[3*np + 1]);
-            g23 = + (Real)0.5*T[3*np + 0];
-            g32 = - (Real)0.5*T[3*np + 0];
+            g_shared[0] = + Real(0.0);
+            g_shared[1] = + Real(0.0);
+            g_shared[2] = + Real(0.0);
+            g_shared[3] = + Real(0.5)*T[3*np + 2];
+            g_shared[4] = - Real(0.5)*T[3*np + 2];
+            g_shared[5] = + Real(-0.5)*T[3*np + 1];
+            g_shared[6] = - Real(-0.5)*T[3*np + 1];
+            g_shared[7] = + Real(0.5)*T[3*np + 0];
+            g_shared[8] = - Real(0.5)*T[3*np + 0];
         }
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            int ngdh = ngd/2;
-            Real xg = round(Yx/dx) - ngdh + fmodf(i, ngd);
-            Real yg = round(Yy/dx) - ngdh + fmodf(i, ngd);
-            Real zg = round(Yz/dx) - ngdh + fmodf(i, ngd);
+            Real xg = rintf(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
+            Real yg = rintf(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
+            Real zg = rintf(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
 
-            Real xx = xg*dx - Yx;
-            Real yy = yg*dx - Yy;
-            Real zz = zg*dx - Yz;
+            Real xx = xg*dx - Y_shared[0];
+            Real yy = yg*dx - Y_shared[1];
+            Real zz = zg*dx - Y_shared[2];
             
             // gauss
             if(i<ngd){ 
-                gaussx_shared[i] = anorm*exp(-xx*xx/anorm2);
-                gaussy_shared[i] = anorm*exp(-yy*yy/anorm2);
-                gaussz_shared[i] = anorm*exp(-zz*zz/anorm2);
+                gaussx_shared[i] = anorm*expf(-xx*xx/anorm2);
+                gaussy_shared[i] = anorm*expf(-yy*yy/anorm2);
+                gaussz_shared[i] = anorm*expf(-zz*zz/anorm2);
             }
             // gauss dip
             if(i>=ngd && i<2*ngd){
-                gaussx_dip_shared[i-ngd] = anormdip*exp(-xx*xx/anormdip2);
-                gaussy_dip_shared[i-ngd] = anormdip*exp(-yy*yy/anormdip2);
-                gaussz_dip_shared[i-ngd] = anormdip*exp(-zz*zz/anormdip2);
+                gaussx_dip_shared[i-ngd] = anormdip*expf(-xx*xx/anormdip2);
+                gaussy_dip_shared[i-ngd] = anormdip*expf(-yy*yy/anormdip2);
+                gaussz_dip_shared[i-ngd] = anormdip*expf(-zz*zz/anormdip2);
             }
             // grad_gauss
             if(i>=2*ngd && i<3*ngd){
@@ -959,9 +1192,9 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
             }
             // ind
             if(i>=3*ngd){
-                indx_shared[i-3*ngd] = xg - NX * floor( xg / NX);
-                indy_shared[i-3*ngd] = yg - NY * floor( yg / NY);
-                indz_shared[i-3*ngd] = zg - NZ * floor( zg / NZ);
+                indx_shared[i-3*ngd] = xg - nx * floorf( xg / nx);
+                indy_shared[i-3*ngd] = yg - ny * floorf( yg / ny);
+                indz_shared[i-3*ngd] = zg - nz * floorf( zg / nz);
             }
         }
         __syncthreads();
@@ -970,26 +1203,18 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
             const int k = t/(ngd*ngd);
             const int j = (t - k*ngd*ngd)/ngd;
             const int i = t - k*ngd*ngd - j*ngd;
-  
-            Real gx = gaussx_shared[i];
-            Real gy = gaussy_shared[j];
-            Real gz = gaussz_shared[k];
-
-            Real gxdip = gaussx_dip_shared[i];
-            Real gydip = gaussy_dip_shared[j];
-            Real gzdip = gaussz_dip_shared[k];
 
             Real gradx = grad_gaussx_dip_shared[i];
             Real grady = grad_gaussy_dip_shared[j];
             Real gradz = grad_gaussz_dip_shared[k];
 
-            int ind = indx_shared[i] + indy_shared[j]*NX + indz_shared[k]*NX*NY;
-            Real temp = gx*gy*gz;
-            Real tempdip = gxdip*gydip*gzdip;
+            int ind = indx_shared[i] + indy_shared[j]*double(nx) + indz_shared[k]*double(nx)*double(ny);
+            Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
+            Real tempdip = gaussx_dip_shared[i]*gaussy_dip_shared[j]*gaussz_dip_shared[k];
 
-            atomicAdd(&fx[ind], Fx*temp + (g11*gradx + g12*grady + g13*gradz)*tempdip);
-            atomicAdd(&fy[ind], Fy*temp + (g21*gradx + g22*grady + g23*gradz)*tempdip);
-            atomicAdd(&fz[ind], Fz*temp + (g31*gradx + g32*grady + g33*gradz)*tempdip);
+            atomicAdd(&fx[ind], F_shared[0]*temp + (g_shared[0]*gradx + g_shared[3]*grady + g_shared[5]*gradz)*tempdip);
+            atomicAdd(&fy[ind], F_shared[1]*temp + (g_shared[4]*gradx + g_shared[1]*grady + g_shared[7]*gradz)*tempdip);
+            atomicAdd(&fz[ind], F_shared[2]*temp + (g_shared[6]*gradx + g_shared[8]*grady + g_shared[2]*gradz)*tempdip);
         }
     }
 }
@@ -1008,19 +1233,23 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
 
     Real norm = dx*dx*dx;
 
-    __shared__ Real gaussx_shared[NGD];
-    __shared__ Real gaussy_shared[NGD];
-    __shared__ Real gaussz_shared[NGD];
-    __shared__ Real gaussx_dip_shared[NGD];
-    __shared__ Real gaussy_dip_shared[NGD];
-    __shared__ Real gaussz_dip_shared[NGD];
-    __shared__ Real grad_gaussx_dip_shared[NGD];
-    __shared__ Real grad_gaussy_dip_shared[NGD];
-    __shared__ Real grad_gaussz_dip_shared[NGD];
-    __shared__ int indx_shared[NGD];
-    __shared__ int indy_shared[NGD];
-    __shared__ int indz_shared[NGD];
-    __shared__ Real Yx, Yy, Yz;
+    int ngdh = ngd/2;
+
+    extern __shared__ int s[];
+    int *indx_shared = s;
+    int *indy_shared = (int*)&indx_shared[ngd];
+    int *indz_shared = (int*)&indy_shared[ngd];
+    Real *gaussx_shared = (Real*)&indz_shared[ngd]; 
+    Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
+    Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
+    Real *gaussx_dip_shared = (Real*)&gaussz_shared[ngd]; 
+    Real *gaussy_dip_shared = (Real*)&gaussx_dip_shared[ngd];
+    Real *gaussz_dip_shared = (Real*)&gaussy_dip_shared[ngd];
+    Real *grad_gaussx_dip_shared = (Real*)&gaussz_dip_shared[ngd];
+    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
+    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
+    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+
     // Specialize BlockReduce
     typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
@@ -1028,39 +1257,45 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
         if(threadIdx.x == 0){
-            Yx = Y[3*np + 0];
-            Yy = Y[3*np + 1];
-            Yz = Y[3*np + 2];
+            Y_shared[0] = Y[3*np + 0];
+            Y_shared[1] = Y[3*np + 1];
+            Y_shared[2] = Y[3*np + 2];
         }
         __syncthreads();
 
-        for(int i = threadIdx.x; i < ngd; i += blockDim.x){
-            int ngdh = ngd/2;
-            Real xg = round(Yx/dx) - ngdh + fmodf(i, ngd);
-            Real yg = round(Yy/dx) - ngdh + fmodf(i, ngd);
-            Real zg = round(Yz/dx) - ngdh + fmodf(i, ngd);
+        for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
+            Real xg = rintf(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
+            Real yg = rintf(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
+            Real zg = rintf(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
 
-            Real xx = xg*dx - Yx;
-            Real yy = yg*dx - Yy;
-            Real zz = zg*dx - Yz;
-
+            Real xx = xg*dx - Y_shared[0];
+            Real yy = yg*dx - Y_shared[1];
+            Real zz = zg*dx - Y_shared[2];
+            
             // gauss
-            gaussx_shared[i] = anorm*exp(-xx*xx/anorm2);
-            gaussy_shared[i] = anorm*exp(-yy*yy/anorm2);
-            gaussz_shared[i] = anorm*exp(-zz*zz/anorm2);
+            if(i<ngd){ 
+                gaussx_shared[i] = anorm*expf(-xx*xx/anorm2);
+                gaussy_shared[i] = anorm*expf(-yy*yy/anorm2);
+                gaussz_shared[i] = anorm*expf(-zz*zz/anorm2);
+            }
             // gauss dip
-            gaussx_dip_shared[i] = anormdip*exp(-xx*xx/anormdip2);
-            gaussy_dip_shared[i] = anormdip*exp(-yy*yy/anormdip2);
-            gaussz_dip_shared[i] = anormdip*exp(-zz*zz/anormdip2);
+            if(i>=ngd && i<2*ngd){
+                gaussx_dip_shared[i-ngd] = anormdip*expf(-xx*xx/anormdip2);
+                gaussy_dip_shared[i-ngd] = anormdip*expf(-yy*yy/anormdip2);
+                gaussz_dip_shared[i-ngd] = anormdip*expf(-zz*zz/anormdip2);
+            }
             // grad_gauss
-            grad_gaussx_dip_shared[i] = - xx / sigmadipsq;
-            grad_gaussy_dip_shared[i] = - yy / sigmadipsq;
-            grad_gaussz_dip_shared[i] = - zz / sigmadipsq;
+            if(i>=2*ngd && i<3*ngd){
+                grad_gaussx_dip_shared[i-2*ngd] = - xx / sigmadipsq;
+                grad_gaussy_dip_shared[i-2*ngd] = - yy / sigmadipsq;
+                grad_gaussz_dip_shared[i-2*ngd] = - zz / sigmadipsq;
+            }
             // ind
-            indx_shared[i] = xg - nx * ((int) floor( ((Real) xg) / ((Real) nx)));
-            indy_shared[i] = yg - ny * ((int) floor( ((Real) yg) / ((Real) ny)));
-            indz_shared[i] = zg - nz * ((int) floor( ((Real) zg) / ((Real) nz)));
-
+            if(i>=3*ngd){
+                indx_shared[i-3*ngd] = xg - nx * floorf( xg / nx);
+                indy_shared[i-3*ngd] = yg - ny * floorf( yg / ny);
+                indz_shared[i-3*ngd] = zg - nz * floorf( zg / nz);
+            }
         }
         __syncthreads();
 
@@ -1069,21 +1304,13 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
             const int j = (t - k*ngd*ngd)/ngd;
             const int i = t - k*ngd*ngd - j*ngd;
 
-            Real gx = gaussx_shared[i];
-            Real gy = gaussy_shared[j];
-            Real gz = gaussz_shared[k];
-
-            Real gxdip = gaussx_dip_shared[i];
-            Real gydip = gaussy_dip_shared[j];
-            Real gzdip = gaussz_dip_shared[k];
-
             Real gradx = grad_gaussx_dip_shared[i];
             Real grady = grad_gaussy_dip_shared[j];
             Real gradz = grad_gaussz_dip_shared[k];
             
             int ind = indx_shared[i] + indy_shared[j]*NX + indz_shared[k]*NX*NY;
-            Real temp = gx*gy*gz*norm;
-            Real tempdip = gxdip*gydip*gzdip*norm;
+            Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k]*norm;
+            Real tempdip = gaussx_dip_shared[i]*gaussy_dip_shared[j]*gaussz_dip_shared[k]*norm;
 
             Vx += ux[ind]*temp;
             Vy += uy[ind]*temp;

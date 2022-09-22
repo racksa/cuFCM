@@ -6,12 +6,14 @@
 #include <cufft.h>
 #include <curand_kernel.h>
 #include <curand.h>
+#include <cudaProfiler.h>
+#include <cuda_profiler_api.h>
 
 #include <cub/device/device_radix_sort.cuh>
 
 
 #include "config.hpp"
-#include "fcmmacro.hpp"
+#include "config_fcm.hpp"
 #include "CUFCM_FCM.hpp"
 #include "CUFCM_CORRECTION.hpp"
 #include "CUFCM_data.hpp"
@@ -30,39 +32,43 @@ int main(int argc, char** argv) {
 
 	auto time_start = get_time();
 
-	int repeat = 100;
+	/* Read parameters */
 
+	/* Physical variables */
+	// int N = 16777216;
+	const int N = 500000;
+	const Real rh = RH;
+
+	/* Error control */
 	Real alpha = ALPHA;
 	Real beta = BETA;
 	Real lambda = LAMBDA;
 
-	// int N = 16777216;
-	const int N = 500000;
-	const int ngd = NGD;
-
+	/* Deduced FCM parameters */
 	const Real nx = (Real) NX;
 	const Real ny = (Real) NY;
 	const Real nz = (Real) NZ;
 
-	const Real dx = DX;
-	const Real rh = RH;
+	const Real dx = PI2/nx;
+	const int ngd = int(alpha*beta);
+	const Real Rref_fac = Real(lambda*alpha);
 
-	Real Rref_fac = RREF_FAC;
-
-	/* Link list */
-	Real Rref = Rref_fac*dx;
+	/* Neighbour list */
+	const Real Rref = Rref_fac*dx;
+	const Real Rrefsq = Rref*Rref;
 	int M = (int) (PI2/Rref);
-	Real cellL = PI2 / (Real)M;
-	Real Rrefsq = Rref*Rref;
 	if(M < 3){
 		M = 3;
 	}
-	int ncell = M*M*M;
-	int mapsize = 13*ncell;
+	const Real cellL = PI2 / (Real)M;
+	const int ncell = M*M*M;
+	const int mapsize = 13*ncell;
+
+	/* Repeat number */
+	int repeat = 100;
+	int warmup = 20;
 
 	#if SOLVER_MODE == 1
-
-		Real sigma_fac = SIGMA_FAC;
 
 		/* Monopole */
 		const Real sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
@@ -70,10 +76,12 @@ int main(int argc, char** argv) {
 		const Real anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
 		const Real anormFCM2 = 2.0*sigmaFCMsq;
 
-		const Real sigmaGRID = sigmaFCM * sigma_fac;
+		const Real sigmaGRID = dx * alpha;
 		const Real sigmaGRIDsq = sigmaGRID * sigmaGRID;
 		const Real anormGRID = 1.0/sqrt(2.0*PI*sigmaGRIDsq);
 		const Real anormGRID2 = 2.0*sigmaGRIDsq;
+
+		const Real sigma_fac = sigmaGRID/sigmaFCM;
 
 		const Real gammaGRID = sqrt(2.0)*sigmaGRID;
 		const Real pdmag = sigmaFCMsq - sigmaGRIDsq;
@@ -122,13 +130,22 @@ int main(int argc, char** argv) {
 
 	auto time_cuda_initialisation = (Real)0.0;
 	auto time_readfile = (Real)0.0;
-	auto time_hashing = (Real)0.0;
-	auto time_linklist = (Real)0.0;
-	auto time_precompute_gauss = (Real)0.0;
-	auto time_spreading = (Real)0.0;
-	auto time_FFT = (Real)0.0;
-	auto time_gathering = (Real)0.0;
-	auto time_correction = (Real)0.0;
+
+	Real time_hashing_array[repeat];
+	Real time_linklist_array[repeat];
+	Real time_precompute_array[repeat];
+	Real time_spreading_array[repeat];
+	Real time_FFT_array[repeat];
+	Real time_gathering_array[repeat];
+	Real time_correction_array[repeat];
+
+	// auto time_hashing = (Real)0.0;
+	// auto time_linklist = (Real)0.0;
+	// auto time_precompute = (Real)0.0;
+	// auto time_spreading = (Real)0.0;
+	// auto time_FFT = (Real)0.0;
+	// auto time_gathering = (Real)0.0;
+	// auto time_correction = (Real)0.0;
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Print simulation information
@@ -257,7 +274,7 @@ int main(int argc, char** argv) {
 	Real* qsq_host = malloc_host<Real>(NX);			Real* qsq_device = malloc_device<Real>(NX);
 	Real* qpadsq_host = malloc_host<Real>(pad);		Real* qpadsq_device = malloc_device<Real>(pad);
 
-	init_wave_vector<<<num_thread_blocks_NX, THREADS_PER_BLOCK>>>(q_device, qsq_device, qpad_device, qpadsq_device, nptsh, pad);
+	init_wave_vector<<<num_thread_blocks_NX, THREADS_PER_BLOCK>>>(q_device, qsq_device, qpad_device, qpadsq_device, nptsh, pad, nx, ny, nz);
 	
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
@@ -360,7 +377,7 @@ int main(int argc, char** argv) {
 
 		#endif
 
-		cudaDeviceSynchronize();	time_hashing += get_time() - time_start;
+		cudaDeviceSynchronize();	time_hashing_array[t] = get_time() - time_start;
 		///////////////////////////////////////////////////////////////////////////////
 		// Link
 		///////////////////////////////////////////////////////////////////////////////
@@ -375,7 +392,7 @@ int main(int argc, char** argv) {
 
 		#endif
 
-		cudaDeviceSynchronize();	time_linklist += get_time() - time_start;
+		cudaDeviceSynchronize();	time_linklist_array[t] = get_time() - time_start;
 		///////////////////////////////////////////////////////////////////////////////
 		// Gaussian initialisation
 		///////////////////////////////////////////////////////////////////////////////
@@ -395,7 +412,7 @@ int main(int argc, char** argv) {
 
 		#endif
 		
-		cudaDeviceSynchronize();	time_precompute_gauss += get_time() - time_start;
+		cudaDeviceSynchronize();	time_precompute_array[t] = get_time() - time_start;
 		///////////////////////////////////////////////////////////////////////////////
 		// Spreading
 		///////////////////////////////////////////////////////////////////////////////
@@ -439,12 +456,23 @@ int main(int argc, char** argv) {
 													pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
 													anormGRID, anormGRID2,
 													dx, nx, ny, nz);
+												
+			#elif SPREAD_TYPE == 4
+
+				cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<num_thread_blocks_N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+15)*sizeof(Real)>>>
+														(hx_device, hy_device, hz_device, 
+														Y_device, T_device, F_device,
+														N, ngd,
+														pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+														anormGRID, anormGRID2,
+														dx, nx, ny, nz);
 
 			#endif
 		
 		#elif SOLVER_MODE == 0
 			
-			cufcm_mono_dipole_distribution_regular_fcm<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, 
+			cufcm_mono_dipole_distribution_regular_fcm<<<num_thread_blocks_N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+3)*sizeof(Real)>>>
+													(hx_device, hy_device, hz_device, 
 													Y_device, T_device, F_device,
 													N, ngd,
 													sigmaFCMsq, sigmaFCMdipsq,
@@ -453,8 +481,7 @@ int main(int argc, char** argv) {
 													dx, nx, ny, nz);
 
 		#endif
-
-		cudaDeviceSynchronize();	time_spreading += get_time() - time_start;
+		cudaDeviceSynchronize();	time_spreading_array[t] = get_time() - time_start;
 		///////////////////////////////////////////////////////////////////////////////
 		// FFT
 		///////////////////////////////////////////////////////////////////////////////
@@ -493,7 +520,7 @@ int main(int argc, char** argv) {
 			return 0;	
 		}		
 
-		cudaDeviceSynchronize();	time_FFT += get_time() - time_start;
+		cudaDeviceSynchronize();	time_FFT_array[t] = get_time() - time_start;
 		///////////////////////////////////////////////////////////////////////////////
 		// Gathering
 		///////////////////////////////////////////////////////////////////////////////
@@ -542,11 +569,23 @@ int main(int argc, char** argv) {
 											anormGRID, anormGRID2,
 											dx, nx, ny, nz);
 
+			#elif GATHER_TYPE == 4
+
+				cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+3)*sizeof(Real)>>>
+											(hx_device, hy_device, hz_device,
+											Y_device,
+											V_device, W_device,
+											N, ngd,
+											pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
+											anormGRID, anormGRID2,
+											dx, nx, ny, nz);
+
 			#endif
 
 		#elif SOLVER_MODE == 0
 
-			cufcm_particle_velocities_regular_fcm<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
+			cufcm_particle_velocities_regular_fcm<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+3)*sizeof(Real)>>>
+											(hx_device, hy_device, hz_device,
 											Y_device,
 											V_device, W_device,
 											N, ngd,
@@ -557,7 +596,7 @@ int main(int argc, char** argv) {
 
 		#endif
 
-		cudaDeviceSynchronize();	time_gathering += get_time() - time_start;
+		cudaDeviceSynchronize();	time_gathering_array[t] = get_time() - time_start;
 		///////////////////////////////////////////////////////////////////////////////
 		// Correction
 		///////////////////////////////////////////////////////////////////////////////
@@ -588,8 +627,6 @@ int main(int argc, char** argv) {
 
 			#endif
 
-		
-
 			cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
 									StokesMob, ModStokesMob,
 									PDStokesMob, BiLapMob,
@@ -597,7 +634,7 @@ int main(int argc, char** argv) {
 
 		#endif
 
-		cudaDeviceSynchronize();	time_correction += get_time() - time_start;
+		cudaDeviceSynchronize();	time_correction_array[t] = get_time() - time_start;
 
 		/* Sort back */
 		#if SPATIAL_HASHING == 2 and SORT_BACK == 1
@@ -626,6 +663,7 @@ int main(int argc, char** argv) {
 
 		#endif
 	}
+	
 
 	copy_to_host<Real>(Y_device, Y_host, 3*N);
 	copy_to_host<Real>(F_device, F_host, 3*N);
@@ -664,28 +702,37 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
 	///////////////////////////////////////////////////////////////////////////////
-	time_hashing/= repeat;
-	time_linklist/= repeat;
-	time_precompute_gauss/= repeat;
-	time_spreading/= repeat;
-	time_FFT/= repeat;
-	time_gathering/= repeat;
-	time_correction/= repeat;
+	auto time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
+	auto time_linklist = mean(&time_linklist_array[warmup], repeat-warmup);
+	auto time_precompute = mean(&time_precompute_array[warmup], repeat-warmup);
+	auto time_spreading = mean(&time_spreading_array[warmup], repeat-warmup);
+	auto time_FFT = mean(&time_FFT_array[warmup], repeat-warmup);
+	auto time_gathering = mean(&time_gathering_array[warmup], repeat-warmup);
+	auto time_correction = mean(&time_correction_array[warmup], repeat-warmup);
 
-	auto time_compute = time_linklist + time_precompute_gauss + time_spreading + time_FFT + time_gathering + time_correction;
+	auto time_hashing_stdv = stdv(&time_hashing_array[warmup], repeat-warmup);
+	auto time_linklist_stdv = stdv(&time_linklist_array[warmup], repeat-warmup);
+	auto time_precompute_stdv = stdv(&time_precompute_array[warmup], repeat-warmup);
+	auto time_spreading_stdv = stdv(&time_spreading_array[warmup], repeat-warmup);
+	auto time_FFT_stdv = stdv(&time_FFT_array[warmup], repeat-warmup);
+	auto time_gathering_stdv = stdv(&time_gathering_array[warmup], repeat-warmup);
+	auto time_correction_stdv = stdv(&time_correction_array[warmup], repeat-warmup);
+
+	auto time_compute = time_linklist + time_precompute + time_spreading + time_FFT + time_gathering + time_correction;
 	auto PTPS = N/time_compute;
+	std::cout.precision(5);
 	std::cout << std::endl;
 	std::cout << "-------\nTimings\n-------\n";
-	std::cout << "Init CUDA:\t" << time_cuda_initialisation << " s\n";
+	std::cout << "Init CUDA:\t" << time_cuda_initialisation << "s\n";
 	std::cout << "Readfile:\t" << time_readfile << " s\n";
-	std::cout << "Hashing:\t" << time_hashing << " s\n";
-	std::cout << "Linklist:\t" << time_linklist << " s\n";
-    std::cout << "Precomputing:\t" << time_precompute_gauss << " s\n";
-    std::cout << "Spreading:\t" << time_spreading << " s\n";
-    std::cout << "FFT+flow:\t" << time_FFT << " s\n";
-	std::cout << "Gathering:\t" << time_gathering << " s\n";
-	std::cout << "Correction:\t" << time_correction << " s\n";
-	std::cout << "Compute total:\t" << time_compute << " s\n";
+	std::cout << "Hashing:\t" << time_hashing << " \t+/-\t " << time_hashing_stdv << " s\n";
+	std::cout << "Linklist:\t" << time_linklist << " \t+/-\t " << time_linklist_stdv <<" s\n";
+    std::cout << "Precomputing:\t" << time_precompute << " \t+/-\t " << time_precompute_stdv <<" s\n";
+    std::cout << "Spreading:\t" << time_spreading << " \t+/-\t " << time_spreading_stdv <<" s\n";
+    std::cout << "FFT+flow:\t" << time_FFT << " \t+/-\t " << time_FFT_stdv <<" s\n";
+	std::cout << "Gathering:\t" << time_gathering << " \t+/-\t " << time_gathering_stdv <<" s\n";
+	std::cout << "Correction:\t" << time_correction << " \t+/-\t " << time_correction_stdv <<" s\n";
+	std::cout << "Compute total:\t" << time_compute <<" s\n";
 	std::cout << "PTPS:\t" << PTPS << " /s\n";
     std::cout << std::endl;
 
@@ -700,7 +747,7 @@ int main(int argc, char** argv) {
 				time_readfile,
 				time_hashing, 
 				time_linklist,
-				time_precompute_gauss,
+				time_precompute,
 				time_spreading,
 				time_FFT,
 				time_gathering,

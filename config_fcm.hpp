@@ -65,7 +65,7 @@
     #define DX (PI2/NPTS)
     #define NGD (int)(BETA*ALPHA)
 
-    #define RREF_FAC 5.21186960
+    #define LAMBDA 5.573
 
 #endif
 

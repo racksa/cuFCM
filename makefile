@@ -1,6 +1,6 @@
 NVCC_FLAGS=-arch=sm_60 -std=c++14 -O3 -g -I../include
 
-LINK=-lcublas -lcufft -llapacke -lcblas -lcurand -lcuda
+LINK=-lcublas -lcufft -llapacke -lcblas -lcurand -lcuda -lineinfo
 
 CUFCM_FILES = CUFCM_MAIN.cu CUFCM_FCM.cu CUFCM_data.cu CUFCM_CORRECTION.cu
 
@@ -11,9 +11,6 @@ UAMMDINCLUDEFLAGS=-I$(CUDA_ROOT)/include -I$(UAMMD_ROOT)/src -I$(UAMMD_ROOT)/src
 
 CUFCM : CUFCM_MAIN.cu
 	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) $(LINK) -o bin/CUFCM
-
-WITHOUT_NAME : CUFCM_MAIN.cu
-	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) $(LINK)
 
 clean :
 	rm -f bin/CUFCM
@@ -45,4 +42,4 @@ CUFCM_FILES_NOMAIN = CUFCM_INCORPORATE.cu
 # 	rm -f $(@:.clean=)
 
 spread_with_UAMMD : spread_interpolate.cu
-	nvcc $(NVCC_FLAGS) spread_interpolate.cu $(CUFCM_FILES_NOMAIN) $(NVCCFLAGS) -o spread $(LINK)
+	nvcc $(NVCC_FLAGS) spread_interpolate.cu $(CUFCM_FILES_NOMAIN) $(NVCCFLAGS) -o bin/spread $(LINK)

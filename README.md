@@ -11,7 +11,7 @@ nvidia-smi
 to check available nodes, and then type
 
 ```bash
-export CUDA_VISIBLE_DEVICES= x
+export CUDA_VISIBLE_DEVICES=x
 ```
 
 to select the available node. 
@@ -20,6 +20,6 @@ Compile and run with
 
 ```bash
 make clean CUFCM
-./CUFCM
+./bin/CUFCM
 ```
 

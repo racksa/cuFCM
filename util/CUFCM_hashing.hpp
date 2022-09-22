@@ -98,6 +98,9 @@ void sort_index_by_key(int *key, int *index, int N){
     copy_device<int><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(key_buf, key, N);
     copy_device<int><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(index_buf, index, N);
 
+    cudaFree(d_temp_storage);
+    cudaFree(key_buf);
+    cudaFree(index_buf);
 }
 
 __global__

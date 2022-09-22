@@ -53,3 +53,20 @@ Real percentage_error_magnitude(Real *data, Real *ref_data, int N){
 
     return ret;
 }
+
+Real mean(Real *data, int length){
+    Real ret = 0;
+    for(int i = 0; i<length; i++){
+        ret += data[i];
+    }
+    return ret/Real(length);
+}
+
+Real stdv(Real *data, int length){
+    Real avg = mean(data, length);
+    Real ret = 0;
+    for(int i = 0; i<length; i++){
+        ret += (data[i] - avg)*(data[i] - avg);
+    }
+    return sqrtf(ret/Real(length));
+}

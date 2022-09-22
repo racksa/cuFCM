@@ -1,9 +1,11 @@
 *.dat
 *.qdrep
 *.sqlite
+*.nvprof
 
 # Ignore all
 *
 # Unignore all with extensions
 !*.*
 /bin
+/profiler

@@ -1,7 +1,6 @@
 #include "CUFCM_data.hpp"
 #include <cstdio>
 #include "config.hpp"
-#include "fcmmacro.hpp"
 #include <curand_kernel.h>
 #include <curand.h>
 
@@ -320,16 +319,16 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states){
 }
 
 __global__
-void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, int pad){
+void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, int pad, Real nx, Real ny, Real nz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    for(int i = index; i < NX; i += stride){
+    for(int i = index; i < nx; i += stride){
         if(i < nptsh || i == nptsh){
 			q[i] = (Real) i;
 		}
 		if(i > nptsh){
-			q[i] = (Real) (i - NX);
+			q[i] = (Real) (i - nx);
 		}
 		qsq[i] = q[i]*q[i];
     }
