@@ -13,5 +13,7 @@
 !python
 !util
 !data
+!makefile
+
 /bin
-/profiler
+/other

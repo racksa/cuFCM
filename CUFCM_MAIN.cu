@@ -15,7 +15,9 @@
 
 
 #include "config.hpp"
-#include "config_fcm.hpp"
+#if CONFIG_TYPE == 0
+	#include "config_fcm.hpp"
+#endif
 #include "CUFCM_FCM.hpp"
 #include "CUFCM_CORRECTION.hpp"
 #include "CUFCM_data.hpp"
@@ -41,6 +43,8 @@ int main(int argc, char** argv) {
 		const Real nx = NX;
 		const Real ny = NY;
 		const Real nz = NZ;
+		int repeat = 1;
+		int prompt = 10;
 	#elif CONFIG_TYPE == 1
 		Real values[100];
 		read_config(values, "simulation_info");
@@ -53,19 +57,23 @@ int main(int argc, char** argv) {
 		const Real ny = values[6];
 		const Real nz = values[7];
 		int repeat = values[8];
+		int prompt = values[9];
 	#endif
 
 	/* Deduced FCM parameters */
-	const int grid_size = nx*ny*nz;
-	const int fft_grid_size = (nx/2+1)*ny*nz;
+	const Real grid_size = nx*ny*nz;
+	const Real fft_grid_size = (nx/2+1)*ny*nz;
 	const Real dx = PI2/nx;
 	const int ngd = int(alpha*beta);
-	const Real Rref_fac = Real(eta*alpha);
+	const Real Rc_fac = Real(eta*alpha);
+
+	// const int ngd = int(beta);
+	// const Real Rc_fac = Real(eta/dx);
 
 	/* Neighbour list */
-	const Real Rref = Rref_fac*dx;
-	const Real Rrefsq = Rref*Rref;
-	int M = (int) (PI2/Rref);
+	const Real Rc = Rc_fac*dx;
+	const Real Rcsq = Rc*Rc;
+	int M = (int) (PI2/Rc);
 	if(M < 3){
 		M = 3;
 	}
@@ -73,8 +81,8 @@ int main(int argc, char** argv) {
 	const int ncell = M*M*M;
 	const int mapsize = 13*ncell;
 
+
 	/* Repeat number */
-	
 	int warmup = 0;
 
 	#if SOLVER_MODE == 1
@@ -136,6 +144,8 @@ int main(int argc, char** argv) {
 		const Real anormFCMdip2 = 2.0*sigmaFCMdipsq;
 
 	#endif
+
+	/* Timing variables */
 	auto time_start = get_time();
 	auto time_cuda_initialisation = (Real)0.0;
 	auto time_readfile = (Real)0.0;
@@ -159,26 +169,30 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Print simulation information
 	///////////////////////////////////////////////////////////////////////////////
-	std::cout << "-------\nSimulation\n-------\n";
-	std::cout << "Particle number:\t" << N << "\n";
-	std::cout << "Particle radius:\t" << rh << "\n";
-	#if SOLVER_MODE == 1
-		std::cout << "Solver:\t\t\t" << "<Fast FCM>" << "\n";
-	#elif SOLVER_MODE == 0
-		std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
-	#endif
-	std::cout << "Grid points:\t\t" << nx << "\n";
-    std::cout << "Grid support:\t\t" << ngd << "\n";
-	#if SOLVER_MODE == 1
-		std::cout << "Sigma/sigma:\t\t" << sigma_fac << "\n";
-	#endif
-	std::cout << "Cell number:\t\t" << M << "\n";
-	#if ENABLE_REPEAT == 1
-		std::cout << "Repeat number:\t\t" << repeat << "\n";
-	#endif
-    
-    std::cout << std::endl;
-
+	if(prompt > -1){
+		std::cout << "-------\nSimulation\n-------\n";
+		std::cout << "Particle number:\t" << N << "\n";
+		std::cout << "Particle radius:\t" << rh << "\n";
+		#if SOLVER_MODE == 1
+			std::cout << "Solver:\t\t\t" << "<Fast FCM>" << "\n";
+		#elif SOLVER_MODE == 0
+			std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
+		#endif
+		std::cout << "Grid points:\t\t" << nx << "\n";
+		std::cout << "Grid support:\t\t" << ngd << "\n";
+		#if SOLVER_MODE == 1
+			std::cout << "Sigma/sigma:\t\t" << sigma_fac << "\n";
+			std::cout << "Alpha:\t\t\t" << alpha << "\n";
+			std::cout << "Beta:\t\t\t" << beta << "\n";
+			std::cout << "Eta:\t\t\t" << eta << "\n";
+		#endif
+		std::cout << "Cell number:\t\t" << M << "\n";
+		#if ENABLE_REPEAT == 1
+			std::cout << "Repeat number:\t\t" << repeat << "\n";
+		#endif
+		
+		std::cout << std::endl;
+	}
 	///////////////////////////////////////////////////////////////////////////////
 	// CUDA initialisation
 	///////////////////////////////////////////////////////////////////////////////
@@ -321,8 +335,10 @@ int main(int argc, char** argv) {
 	// Start repeat
 	///////////////////////////////////////////////////////////////////////////////
 	for(int t = 0; t < repeat; t++){
-
-		std::cout << "\rComputing repeat " << (t+1) << "/" << repeat;
+		
+		if(prompt > 1){
+			std::cout << "\rComputing repeat " << (t+1) << "/" << repeat;
+		}
 
 		reset_device(V_device, 3*N);
 		reset_device(W_device, 3*N);
@@ -479,7 +495,7 @@ int main(int argc, char** argv) {
 		
 		#elif SOLVER_MODE == 0
 			
-			cufcm_mono_dipole_distribution_regular_fcm<<<num_thread_blocks_N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+3)*sizeof(Real)>>>
+			cufcm_mono_dipole_distribution_regular_fcm<<<num_thread_blocks_N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+15)*sizeof(Real)>>>
 													(hx_device, hy_device, hz_device, 
 													Y_device, T_device, F_device,
 													N, ngd,
@@ -579,7 +595,7 @@ int main(int argc, char** argv) {
 
 			#elif GATHER_TYPE == 4
 
-				cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+3)*sizeof(Real)>>>
+				cufcm_particle_velocities_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+3)*sizeof(Real)>>>
 											(hx_device, hy_device, hz_device,
 											Y_device,
 											V_device, W_device,
@@ -616,7 +632,7 @@ int main(int argc, char** argv) {
 
 				cufcm_pair_correction_linklist<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
 									map_device, head_device, list_device,
-									ncell, Rrefsq,
+									ncell, Rcsq,
 									pdmag,
 									sigmaGRID, sigmaGRIDsq,
 									sigmaFCM, sigmaFCMsq,
@@ -627,7 +643,7 @@ int main(int argc, char** argv) {
 				cufcm_pair_correction_spatial_hashing_tpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
 									particle_cellhash_device, cell_start_device, cell_end_device,
 									map_device,
-									ncell, Rrefsq,
+									ncell, Rcsq,
 									pdmag,
 									sigmaGRID, sigmaGRIDsq,
 									sigmaFCM, sigmaFCMsq,
@@ -728,21 +744,25 @@ int main(int argc, char** argv) {
 
 	auto time_compute = time_linklist + time_precompute + time_spreading + time_FFT + time_gathering + time_correction;
 	auto PTPS = N/time_compute;
-	std::cout.precision(5);
-	std::cout << std::endl;
-	std::cout << "-------\nTimings\n-------\n";
-	std::cout << "Init CUDA:\t" << time_cuda_initialisation << "s\n";
-	std::cout << "Readfile:\t" << time_readfile << " s\n";
-	std::cout << "Hashing:\t" << time_hashing << " \t+/-\t " << time_hashing_stdv << " s\n";
-	std::cout << "Linklist:\t" << time_linklist << " \t+/-\t " << time_linklist_stdv <<" s\n";
-    std::cout << "Precomputing:\t" << time_precompute << " \t+/-\t " << time_precompute_stdv <<" s\n";
-    std::cout << "Spreading:\t" << time_spreading << " \t+/-\t " << time_spreading_stdv <<" s\n";
-    std::cout << "FFT+flow:\t" << time_FFT << " \t+/-\t " << time_FFT_stdv <<" s\n";
-	std::cout << "Gathering:\t" << time_gathering << " \t+/-\t " << time_gathering_stdv <<" s\n";
-	std::cout << "Correction:\t" << time_correction << " \t+/-\t " << time_correction_stdv <<" s\n";
-	std::cout << "Compute total:\t" << time_compute <<" s\n";
-	std::cout << "PTPS:\t" << PTPS << " /s\n";
-    std::cout << std::endl;
+
+	if(prompt > 1){
+		std::cout.precision(5);
+		std::cout << std::endl;
+		std::cout << "-------\nTimings\n-------\n";
+		std::cout << "Init CUDA:\t" << time_cuda_initialisation << "s\n";
+		std::cout << "Readfile:\t" << time_readfile << " s\n";
+		std::cout << "Hashing:\t" << time_hashing << " \t+/-\t " << time_hashing_stdv << " s\n";
+		std::cout << "Linklist:\t" << time_linklist << " \t+/-\t " << time_linklist_stdv <<" s\n";
+		std::cout << "Precomputing:\t" << time_precompute << " \t+/-\t " << time_precompute_stdv <<" s\n";
+		std::cout << "Spreading:\t" << time_spreading << " \t+/-\t " << time_spreading_stdv <<" s\n";
+		std::cout << "FFT+flow:\t" << time_FFT << " \t+/-\t " << time_FFT_stdv <<" s\n";
+		std::cout << "Gathering:\t" << time_gathering << " \t+/-\t " << time_gathering_stdv <<" s\n";
+		std::cout << "Correction:\t" << time_correction << " \t+/-\t " << time_correction_stdv <<" s\n";
+		std::cout << "Compute total:\t" << time_compute <<" s\n";
+		std::cout << "PTPS:\t" << PTPS << " /s\n";
+		std::cout << std::endl;
+	}
+	
 	///////////////////////////////////////////////////////////////////////////////
 	// Check error
 	///////////////////////////////////////////////////////////////////////////////
@@ -762,11 +782,13 @@ int main(int argc, char** argv) {
 		Real Verror = percentage_error_magnitude(V_host, V_validation, N);
 		Real Werror = percentage_error_magnitude(W_host, W_validation, N);
 
-		std::cout << "-------\nError\n-------\n";
-		std::cout << "%Y error:\t" << Yerror << "\n";
-		std::cout << "%V error:\t" << Verror << "\n";
-		std::cout << "%W error:\t" << Werror << "\n";
-
+		if(prompt > 1){
+			std::cout << "-------\nError\n-------\n";
+			std::cout << "%Y error:\t" << Yerror << "\n";
+			std::cout << "%V error:\t" << Verror << "\n";
+			std::cout << "%W error:\t" << Werror << "\n";
+		}
+		
 	#endif
 	///////////////////////////////////////////////////////////////////////////////
 	// Write to file
@@ -783,6 +805,7 @@ int main(int argc, char** argv) {
 				time_FFT,
 				time_gathering,
 				time_correction,
+				time_compute,
 				"./data/simulation/simulation_scalar.dat");
 
 		#if CHECK_ERROR == 1
@@ -805,7 +828,9 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Finish
 	///////////////////////////////////////////////////////////////////////////////
-	std::cout << "--------------\nFreeing memory\n--------------\n";
+	if(prompt > 1){
+		std::cout << "--------------\nFreeing memory\n--------------\n";
+	}
 	
 	cufftDestroy(plan);
 	cufftDestroy(iplan);

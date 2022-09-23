@@ -556,11 +556,13 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
     Real q1, q2, q3, qq;
     Real f1_re, f1_im, f2_re, f2_im, f3_re, f3_im;
 
+    Real grid_size = nx*ny*nz;
+
     // Stay in the loop as long as any thread in the block still needs to compute velocities.
-    for(int i = index; i < FFT_GRID_SIZE; i += stride){
-        const int indk = (i)/(NY*(NX/2+1));
-        const int indj = (i - indk*(NY*(NX/2+1)))/(NX/2+1);
-        const int indi = i - indk*(NY*(NX/2+1)) - indj*(NX/2+1);
+    for(int i = index; i < (nx/2+1)*ny*nz; i += stride){
+        const int indk = (i)/(ny*(nx/2+1));
+        const int indj = (i - indk*(ny*(nx/2+1)))/(nx/2+1);
+        const int indi = i - indk*(ny*(nx/2+1)) - indj*(nx/2+1);
 
         q1 = q[indi];
         q2 = q[indj];
@@ -587,12 +589,12 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         kdotf_re = (q1*f1_re+q2*f2_re+q3*f3_re)*norm;
         kdotf_im = (q1*f1_im+q2*f2_im+q3*f3_im)*norm;
 
-        uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)GRID_SIZE);
-        uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)GRID_SIZE);
-        uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)GRID_SIZE);
-        uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)GRID_SIZE);
-        uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)GRID_SIZE);
-        uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)GRID_SIZE);
+        uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)grid_size);
+        uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)grid_size);
+        uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)grid_size);
+        uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)grid_size);
+        uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)grid_size);
+        uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)grid_size);
 
         if(i==0){
             uk_x[0].x = (Real)0.0;
@@ -1013,6 +1015,7 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
     Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
     Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
     Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+
     // Specialize BlockReduce
     typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
@@ -1071,13 +1074,13 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
             Real grady = grad_gaussy_dip_shared[j];
             Real gradz = grad_gaussz_dip_shared[k];
 
-            int ind = indx_shared[i] + indy_shared[j]*nx + indz_shared[k]*nx*ny;
+            int ind = indx_shared[i] + indy_shared[j]*int(nx) + indz_shared[k]*int(nx)*int(ny);
             Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
-            Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
+            Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k]*norm;
             Real temp2 = Real(0.5) * pdmag / sigmasq;
             Real temp3 = temp2 /sigmasq;
             Real temp4 = Real(3.0)*temp2;
-            Real temp5 = temp*( Real(1.0) + temp3*r2 - temp4);
+            Real temp5 = ( Real(1.0) + temp3*r2 - temp4);
 
             Real ux_temp = ux[ind]*temp;
             Real uy_temp = uy[ind]*temp;
@@ -1208,7 +1211,7 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
             Real grady = grad_gaussy_dip_shared[j];
             Real gradz = grad_gaussz_dip_shared[k];
 
-            int ind = indx_shared[i] + indy_shared[j]*double(nx) + indz_shared[k]*double(nx)*double(ny);
+            int ind = indx_shared[i] + indy_shared[j]*int(nx) + indz_shared[k]*int(nx)*int(ny);
             Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
             Real tempdip = gaussx_dip_shared[i]*gaussy_dip_shared[j]*gaussz_dip_shared[k];
 
@@ -1228,12 +1231,9 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
                                 Real anorm, Real anorm2,
                                 Real anormdip, Real anormdip2,
                                 Real dx, Real nx, Real ny, Real nz){
-
-    Real Vx = (Real) 0.0, Vy = (Real) 0.0, Vz = (Real) 0.0, Wx = (Real) 0.0, Wy = (Real) 0.0, Wz = (Real) 0.0;
-
-    Real norm = dx*dx*dx;
-
     int ngdh = ngd/2;
+    Real norm = dx*dx*dx;
+    Real Vx = (Real) 0.0, Vy = (Real) 0.0, Vz = (Real) 0.0, Wx = (Real) 0.0, Wy = (Real) 0.0, Wz = (Real) 0.0;
 
     extern __shared__ int s[];
     int *indx_shared = s;
@@ -1308,7 +1308,7 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
             Real grady = grad_gaussy_dip_shared[j];
             Real gradz = grad_gaussz_dip_shared[k];
             
-            int ind = indx_shared[i] + indy_shared[j]*NX + indz_shared[k]*NX*NY;
+            int ind = indx_shared[i] + indy_shared[j]*int(nx) + indz_shared[k]*int(nx)*int(ny);
             Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k]*norm;
             Real tempdip = gaussx_dip_shared[i]*gaussy_dip_shared[j]*gaussz_dip_shared[k]*norm;
 
@@ -1573,10 +1573,10 @@ void cufcm_test_force(myCufftReal* fx, myCufftReal* fy, myCufftReal* fz, Real nx
     const int stride = blockDim.x*gridDim.x;
 
     // Stay in the loop as long as any thread in the block still needs to spread forces.
-    for(int i = index; i < GRID_SIZE; i += stride){
-        const int indk = (i)/(NY*NX);
-        const int indj = (i - indk*(NY*NX))/(NX);
-        const int indi = i - indk*(NY*NX) - indj*(NX);
+    for(int i = index; i < nx*ny*nz; i += stride){
+        const int indk = (i)/(ny*nx);
+        const int indj = (i - indk*(ny*nx))/(nx);
+        const int indi = i - indk*(ny*nx) - indj*(nx);
 
         fx[i] = 1 + 3*(indi+indj*indk) + 7*(indj+2) + 3*(indk+2);
         fy[i] = 1 + 2*(indi+indj+indk) + 3*(indj*indj) + 2*(indk*indi);

@@ -13,7 +13,7 @@
 #define PI2sqrt_inv 0.3989422804014327
 #define SQRT2 1.4142135623730951
 
-#define SOLVER_MODE 1
+#define SOLVER_MODE 0
 // 0 = FCM
 // 1 = Fast FCM
 
@@ -23,7 +23,7 @@
 // 2 = 10^-5
 // 3 = 10^-6
 
-#define CONFIG_TYPE 1
+#define CONFIG_TYPE 0
 // 0 = Config FCM at compile time
 // 1 = Read config at run time
 

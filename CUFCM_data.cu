@@ -102,6 +102,7 @@ void write_time(Real time_cuda_initialisation,
                 Real time_FFT,
                 Real time_gathering,
                 Real time_correction,
+                Real time_compute,
                 const char *file_name){
     FILE *pfile;
     pfile = fopen(file_name, "w");
@@ -114,6 +115,7 @@ void write_time(Real time_cuda_initialisation,
     fprintf(pfile, "time_FFT=%.8f\n", time_FFT);
     fprintf(pfile, "time_gathering=%.8f\n", time_gathering);
     fprintf(pfile, "time_correction=%.8f\n", time_correction);
+    fprintf(pfile, "time_compute=%.8f\n", time_compute);
     fclose(pfile);
 }
 

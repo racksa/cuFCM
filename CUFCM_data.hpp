@@ -20,6 +20,7 @@ void write_time(Real time_cuda_initialisation,
                     Real time_FFT,
                     Real time_gathering,
                     Real time_correction,
+                    Real time_compute,
                     const char *file_name);
 
 void write_error(Real Verror,
