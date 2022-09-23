@@ -1,5 +1,7 @@
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
+#include <algorithm>
 #include <cmath>
 // Include CUDA runtime and CUFFT
 #include <cuda_runtime.h>
@@ -29,26 +31,30 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Initialise parameters
 	///////////////////////////////////////////////////////////////////////////////
-
-	auto time_start = get_time();
-
 	/* Read parameters */
-
-	/* Physical variables */
-	// int N = 16777216;
-	const int N = 500000;
-	const Real rh = RH;
-
-	/* Error control */
-	Real alpha = ALPHA;
-	Real beta = BETA;
-	Real lambda = LAMBDA;
+	#if CONFIG_TYPE == 0
+		const int N = NP;
+		const Real rh = RH;
+		Real alpha = ALPHA;
+		Real beta = BETA;
+		Real lambda = LAMBDA;
+		const Real nx = NX;
+		const Real ny = NY;
+		const Real nz = NZ;
+	#elif CONFIG_TYPE == 1
+		Real values[100];
+		read_config(values, "config.init");
+		const int N = values[0];
+		const Real rh = values[1];
+		Real alpha = values[2];
+		Real beta = values[3];
+		Real lambda = values[4];
+		const Real nx = values[5];
+		const Real ny = values[6];
+		const Real nz = values[7];
+	#endif
 
 	/* Deduced FCM parameters */
-	const Real nx = (Real) NX;
-	const Real ny = (Real) NY;
-	const Real nz = (Real) NZ;
-
 	const Real dx = PI2/nx;
 	const int ngd = int(alpha*beta);
 	const Real Rref_fac = Real(lambda*alpha);
@@ -127,7 +133,7 @@ int main(int argc, char** argv) {
 		const Real anormFCMdip2 = 2.0*sigmaFCMdipsq;
 
 	#endif
-
+	auto time_start = get_time();
 	auto time_cuda_initialisation = (Real)0.0;
 	auto time_readfile = (Real)0.0;
 
@@ -152,14 +158,14 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	std::cout << "-------\nSimulation\n-------\n";
 	std::cout << "Particle number:\t" << N << "\n";
-	std::cout << "Particle radius:\t" << RH << "\n";
+	std::cout << "Particle radius:\t" << rh << "\n";
 	#if SOLVER_MODE == 1
 		std::cout << "Solver:\t\t\t" << "<Fast FCM>" << "\n";
 	#elif SOLVER_MODE == 0
 		std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
 	#endif
-	std::cout << "Grid points:\t\t" << NX << "\n";
-    std::cout << "Grid support:\t\t" << NGD << "\n";
+	std::cout << "Grid points:\t\t" << nx << "\n";
+    std::cout << "Grid support:\t\t" << ngd << "\n";
 	#if SOLVER_MODE == 1
 		std::cout << "Sigma/sigma:\t\t" << sigma_fac << "\n";
 	#endif

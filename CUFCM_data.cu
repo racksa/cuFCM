@@ -1,5 +1,8 @@
 #include "CUFCM_data.hpp"
 #include <cstdio>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
 #include "config.hpp"
 #include <curand_kernel.h>
 #include <curand.h>
@@ -114,6 +117,29 @@ void write_timing(Real time_cuda_initialisation,
     time_correction);
     fprintf(pfile, "\n");
     fclose(pfile);
+}
+
+void read_config(Real *values, const char *file_name){
+    std::ifstream cFile (file_name);
+    if (cFile.is_open()){
+        std::string line;
+        int line_count = 0;
+        while(getline(cFile, line)){
+            line.erase(std::remove_if(line.begin(), line.end(), isspace),
+                                line.end());
+            if( line.empty() || line[0] == '#' ){
+                continue;
+            }
+            auto delimiterPos = line.find("=");
+            Real value = (Real) std::stod(line.substr(delimiterPos + 1));
+            values[line_count] = value;
+            std::cout<<value<<std::endl;
+            line_count += 1;
+        }
+    }
+    else{
+        std::cerr << "Couldn't open config file for reading.\n";
+    }
 }
 
 void init_pos(Real *Y, Real rad, int N){

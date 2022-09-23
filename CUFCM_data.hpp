@@ -22,6 +22,8 @@ void write_timing(Real time_cuda_initialisation,
                     Real time_correction,
                     const char *file_name);
 
+void read_config(Real *values, const char *file_name);
+
 __global__
 void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, int pad, Real nx, Real ny, Real nz);
 

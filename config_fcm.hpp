@@ -7,6 +7,7 @@
 
 // #define RH 0.008089855908506678
 #define RH 0.02609300415934458
+#define NP 500000
 
 #if SOLVER_MODE == 1
 
