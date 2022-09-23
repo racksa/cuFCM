@@ -1,4 +1,4 @@
-NVCC_FLAGS=-arch=sm_60 -std=c++14 -O3 -g -I../include
+NVCC_FLAGS=-arch=sm_60 -std=c++14 -O3 -I../include
 
 LINK=-lcublas -lcufft -llapacke -lcblas -lcurand -lcuda -lineinfo
 
@@ -30,7 +30,7 @@ UAMMD_ROOT= ../UAMMD/
 INCLUDEFLAGS=-I$(CUDA_ROOT)/include -I$(UAMMD_ROOT)/src -I$(UAMMD_ROOT)/src/third_party
 NVCCFLAGS=-ccbin=$(CXX) -std=c++14 -O3 $(INCLUDEFLAGS) -DMAXLOGLEVEL=$(LOG_LEVEL) $(DOUBLE_PRECISION) --extended-lambda
 
-CUFCM_FILES_NOMAIN = CUFCM_INCORPORATE.cu
+CUFCM_FILES_NOMAIN = incorporate/CUFCM_INCORPORATE.cu
 # all: $(patsubst %.cu, %, $(wildcard *.cu))
 
 # %: %.cu Makefile
@@ -41,5 +41,5 @@ CUFCM_FILES_NOMAIN = CUFCM_INCORPORATE.cu
 # %.clean:
 # 	rm -f $(@:.clean=)
 
-spread_with_UAMMD : spread_interpolate.cu
-	nvcc $(NVCC_FLAGS) spread_interpolate.cu $(CUFCM_FILES_NOMAIN) $(NVCCFLAGS) -o bin/spread $(LINK)
+spread_with_UAMMD : incorporate/spread_interpolate.cu
+	nvcc $(NVCC_FLAGS) incorporate/spread_interpolate.cu $(CUFCM_FILES_NOMAIN) $(NVCCFLAGS) -o bin/spread $(LINK)

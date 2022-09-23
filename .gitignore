@@ -2,10 +2,12 @@
 *.qdrep
 *.sqlite
 *.nvprof
+*.pyc
 
 # Ignore all
 *
 # Unignore all with extensions
 !*.*
+!simulation_info
 /bin
 /profiler

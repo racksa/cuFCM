@@ -93,29 +93,37 @@ void write_init_data(Real *Y, Real *F, Real *T, int N){
 }
 
 
-void write_timing(Real time_cuda_initialisation, 
-                    Real time_readfile,
-                    Real time_hashing, 
-                    Real time_linklist,
-                    Real time_precompute_gauss,
-                    Real time_spreading,
-                    Real time_FFT,
-                    Real time_gathering,
-                    Real time_correction,
-                    const char *file_name){
+void write_time(Real time_cuda_initialisation, 
+                Real time_readfile,
+                Real time_hashing, 
+                Real time_linklist,
+                Real time_precompute_gauss,
+                Real time_spreading,
+                Real time_FFT,
+                Real time_gathering,
+                Real time_correction,
+                const char *file_name){
+    FILE *pfile;
+    pfile = fopen(file_name, "w");
+    fprintf(pfile, "time_cuda_initialisation=%.8f\n", time_cuda_initialisation);
+    fprintf(pfile, "time_readfile=%.8f\n", time_readfile);
+    fprintf(pfile, "time_hashing=%.8f\n", time_hashing);
+    fprintf(pfile, "time_linklist=%.8f\n", time_linklist);
+    fprintf(pfile, "time_precompute_gauss=%.8f\n", time_precompute_gauss);
+    fprintf(pfile, "time_spreading=%.8f\n", time_spreading);
+    fprintf(pfile, "time_FFT=%.8f\n", time_FFT);
+    fprintf(pfile, "time_gathering=%.8f\n", time_gathering);
+    fprintf(pfile, "time_correction=%.8f\n", time_correction);
+    fclose(pfile);
+}
+
+void write_error(Real Verror,
+                 Real Werror,
+                 const char *file_name){
     FILE *pfile;
     pfile = fopen(file_name, "a");
-    fprintf(pfile, "%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n%.8f\n", 
-    time_cuda_initialisation, 
-    time_readfile,
-    time_hashing, 
-    time_linklist,
-    time_precompute_gauss,
-    time_spreading,
-    time_FFT,
-    time_gathering,
-    time_correction);
-    fprintf(pfile, "\n");
+    fprintf(pfile, "Verror=%.8f\n", Verror);
+    fprintf(pfile, "Werror=%.8f\n", Werror);
     fclose(pfile);
 }
 
@@ -133,7 +141,6 @@ void read_config(Real *values, const char *file_name){
             auto delimiterPos = line.find("=");
             Real value = (Real) std::stod(line.substr(delimiterPos + 1));
             values[line_count] = value;
-            std::cout<<value<<std::endl;
             line_count += 1;
         }
     }
@@ -179,7 +186,6 @@ void init_pos(Real *Y, Real rad, int N){
     }
     return;
 }
-
 
 void init_pos_gpu(Real *Y, Real rad, int N){
 

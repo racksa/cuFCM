@@ -37,27 +37,30 @@ int main(int argc, char** argv) {
 		const Real rh = RH;
 		Real alpha = ALPHA;
 		Real beta = BETA;
-		Real lambda = LAMBDA;
+		Real eta = ETA;
 		const Real nx = NX;
 		const Real ny = NY;
 		const Real nz = NZ;
 	#elif CONFIG_TYPE == 1
 		Real values[100];
-		read_config(values, "config.init");
+		read_config(values, "simulation_info");
 		const int N = values[0];
 		const Real rh = values[1];
 		Real alpha = values[2];
 		Real beta = values[3];
-		Real lambda = values[4];
+		Real eta = values[4];
 		const Real nx = values[5];
 		const Real ny = values[6];
 		const Real nz = values[7];
+		int repeat = values[8];
 	#endif
 
 	/* Deduced FCM parameters */
+	const int grid_size = nx*ny*nz;
+	const int fft_grid_size = (nx/2+1)*ny*nz;
 	const Real dx = PI2/nx;
 	const int ngd = int(alpha*beta);
-	const Real Rref_fac = Real(lambda*alpha);
+	const Real Rref_fac = Real(eta*alpha);
 
 	/* Neighbour list */
 	const Real Rref = Rref_fac*dx;
@@ -71,8 +74,8 @@ int main(int argc, char** argv) {
 	const int mapsize = 13*ncell;
 
 	/* Repeat number */
-	int repeat = 100;
-	int warmup = 20;
+	
+	int warmup = 0;
 
 	#if SOLVER_MODE == 1
 
@@ -191,19 +194,19 @@ int main(int argc, char** argv) {
 	Real* V_host = malloc_host<Real>(3*N);						Real* V_device = malloc_device<Real>(3*N);
 	Real* W_host = malloc_host<Real>(3*N);						Real* W_device = malloc_device<Real>(3*N);
 
-	myCufftReal* hx_host = malloc_host<myCufftReal>(GRID_SIZE);
-	myCufftReal* hy_host = malloc_host<myCufftReal>(GRID_SIZE);
-	myCufftReal* hz_host = malloc_host<myCufftReal>(GRID_SIZE);
-	myCufftReal* hx_device = malloc_device<myCufftReal>(GRID_SIZE);
-	myCufftReal* hy_device = malloc_device<myCufftReal>(GRID_SIZE);
-	myCufftReal* hz_device = malloc_device<myCufftReal>(GRID_SIZE);
+	myCufftReal* hx_host = malloc_host<myCufftReal>(grid_size);
+	myCufftReal* hy_host = malloc_host<myCufftReal>(grid_size);
+	myCufftReal* hz_host = malloc_host<myCufftReal>(grid_size);
+	myCufftReal* hx_device = malloc_device<myCufftReal>(grid_size);
+	myCufftReal* hy_device = malloc_device<myCufftReal>(grid_size);
+	myCufftReal* hz_device = malloc_device<myCufftReal>(grid_size);
 
-	myCufftComplex* fk_x_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_x_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-	myCufftComplex* fk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-	myCufftComplex* fk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* fk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-	myCufftComplex* uk_x_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_x_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-	myCufftComplex* uk_y_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_y_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
-	myCufftComplex* uk_z_host = malloc_host<myCufftComplex>(FFT_GRID_SIZE);		myCufftComplex* uk_z_device = malloc_device<myCufftComplex>(FFT_GRID_SIZE);
+	myCufftComplex* fk_x_host = malloc_host<myCufftComplex>(fft_grid_size);		myCufftComplex* fk_x_device = malloc_device<myCufftComplex>(fft_grid_size);
+	myCufftComplex* fk_y_host = malloc_host<myCufftComplex>(fft_grid_size);		myCufftComplex* fk_y_device = malloc_device<myCufftComplex>(fft_grid_size);
+	myCufftComplex* fk_z_host = malloc_host<myCufftComplex>(fft_grid_size);		myCufftComplex* fk_z_device = malloc_device<myCufftComplex>(fft_grid_size);
+	myCufftComplex* uk_x_host = malloc_host<myCufftComplex>(fft_grid_size);		myCufftComplex* uk_x_device = malloc_device<myCufftComplex>(fft_grid_size);
+	myCufftComplex* uk_y_host = malloc_host<myCufftComplex>(fft_grid_size);		myCufftComplex* uk_y_device = malloc_device<myCufftComplex>(fft_grid_size);
+	myCufftComplex* uk_z_host = malloc_host<myCufftComplex>(fft_grid_size);		myCufftComplex* uk_z_device = malloc_device<myCufftComplex>(fft_grid_size);
 
 	int* particle_cellindex_host = malloc_host<int>(N);					int* particle_cellindex_device = malloc_device<int>(N);
 	int* particle_cellhash_host = malloc_host<int>(N);					int* particle_cellhash_device = malloc_device<int>(N);
@@ -252,19 +255,19 @@ int main(int argc, char** argv) {
 	copy_to_device<int>(map_host, map_device, mapsize);
 
 	/* Create 3D FFT plans */
-	if (cufftPlan3d(&plan, NX, NY, NZ, cufftReal2Complex) != CUFFT_SUCCESS){
+	if (cufftPlan3d(&plan, nx, ny, nz, cufftReal2Complex) != CUFFT_SUCCESS){
 		printf("CUFFT error: Plan creation failed");
 		return 0;	
 	}
 
-	if (cufftPlan3d(&iplan, NX, NY, NZ, cufftComplex2Real) != CUFFT_SUCCESS){
+	if (cufftPlan3d(&iplan, nx, ny, nz, cufftComplex2Real) != CUFFT_SUCCESS){
 		printf("CUFFT error: Plan creation failed");
 		return 0;	
 	}
 
-	const int num_thread_blocks_GRID = (GRID_SIZE + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	const int num_thread_blocks_GRID = (grid_size + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	const int num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
-	const int num_thread_blocks_NX = (NX + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	const int num_thread_blocks_NX = (nx + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 
 	curandState *dev_random;
 	cudaMalloc((void**)&dev_random, num_thread_blocks_N*THREADS_PER_BLOCK*sizeof(curandState));
@@ -273,15 +276,14 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Wave vector initialisation
 	///////////////////////////////////////////////////////////////////////////////
-	int pad = (NX/2 + 1);
-	int nptsh = (NX/2);
-	Real* q_host = malloc_host<Real>(NX);			Real* q_device = malloc_device<Real>(NX);
+	int pad = (nx/2 + 1);
+	int nptsh = (nx/2);
+	Real* q_host = malloc_host<Real>(nx);			Real* q_device = malloc_device<Real>(nx);
 	Real* qpad_host = malloc_host<Real>(pad);		Real* qpad_device = malloc_device<Real>(pad);
-	Real* qsq_host = malloc_host<Real>(NX);			Real* qsq_device = malloc_device<Real>(NX);
+	Real* qsq_host = malloc_host<Real>(nx);			Real* qsq_device = malloc_device<Real>(nx);
 	Real* qpadsq_host = malloc_host<Real>(pad);		Real* qpadsq_device = malloc_device<Real>(pad);
 
 	init_wave_vector<<<num_thread_blocks_NX, THREADS_PER_BLOCK>>>(q_device, qsq_device, qpad_device, qpadsq_device, nptsh, pad, nx, ny, nz);
-	
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
@@ -289,13 +291,13 @@ int main(int argc, char** argv) {
 
 	#if INIT_FROM_FILE == 1
 
-		read_init_data(Y_host, N, "./init_data/pos-N500000-rh02609300-2.dat");
-		read_init_data(F_host, N, "./init_data/force-N500000-rh02609300.dat");
-		read_init_data(T_host, N, "./init_data/force-N500000-rh02609300-2.dat");	
+		read_init_data(Y_host, N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
+		read_init_data(F_host, N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
+		read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");	
 
-		// read_init_data(Y_host, N, "./init_data/N16777216/pos-N16777216-rh008089855.dat");
-		// read_init_data(F_host, N, "./init_data/N16777216/force-N16777216-rh008089855.dat");
-		// read_init_data(T_host, N, "./init_data/N16777216/force-N16777216-rh008089855-2.dat");
+		// read_init_data(Y_host, N, "./data/init_data/N16777216/pos-N16777216-rh008089855.dat");
+		// read_init_data(F_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855.dat");
+		// read_init_data(T_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855-2.dat");
 
 	#elif INIT_FROM_FILE == 0
 
@@ -324,9 +326,9 @@ int main(int argc, char** argv) {
 
 		reset_device(V_device, 3*N);
 		reset_device(W_device, 3*N);
-		reset_device(hx_device, GRID_SIZE);
-		reset_device(hy_device, GRID_SIZE);
-		reset_device(hz_device, GRID_SIZE);
+		reset_device(hx_device, grid_size);
+		reset_device(hy_device, grid_size);
+		reset_device(hz_device, grid_size);
 		///////////////////////////////////////////////////////////////////////////////
 		// Spatial hashing
 		///////////////////////////////////////////////////////////////////////////////
@@ -741,26 +743,6 @@ int main(int argc, char** argv) {
 	std::cout << "Compute total:\t" << time_compute <<" s\n";
 	std::cout << "PTPS:\t" << PTPS << " /s\n";
     std::cout << std::endl;
-
-	///////////////////////////////////////////////////////////////////////////////
-	// Write to file
-	///////////////////////////////////////////////////////////////////////////////
-	#if OUTPUT_TO_FILE == 1
-
-		write_data(Y_host, F_host, V_host, W_host, N, "./data/simulation_data.dat");
-		
-		write_timing(time_cuda_initialisation, 
-				time_readfile,
-				time_hashing, 
-				time_linklist,
-				time_precompute,
-				time_spreading,
-				time_FFT,
-				time_gathering,
-				time_correction,
-				"./data/simulation_timing.dat");
-		
-	#endif
 	///////////////////////////////////////////////////////////////////////////////
 	// Check error
 	///////////////////////////////////////////////////////////////////////////////
@@ -776,24 +758,49 @@ int main(int argc, char** argv) {
 						   V_validation,
 						   W_validation, N, "./data/refdata/ref_data_N500000");
 
-		// for(int i = N-10; i < N; i++){
-		// 	printf("%d V_validation ( ", i);
-		// 	for(int n = 0; n < 3; n++){
-		// 		printf("%.8f ", V_validation[3*i + n]);
-		// 	}
-		// 	printf(")     \t");
-		// 	printf("W ( ");
-		// 	for(int n = 0; n < 3; n++){
-		// 		printf("%.8f ", W_host[3*i + n]);
-		// 	}
-		// 	printf(")\n");
-		// }
+		Real Yerror = percentage_error_magnitude(Y_host, Y_validation, N);
+		Real Verror = percentage_error_magnitude(V_host, V_validation, N);
+		Real Werror = percentage_error_magnitude(W_host, W_validation, N);
 
 		std::cout << "-------\nError\n-------\n";
-		std::cout << "%Y error:\t" << percentage_error_magnitude(Y_host, Y_validation, N) << "\n";
-		std::cout << "%V error:\t" << percentage_error_magnitude(V_host, V_validation, N) << "\n";
-		std::cout << "%W error:\t" << percentage_error_magnitude(W_host, W_validation, N) << "\n";
+		std::cout << "%Y error:\t" << Yerror << "\n";
+		std::cout << "%V error:\t" << Verror << "\n";
+		std::cout << "%W error:\t" << Werror << "\n";
 
+	#endif
+	///////////////////////////////////////////////////////////////////////////////
+	// Write to file
+	///////////////////////////////////////////////////////////////////////////////
+	#if OUTPUT_TO_FILE == 1
+		write_data(Y_host, F_host, V_host, W_host, N, "./data/simulation/simulation_data.dat");
+		
+		write_time(time_cuda_initialisation, 
+				time_readfile,
+				time_hashing, 
+				time_linklist,
+				time_precompute,
+				time_spreading,
+				time_FFT,
+				time_gathering,
+				time_correction,
+				"./data/simulation/simulation_scalar.dat");
+
+		#if CHECK_ERROR == 1
+
+			write_error(
+				Verror,
+				Werror,
+				"./data/simulation/simulation_scalar.dat");
+
+		#else
+
+			write_error(
+				-1,
+				-1,
+				"./data/simulation/simulation_scalar.dat");
+
+		#endif
+		
 	#endif
 	///////////////////////////////////////////////////////////////////////////////
 	// Finish

@@ -11,7 +11,7 @@ void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name
 
 void write_init_data(Real *Y, Real *F, Real *T, int N);
 
-void write_timing(Real time_cuda_initialisation, 
+void write_time(Real time_cuda_initialisation, 
                     Real time_readfile,
                     Real time_hashing, 
                     Real time_linklist,
@@ -21,6 +21,10 @@ void write_timing(Real time_cuda_initialisation,
                     Real time_gathering,
                     Real time_correction,
                     const char *file_name);
+
+void write_error(Real Verror,
+                 Real Werror,
+                 const char *file_name);
 
 void read_config(Real *values, const char *file_name);
 
