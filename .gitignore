@@ -9,5 +9,9 @@
 # Unignore all with extensions
 !*.*
 !simulation_info
+!incorporate
+!python
+!util
+!data
 /bin
 /profiler
