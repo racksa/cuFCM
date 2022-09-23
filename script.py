@@ -16,12 +16,12 @@ def run():
                 if(sys.argv[1] == 'run'):
 
                 
-                    npts = 400
+                    npts = 444
                     par_dict['N']=          500000.0
                     par_dict['rh']=         0.02609300415934458
                     par_dict['alpha']=      1.0/(2*np.pi/npts) * par_dict['rh']/np.sqrt(np.pi)
-                    par_dict['beta']=       15
-                    par_dict['eta']=        0.2
+                    par_dict['beta']=       11
+                    par_dict['eta']=        0.21
                     par_dict['nx']=         npts
                     par_dict['ny']=         npts
                     par_dict['nz']=         npts

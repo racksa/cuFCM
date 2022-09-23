@@ -559,10 +559,14 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
     Real grid_size = nx*ny*nz;
 
     // Stay in the loop as long as any thread in the block still needs to compute velocities.
-    for(int i = index; i < (nx/2+1)*ny*nz; i += stride){
-        const int indk = (i)/(ny*(nx/2+1));
-        const int indj = (i - indk*(ny*(nx/2+1)))/(nx/2+1);
-        const int indi = i - indk*(ny*(nx/2+1)) - indj*(nx/2+1);
+    for(int i = index; i < FFT_GRID_SIZE; i += stride){
+        const int indk = (i)/(NY*(NX/2+1));
+        const int indj = (i - indk*(NY*(NX/2+1)))/(NX/2+1);
+        const int indi = i - indk*(NY*(NX/2+1)) - indj*(NX/2+1);
+    // for(int i = index; i < (nx/2+1)*ny*nz; i += stride){
+    //     const int indk = (i)/(ny*(nx/2+1));
+    //     const int indj = (i - indk*(ny*(nx/2+1)))/(nx/2+1);
+        // const int indi = i - indk*(ny*(nx/2+1)) - indj*(nx/2+1);
 
         q1 = q[indi];
         q2 = q[indj];
@@ -589,12 +593,18 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         kdotf_re = (q1*f1_re+q2*f2_re+q3*f3_re)*norm;
         kdotf_im = (q1*f1_im+q2*f2_im+q3*f3_im)*norm;
 
-        uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)grid_size);
-        uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)grid_size);
-        uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)grid_size);
-        uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)grid_size);
-        uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)grid_size);
-        uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)grid_size);
+        uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)GRID_SIZE);
+        uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)GRID_SIZE);
+        uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)GRID_SIZE);
+        uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)GRID_SIZE);
+        uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)GRID_SIZE);
+        uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)GRID_SIZE);
+        // uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)grid_size);
+        // uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)grid_size);
+        // uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)grid_size);
+        // uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)grid_size);
+        // uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)grid_size);
+        // uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)grid_size);
 
         if(i==0){
             uk_x[0].x = (Real)0.0;
