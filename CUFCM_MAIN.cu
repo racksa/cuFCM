@@ -40,9 +40,9 @@ int main(int argc, char** argv) {
 		Real alpha = ALPHA;
 		Real beta = BETA;
 		Real eta = ETA;
-		const Real nx = NX;
-		const Real ny = NY;
-		const Real nz = NZ;
+		const int nx = NX;
+		const int ny = NY;
+		const int nz = NZ;
 		int repeat = 1;
 		int prompt = 10;
 	#elif CONFIG_TYPE == 1
@@ -61,14 +61,11 @@ int main(int argc, char** argv) {
 	#endif
 
 	/* Deduced FCM parameters */
-	const Real grid_size = nx*ny*nz;
-	const Real fft_grid_size = (nx/2+1)*ny*nz;
+	const int grid_size = nx*ny*nz;
+	const int fft_grid_size = (nx/2+1)*ny*nz;
 	const Real dx = PI2/nx;
 	const int ngd = int(alpha*beta);
 	const Real Rc_fac = Real(eta*alpha);
-
-	// const int ngd = int(beta);
-	// const Real Rc_fac = Real(eta/dx);
 
 	/* Neighbour list */
 	const Real Rc = Rc_fac*dx;

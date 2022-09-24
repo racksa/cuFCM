@@ -11,22 +11,25 @@ def run():
     # Begin custom massive loop
     for i in range(1):
         for j in range(1):
-            for k in range(1):
+            for k in range(10):
                 
                 if(sys.argv[1] == 'run'):
 
                 
-                    npts = 444
+                    npts = 100 + 30*k
                     par_dict['N']=          500000.0
                     par_dict['rh']=         0.02609300415934458
-                    par_dict['alpha']=      1.0/(2*np.pi/npts) * par_dict['rh']/np.sqrt(np.pi)
-                    par_dict['beta']=       11
-                    par_dict['eta']=        0.21
+                    # par_dict['alpha']=      1.0/(2*np.pi/npts) * par_dict['rh']/np.sqrt(np.pi)
+                    # par_dict['beta']=       11
+                    # par_dict['eta']=        0.21
+                    par_dict['alpha']=      0.9352
+                    par_dict['beta']=       9.706
+                    par_dict['eta']=        5.573
                     par_dict['nx']=         npts
                     par_dict['ny']=         npts
                     par_dict['nz']=         npts
                     par_dict['repeat']=     1
-                    par_dict['prompt']=     10
+                    par_dict['prompt']=     -1
 
                     for key in par_dict:
                         util.replace(key, str(par_dict[key]), info_file_name)
@@ -44,8 +47,8 @@ def run():
                     sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
                     print(sim_dict)
 
-    if(sys.argv[1] == 'run'):
-        print("Data files moved to " + save_directory)
+    # if(sys.argv[1] == 'run'):
+    #     print("Data files moved to " + save_directory)
 
 run()
 

@@ -442,8 +442,9 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
               Real *T, Real *F, int N, int ngd, 
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
-              Real dx, Real nx, Real ny, Real nz){
+              Real dx, double nx, double ny, double nz){
 
+    // TODO: GPU is more comfortable computing FP2 (double) than integer
     int ngdh = ngd/2;
 
     extern __shared__ int s[];
@@ -514,9 +515,9 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             }
             /* ind */
             if(i>=3*ngd){
-                indx_shared[i-3*ngd] = xg - double(nx) * floorf( xg / double(nx) );
-                indy_shared[i-3*ngd] = yg - double(ny) * floorf( yg / double(ny) );
-                indz_shared[i-3*ngd] = zg - double(nz) * floorf( zg / double(nz) );
+                indx_shared[i-3*ngd] = xg - nx * floorf( xg / nx );
+                indy_shared[i-3*ngd] = yg - ny * floorf( yg / ny );
+                indz_shared[i-3*ngd] = zg - nz * floorf( zg / nz );
             }
         }
         __syncthreads();
@@ -530,7 +531,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             Real grady = grad_gaussy_dip_shared[j];
             Real gradz = grad_gaussz_dip_shared[k];
 
-            int ind = indx_shared[i] + indy_shared[j]*double(nx) + indz_shared[k]*double(nx)*double(ny);
+            int ind = indx_shared[i] + indy_shared[j]*nx + indz_shared[k]*nx*ny;
             Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
             Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
             Real temp2 = Real(0.5) * pdmag / sigmasq;
@@ -548,38 +549,32 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
 __global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
                       myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
-                      Real* q, Real* qpad, Real* qsq, Real* qpadsq, Real nx, Real ny, Real nz){
+                      Real* q, Real* qpad, Real* qsq, Real* qpadsq, int nx, int ny, int nz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    Real norm, kdotf_re, kdotf_im;
-    Real q1, q2, q3, qq;
-    Real f1_re, f1_im, f2_re, f2_im, f3_re, f3_im;
-
-    Real grid_size = nx*ny*nz;
+    int fft_nx = nx/2 + 1;
+    int grid_size = nx*ny*nz;
+    int fft_grid_size = fft_nx*ny*nz;
 
     // Stay in the loop as long as any thread in the block still needs to compute velocities.
-    for(int i = index; i < FFT_GRID_SIZE; i += stride){
-        const int indk = (i)/(NY*(NX/2+1));
-        const int indj = (i - indk*(NY*(NX/2+1)))/(NX/2+1);
-        const int indi = i - indk*(NY*(NX/2+1)) - indj*(NX/2+1);
-    // for(int i = index; i < (nx/2+1)*ny*nz; i += stride){
-    //     const int indk = (i)/(ny*(nx/2+1));
-    //     const int indj = (i - indk*(ny*(nx/2+1)))/(nx/2+1);
-        // const int indi = i - indk*(ny*(nx/2+1)) - indj*(nx/2+1);
+    for(int i = index; i < fft_grid_size; i += stride){
+        const int indk = (i)/(ny*fft_nx);
+        const int indj = (i - indk*(ny*fft_nx))/fft_nx;
+        const int indi = i - indk*(ny*fft_nx) - indj*fft_nx;
 
-        q1 = q[indi];
-        q2 = q[indj];
-        q3 = q[indk];
-        qq = qsq[indi] + qsq[indj] + qsq[indk];
-        norm = (Real)1.0/(qq);
+        Real q1 = q[indi];
+        Real q2 = q[indj];
+        Real q3 = q[indk];
+        Real qq = qsq[indi] + qsq[indj] + qsq[indk];
+        Real norm = (Real)1.0/(qq);
 
-        f1_re = fk_x[i].x;
-        f1_im = fk_x[i].y;
-        f2_re = fk_y[i].x;
-        f2_im = fk_y[i].y;
-        f3_re = fk_z[i].x;
-        f3_im = fk_z[i].y;
+        Real f1_re = fk_x[i].x;
+        Real f1_im = fk_x[i].y;
+        Real f2_re = fk_y[i].x;
+        Real f2_im = fk_y[i].y;
+        Real f3_re = fk_z[i].x;
+        Real f3_im = fk_z[i].y;
 
         if(i==0){
             f1_re = (Real)0.0;
@@ -590,21 +585,15 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
             f3_im = (Real)0.0;
         }
 
-        kdotf_re = (q1*f1_re+q2*f2_re+q3*f3_re)*norm;
-        kdotf_im = (q1*f1_im+q2*f2_im+q3*f3_im)*norm;
+        Real kdotf_re = (q1*f1_re+q2*f2_re+q3*f3_re)*norm;
+        Real kdotf_im = (q1*f1_im+q2*f2_im+q3*f3_im)*norm;
 
-        uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)GRID_SIZE);
-        uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)GRID_SIZE);
-        uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)GRID_SIZE);
-        uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)GRID_SIZE);
-        uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)GRID_SIZE);
-        uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)GRID_SIZE);
-        // uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)grid_size);
-        // uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)grid_size);
-        // uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)grid_size);
-        // uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)grid_size);
-        // uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)grid_size);
-        // uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)grid_size);
+        uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)grid_size);
+        uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)grid_size);
+        uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)grid_size);
+        uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)grid_size);
+        uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)grid_size);
+        uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)grid_size);
 
         if(i==0){
             uk_x[0].x = (Real)0.0;
