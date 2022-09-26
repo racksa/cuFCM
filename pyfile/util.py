@@ -1,4 +1,7 @@
+from cProfile import label
 from mpl_toolkits.mplot3d import Axes3D
+
+from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
@@ -94,7 +97,7 @@ def savefile(idict, directory, mode=1):
     return save_info_name, save_scalar_name, save_data_name
 
 
-def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array ):
+def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array):
     # creating figures
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
@@ -118,17 +121,52 @@ def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array ):
     # displaying plot
     plt.show()
 
-def plot_1D_fit(data_array, error_array):
+def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
+    l = len(alpha_array[:, 0, 0])
+    if(option[0] == "1"):
+        data_array = alpha_array[:, -1, -1]
+        y_array = error_array[:, -1, -1]
+    if(option[0] == "2"):
+        data_array = beta_array[-1, :, -1]
+        y_array = error_array[-1, :, -1]
+    if(option[0] == "3"):
+        data_array = eta_array[-1, -1, :]
+        y_array = error_array[-1, -1, :]
+    if(option[0] == "4"):
+        data_array = [alpha_array[i, i, i] for i in range(l)]
+        y_array = [error_array[i, i, i] for i in range(l)]
+        
     fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111)
+    ax = fig.add_subplot(1,1,1)
     
-    # creating the heatmap
-    img = ax.line(data_array, error_array, marker='s', s=100)
-    
+    # plot data
+    ax.plot(data_array, y_array, marker='o', label="data")
+
+    if(option[1] == "f"):
+        params, cv = curve_fit(monoExp, data_array, y_array, (1, 10))
+        m, t = params
+        print(m, t)
+        x_fit = np.linspace(data_array[0], data_array[-1], 20)
+        ax.plot(x_fit, monoExp(x_fit, m, t), label="fit curve")
+        ax.legend()
+
     # adding title and labels
     ax.set_title("Fit")
     ax.set_xlabel('data')
     ax.set_ylabel('error')
+    ax.set_yscale('log')
 
     # displaying plot
     plt.show()
+
+def monoExp(x, m, t):
+    return m * np.exp(-t * x**2)
+
+def alpha_expr(tol):
+    return np.sqrt(np.log10(tol/3.25)/(-9.48))
+
+def beta_expr(tol):
+    return 9.0 + (alpha_expr(tol) - 0.8)*10
+
+def eta_expr(tol):
+    return 5.5 + (alpha_expr(tol) - 0.8)*6

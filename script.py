@@ -1,3 +1,4 @@
+from distutils.log import error
 import sys
 import subprocess
 from mpl_toolkits.mplot3d import Axes3D
@@ -5,7 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 from pylab import *
-from python import util
+from pyfile import util
+from pyfile.util import alpha_expr, beta_expr, eta_expr
 
 def run():
     info_file_name = "simulation_info"
@@ -26,12 +28,16 @@ def run():
         for j in range(jl):
             for k in range(kl):
 
+                tol = 0.0005
                 npts = 256
                 par_dict['N']=          500000.0
                 par_dict['rh']=         0.02609300415934458
                 par_dict['alpha']=      0.8 + 0.05*i
                 par_dict['beta']=       9.0 + 0.5*j
                 par_dict['eta']=        5.5 + 0.3*k
+                # par_dict['alpha']=      alpha_expr(tol)
+                # par_dict['beta']=       beta_expr(tol)
+                # par_dict['eta']=        eta_expr(tol)
                 par_dict['nx']=         npts
                 par_dict['ny']=         npts
                 par_dict['nz']=         npts
@@ -55,30 +61,24 @@ def run():
                           "Werror=", str(sim_dict["Werror"]),\
                           "time_compute=", str(sim_dict["time_compute"]))
 
-                if(sys.argv[1] == 'read'):
+                if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1'):
                     sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
                     time_compute_array[i][j][k] = sim_dict['time_compute']
                     Verror_array[i][j][k] = sim_dict['Verror']
                     Werror_array[i][j][k] = sim_dict['Werror']
-                    np.savetxt(save_directory + 'Verror.csv', Verror_array, delimiter=',')
-                    np.savetxt(save_directory + 'Werror.csv', Verror_array, delimiter=',')
-                    np.savetxt(save_directory + 'time_compute.csv', time_compute_array, delimiter=',')
-
-                if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1'):
-                    Verror_array = loadtxt(save_directory + 'Verror.csv', delimiter=',')
-                    Werror_array = loadtxt(save_directory + 'Werror.csv', delimiter=',')
-                    time_compute_array = loadtxt(save_directory + 'time_compute.csv', delimiter=',')
 
                 if(sys.argv[1] == 'clean'):
                     subprocess.call("rm -f " + save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat", shell=True)
                     subprocess.call("rm -f " + save_directory + "simulation_info" + util.parser(par_dict) + ".dat", shell=True)
 
-
     # if(sys.argv[1] == 'run'):
     #     print("Data files moved to " + save_directory)
 
     if(sys.argv[1] == 'plot1'):
-        util.plot_1D_fit(alpha_array[:, -1, -1], Verror_array[:, -1, -1])
+        option = "1n"
+        if(len(sys.argv)>1):
+            option = sys.argv[2]
+        util.plot_1D_fit(alpha_array, beta_array, eta_array, Verror_array, option)
 
     if(sys.argv[1] == 'plot3'):
         util.plot_3Dheatmap(alpha_array, beta_array, eta_array, Verror_array)
