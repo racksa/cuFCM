@@ -520,6 +520,9 @@ void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// CPU code
+///////////////////////////////////////////////////////////////////////////////
 void cufcm_pair_correction_loop(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,
                     int ncell, Real Rrefsq,

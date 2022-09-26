@@ -1,9 +1,10 @@
-**.dat
-**.qdrep
-**.sqlite
-**.nvprof
-**.pyc
-**.o
+*.dat
+*.qdrep
+*.sqlite
+*.nvprof
+*.pyc
+*.o
+*.csv
 
 python/__pycache__/*
 bin/*

@@ -91,6 +91,8 @@ def savefile(idict, directory, mode=1):
     if(mode>2):
         subprocess.call("cp " + "data/simulation/simulation_data.dat " + save_data_name, shell=True)
 
+    return save_info_name, save_scalar_name, save_data_name
+
 
 def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array ):
     # creating figures
@@ -113,5 +115,20 @@ def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array ):
     ax.set_ylabel('Y-axis')
     ax.set_zlabel('Z-axis')
     
+    # displaying plot
+    plt.show()
+
+def plot_1D_fit(data_array, error_array):
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111)
+    
+    # creating the heatmap
+    img = ax.line(data_array, error_array, marker='s', s=100)
+    
+    # adding title and labels
+    ax.set_title("Fit")
+    ax.set_xlabel('data')
+    ax.set_ylabel('error')
+
     # displaying plot
     plt.show()
