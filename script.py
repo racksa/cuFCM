@@ -2,45 +2,24 @@ import sys
 import subprocess
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
 from pylab import *
 from python import util
-
-def plot_3Dheatmap(alpha_array, beta_array, eta_array ):
-    colo = [alpha_array + beta_array + eta_array]
-
-    # creating figures
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
-
-    # setting color bar
-    color_map = cm.ScalarMappable(cmap=cm.Greens_r)
-    color_map.set_array(colo)
-    
-    # creating the heatmap
-    img = ax.scatter(alpha_array, beta_array, eta_array, marker='s',
-                    s=200, color='green')
-    plt.colorbar(color_map)
-    
-    # adding title and labels
-    ax.set_title("3D Heatmap")
-    ax.set_xlabel('X-axis')
-    ax.set_ylabel('Y-axis')
-    ax.set_zlabel('Z-axis')
-    
-    # displaying plot
-    plt.show()
 
 def run():
     info_file_name = "simulation_info"
     par_dict = util.read_info(info_file_name)
     save_directory = "data/simulation/test/"
 
-    il, jl, kl = 6, 6, 6
-    error_array = np.zeros((il, jl, kl))
-    alpha_array = np.linspace(0.8, 1.0, il)
-    beta_array = np.linspace(9.5, 14, jl)
-    eta_array = np.linspace(5.5, 8.5, kl)
+    l = 2
+    il, jl, kl = l, l, l
+    computetime_array = np.zeros((l, l, l))
+    Verror_array = np.zeros((l, l, l))
+    Werror_array = np.zeros((l, l, l))
+    alpha_array = np.zeros((l, l, l))
+    beta_array = np.zeros((l, l, l))
+    eta_array = np.zeros((l, l, l))
 
     # Begin custom massive loop
     for i in range(il):
@@ -50,18 +29,18 @@ def run():
                 npts = 256
                 par_dict['N']=          500000.0
                 par_dict['rh']=         0.02609300415934458
-                par_dict['alpha']=      alpha_array[i]
-                par_dict['beta']=       9.706
-                par_dict['eta']=        5.573
+                par_dict['alpha']=      0.8 + 0.1*i
+                par_dict['beta']=       9.0 + 0.5*j
+                par_dict['eta']=        5.5 + 0.5*k
                 par_dict['nx']=         npts
                 par_dict['ny']=         npts
                 par_dict['nz']=         npts
                 par_dict['repeat']=     1
                 par_dict['prompt']=     -1
 
-                # alpha_array[i][j][k] = par_dict['alpha']
-                # beta_array[i][j][k] = par_dict['beta']
-                # eta_array[i][j][k] = par_dict['eta']
+                alpha_array[i][j][k] = par_dict['alpha']
+                beta_array[i][j][k] = par_dict['beta']
+                eta_array[i][j][k] = par_dict['eta']
 
                 if(sys.argv[1] == 'run'):
                     for key in par_dict:
@@ -78,18 +57,19 @@ def run():
 
                 if(sys.argv[1] == 'read'):
                     sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
-                    print(sim_dict)
-
-                error_array[i][j][k] = k + kl*(j + i*jl)
+                    computetime_array[i][j][k] = sim_dict['time_compute']
+                    Verror_array[i][j][k] = sim_dict['Verror']
+                    Werror_array[i][j][k] = sim_dict['Werror']
 
     # if(sys.argv[1] == 'run'):
     #     print("Data files moved to " + save_directory)
 
-    if(sys.argv[1] == 'plot'):
-        plot_3Dheatmap(alpha_array, beta_array, eta_array)
+    if(sys.argv[1] == 'read'):
+        util.plot_3Dheatmap(alpha_array, beta_array, eta_array, Verror_array)
+        print(Verror_array)
 
 run()
-
+print(plt.get_backend())
 
 
 
@@ -102,29 +82,6 @@ run()
 # par_dict['alpha']=      0.9352
 # par_dict['beta']=       9.706
 # par_dict['eta']=        5.573
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

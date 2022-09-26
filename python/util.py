@@ -1,3 +1,6 @@
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
 import subprocess
 import os
@@ -77,7 +80,7 @@ def parser(idict):
 
 
 def savefile(idict, directory, mode=1):
-    save_info_name = directory + "simulation_info" + parser(idict)
+    save_info_name = directory + "simulation_info" + parser(idict) + ".dat"
     save_scalar_name = directory + "simulation_scalar" + parser(idict) + ".dat"
     save_data_name = directory + "simulation_data" + parser(idict) + ".dat"
 
@@ -87,3 +90,28 @@ def savefile(idict, directory, mode=1):
         subprocess.call("cp " + "data/simulation/simulation_scalar.dat " + save_scalar_name, shell=True)
     if(mode>2):
         subprocess.call("cp " + "data/simulation/simulation_data.dat " + save_data_name, shell=True)
+
+
+def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array ):
+    # creating figures
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+    cmap_name = 'plasma'
+
+    # setting color bar
+    color_map = cm.ScalarMappable(cmap=cmap_name)
+    color_map.set_array(error_array)
+    
+    # creating the heatmap
+    img = ax.scatter(alpha_array, beta_array, eta_array, marker='s',
+                    s=100, c=error_array, cmap=cmap_name)
+    plt.colorbar(color_map)
+    
+    # adding title and labels
+    ax.set_title("3D Heatmap")
+    ax.set_xlabel('X-axis')
+    ax.set_ylabel('Y-axis')
+    ax.set_zlabel('Z-axis')
+    
+    # displaying plot
+    plt.show()
