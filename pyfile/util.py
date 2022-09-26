@@ -117,8 +117,7 @@ def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array):
     ax.set_xlabel('X-axis')
     ax.set_ylabel('Y-axis')
     ax.set_zlabel('Z-axis')
-    
-    # displaying plot
+    plt.savefig('img/plot.eps', format='eps')
     plt.show()
 
 def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
@@ -136,7 +135,7 @@ def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
         data_array = [alpha_array[i, i, i] for i in range(l)]
         y_array = [error_array[i, i, i] for i in range(l)]
         
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     
     # plot data
@@ -155,8 +154,7 @@ def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
     ax.set_xlabel('data')
     ax.set_ylabel('error')
     ax.set_yscale('log')
-
-    # displaying plot
+    plt.savefig('img/plot'+option+'.eps', format='eps')
     plt.show()
 
 def monoExp(x, m, t):

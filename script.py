@@ -13,7 +13,7 @@ def run():
     info_file_name = "simulation_info"
     save_directory = "data/simulation/20220926_error1/"
 
-    l = 10
+    l = 8
     il, jl, kl = l, l, l
     time_compute_array = np.zeros((l, l, l))
     Verror_array = np.zeros((l, l, l))
@@ -32,9 +32,9 @@ def run():
                 npts = 256
                 par_dict['N']=          500000.0
                 par_dict['rh']=         0.02609300415934458
-                par_dict['alpha']=      0.8 + 0.05*i
-                par_dict['beta']=       9.0 + 0.5*j
-                par_dict['eta']=        5.5 + 0.3*k
+                par_dict['alpha']=      0.8 + 0.07*i
+                par_dict['beta']=       9.0 + 0.6*j
+                par_dict['eta']=        5.5 + 0.35*k
                 # par_dict['alpha']=      alpha_expr(tol)
                 # par_dict['beta']=       beta_expr(tol)
                 # par_dict['eta']=        eta_expr(tol)

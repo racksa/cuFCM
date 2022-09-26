@@ -1,10 +1,10 @@
-N=500000.0
+N=2.0
 rh=0.02609300415934458
-alpha=1.25
-beta=13.5
-eta=8.2
+alpha=1.0
+beta=10.0
+eta=6.0
 nx=256
 ny=256
 nz=256
 repeat=1
-prompt=-1
+prompt=10

@@ -55,6 +55,13 @@ void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* 
                     Real sigmaFCM, Real sigmaFCMsq,
                     Real sigmaFCMdip, Real sigmaFCMdipsq);
 
+__global__
+void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,
+                    Real sigmaFCM,
+                    Real sigmaFCMdip,
+                    Real StokesMob,
+                    Real WT1Mob);
+
 void cufcm_pair_correction_loop(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,
                     int ncell, Real Rrefsq,

@@ -31,6 +31,7 @@ Real percentage_error(Real *data, Real *ref_data, int N){
     return ret;
 }
 
+
 Real percentage_error_magnitude(Real *data, Real *ref_data, int N){
     Real ret = Real(0.0);
 
@@ -54,6 +55,7 @@ Real percentage_error_magnitude(Real *data, Real *ref_data, int N){
     return ret;
 }
 
+
 Real mean(Real *data, int length){
     Real ret = 0;
     for(int i = 0; i<length; i++){
@@ -61,6 +63,7 @@ Real mean(Real *data, int length){
     }
     return ret/Real(length);
 }
+
 
 Real stdv(Real *data, int length){
     Real avg = mean(data, length);

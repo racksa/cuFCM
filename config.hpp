@@ -75,9 +75,10 @@
 // 0 = Dont write to file
 // 1 = Write to file    **default
 
-#define CHECK_ERROR 1
+#define CHECK_ERROR 2
 // 0 = Dont check error
-// 1 = Check error  **default
+// 1 = Check error from file  **default
+// 2 = Check error from random sample
 
 #define USE_DOUBLE_PRECISION false
 

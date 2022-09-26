@@ -520,6 +520,107 @@ void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
 
 }
 
+__global__
+void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,
+                    Real sigmaFCM,
+                    Real sigmaFCMdip,
+                    Real StokesMob,
+                    Real WT1Mob){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    Real gammaVF_FCM = sqrtf((Real)2.0)*sigmaFCM;
+    Real gammaVF_FCMsq = gammaVF_FCM*gammaVF_FCM;
+    Real gammaVTWF_FCM = sqrtf(sigmaFCM*sigmaFCM + sigmaFCMdip*sigmaFCMdip);
+    Real gammaVTWF_FCMsq = gammaVTWF_FCM*gammaVTWF_FCM;
+    Real gammaWT_FCM = sqrtf((Real)2.0)*sigmaFCMdip;
+    Real gammaWT_FCMsq = gammaWT_FCM*gammaWT_FCM;
+    Real vxi = (Real)0.0, vyi = (Real)0.0, vzi = (Real)0.0;
+    Real wxi = (Real)0.0, wyi = (Real)0.0, wzi = (Real)0.0;
+
+    for(int i = index; i < N_truncate; i += stride){
+        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
+
+        for(int j = 0; j < N; j++){
+            if(i != j){
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
+
+                xij = xij - PI2 * (Real) ((int) (xij/PI));
+                yij = yij - PI2 * (Real) ((int) (yij/PI));
+                zij = zij - PI2 * (Real) ((int) (zij/PI));
+
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                Real rij = sqrtf(rijsq);
+
+                Real erfS_VF_FCM = erf(rij/(sqrtf(Real(2.0))*gammaVF_FCM));
+                Real expS_VF_FCM = exp(-rijsq/(Real(2.0)*gammaVF_FCMsq));
+
+                Real erfS_VTWF_FCM = erf(rij/(sqrtf(Real(2.0))*gammaVTWF_FCM));
+                Real expS_VTWF_FCM = exp(-rijsq/(Real(2.0)*gammaVTWF_FCMsq));
+
+                Real erfS_WT_FCM = erf(rij/(sqrtf(Real(2.0))*gammaWT_FCM));
+                Real expS_WT_FCM = exp(-rijsq/(Real(2.0)*gammaWT_FCMsq));
+
+                // ------------VF------------
+                Real Fjdotx = xij*F[3*j + 0] + yij*F[3*j + 1] + zij*F[3*j + 2];
+
+                Real AFCMtemp = A(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                Real BFCMtemp = B(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+
+                Real temp1VF = (AFCMtemp);
+                Real temp2VF = (BFCMtemp);
+
+                // ------------WF+VT------------
+                Real fFCMtemp_VTWF = f(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, expS_VTWF_FCM, erfS_VTWF_FCM);
+
+                Real tempVTWF = (fFCMtemp_VTWF);
+
+                // ------------WT------------
+                Real fFCMtemp_WT = f(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                Real dfdrFCMtemp = dfdr(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+
+                Real Tjdotx = (T[3*j + 0]*xij + T[3*j + 1]*yij + T[3*j + 2]*zij);
+
+                Real temp1WT = (dfdrFCMtemp*rij + Real(2.0)*fFCMtemp_WT);
+                Real temp2WT = dfdrFCMtemp/rij;
+
+                // Summation
+                wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
+
+                vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
+                vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
+                vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+            }
+        }
+
+        vxi += F[3*i + 0]*(StokesMob) ;
+        vyi += F[3*i + 1]*(StokesMob) ;
+        vzi += F[3*i + 2]*(StokesMob) ;
+
+        wxi += T[3*i + 0]*(WT1Mob) ;
+        wyi += T[3*i + 1]*(WT1Mob) ;
+        wzi += T[3*i + 2]*(WT1Mob) ;
+
+        atomicAdd(&V[3*i + 0], vxi);
+        atomicAdd(&V[3*i + 1], vyi);
+        atomicAdd(&V[3*i + 2], vzi);
+        atomicAdd(&W[3*i + 0], wxi);
+        atomicAdd(&W[3*i + 1], wyi);
+        atomicAdd(&W[3*i + 2], wzi);
+
+        
+
+        printf("%d (%.8f %.8f %.8f) (%.8f %.8f %.8f) \n", i, vxi, vyi, vzi, wxi, wyi, wzi);
+
+        return;
+    }
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // CPU code
 ///////////////////////////////////////////////////////////////////////////////

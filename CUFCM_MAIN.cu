@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 	const int grid_size = nx*ny*nz;
 	const int fft_grid_size = (nx/2+1)*ny*nz;
 	const Real dx = PI2/nx;
-	const int ngd = int(alpha*beta);
+	const int ngd = round(alpha*beta);
 	const Real Rc_fac = Real(eta*alpha);
 
 	/* Neighbour list */
@@ -785,6 +785,39 @@ int main(int argc, char** argv) {
 			std::cout << "%V error:\t" << Verror << "\n";
 			std::cout << "%W error:\t" << Werror << "\n";
 		}
+
+	#elif CHECK_ERROR == 2
+		int N_truncate;
+		if(N>1000){
+			N_truncate = int(N*0.001);
+		}
+		else{
+			N_truncate = int(N);
+		}
+		
+	
+		Real* V_validation = malloc_host<Real>(3*N);
+		Real* W_validation = malloc_host<Real>(3*N);
+		Real* V_validation_device = malloc_device<Real>(3*N_truncate);
+		Real* W_validation_device = malloc_device<Real>(3*N_truncate);
+
+		const int num_thread_blocks_N_trunc = (N_truncate + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+		cufcm_compute_formula<<<num_thread_blocks_N_trunc, THREADS_PER_BLOCK>>>
+							(Y_device, V_validation_device, W_validation_device,
+							F_device, T_device, N, N_truncate,
+							sigmaFCM, sigmaFCMdip, StokesMob, WT1Mob);
+
+		copy_to_host<Real>(V_validation_device, V_validation, 3*N_truncate);
+		copy_to_host<Real>(W_validation_device, W_validation, 3*N_truncate);
+		Real Verror = percentage_error_magnitude(V_host, V_validation, N_truncate);
+		Real Werror = percentage_error_magnitude(W_host, W_validation, N_truncate);
+
+		if(prompt > 1){
+			std::cout << "-------\nError\n-------\n";
+			std::cout << "%Y error:\t" << 0 << "\n";
+			std::cout << "%V error:\t" << Verror << "\n";
+			std::cout << "%W error:\t" << Werror << "\n";
+		}
 		
 	#endif
 	///////////////////////////////////////////////////////////////////////////////
@@ -805,7 +838,7 @@ int main(int argc, char** argv) {
 				time_compute,
 				"./data/simulation/simulation_scalar.dat");
 
-		#if CHECK_ERROR == 1
+		#if CHECK_ERROR > 0
 
 			write_error(
 				Verror,
