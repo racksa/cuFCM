@@ -1,19 +1,24 @@
-*.dat
-*.qdrep
-*.sqlite
-*.nvprof
-*.pyc
+**.dat
+**.qdrep
+**.sqlite
+**.nvprof
+**.pyc
+**.o
 
-# Ignore all
-*
+python/__pycache__/*
+bin/*
+other/*
+data/init_data/*
+data/profiler_data/*
+data/simulation/*
+
 # Unignore all with extensions
-!*.*
-!simulation_info
-!incorporate
-!python
-!util
-!data
-!makefile
+# !*/
+# !*.*
+# !simulation_info
+# !incorporate
+# !python
+# !util
+# !data
+# !makefile
 
-/bin
-/other
