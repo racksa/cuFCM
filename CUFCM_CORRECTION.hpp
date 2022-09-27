@@ -60,7 +60,8 @@ void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, i
                     Real sigmaFCM,
                     Real sigmaFCMdip,
                     Real StokesMob,
-                    Real WT1Mob);
+                    Real WT1Mob,
+                    Real hasimoto_ratio);
 
 void cufcm_pair_correction_loop(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
                     int *map, int *head, int *list,

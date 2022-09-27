@@ -525,7 +525,8 @@ void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, i
                     Real sigmaFCM,
                     Real sigmaFCMdip,
                     Real StokesMob,
-                    Real WT1Mob){
+                    Real WT1Mob,
+                    Real hasimoto_ratio){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -587,34 +588,32 @@ void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, i
                 Real temp2WT = dfdrFCMtemp/rij;
 
                 // Summation
-                wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
-                wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
-                wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
+                wxi += (Real)0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                wyi += (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                wzi += (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
 
-                vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
-                vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
-                vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+                vxi += temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
+                vyi += temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
+                vzi += temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
             }
         }
 
-        vxi += F[3*i + 0]*(StokesMob) ;
-        vyi += F[3*i + 1]*(StokesMob) ;
-        vzi += F[3*i + 2]*(StokesMob) ;
+        vxi += F[3*i + 0]*(StokesMob);
+        vyi += F[3*i + 1]*(StokesMob);
+        vzi += F[3*i + 2]*(StokesMob);
 
         wxi += T[3*i + 0]*(WT1Mob) ;
         wyi += T[3*i + 1]*(WT1Mob) ;
         wzi += T[3*i + 2]*(WT1Mob) ;
 
-        atomicAdd(&V[3*i + 0], vxi);
-        atomicAdd(&V[3*i + 1], vyi);
-        atomicAdd(&V[3*i + 2], vzi);
-        atomicAdd(&W[3*i + 0], wxi);
-        atomicAdd(&W[3*i + 1], wyi);
-        atomicAdd(&W[3*i + 2], wzi);
+        V[3*i + 0] += vxi;
+        V[3*i + 1] += vyi;
+        V[3*i + 2] += vzi;
+        W[3*i + 0] += wxi;
+        W[3*i + 1] += wyi;
+        W[3*i + 2] += wzi;        
 
-        
-
-        printf("%d (%.8f %.8f %.8f) (%.8f %.8f %.8f) \n", i, vxi, vyi, vzi, wxi, wyi, wzi);
+        // printf("%d (%.8f %.8f %.8f) (%.8f %.8f %.8f) \n", i, vxi, vyi, vzi, wxi, wyi, wzi);
 
         return;
     }

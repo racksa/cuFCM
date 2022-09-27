@@ -5,6 +5,8 @@
 *.pyc
 *.o
 *.csv
+*.png
+*.eps
 
 python/__pycache__/*
 bin/*

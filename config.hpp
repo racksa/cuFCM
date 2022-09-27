@@ -53,7 +53,6 @@
 // 3 = Block per particle (BPP) recompute
 // 4 = Block per particle (BPP) shared dynamic
 
-
 #define SPATIAL_HASHING 2
 // 0 = Spatial hashing for correction, but without sorting
 // 1 = Spatial hashing and sorting
@@ -75,7 +74,7 @@
 // 0 = Dont write to file
 // 1 = Write to file    **default
 
-#define CHECK_ERROR 2
+#define CHECK_ERROR 1
 // 0 = Dont check error
 // 1 = Check error from file  **default
 // 2 = Check error from random sample

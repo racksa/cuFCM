@@ -11,9 +11,9 @@ from pyfile.util import alpha_expr, beta_expr, eta_expr
 
 def run():
     info_file_name = "simulation_info"
-    save_directory = "data/simulation/20220926_error1/"
+    save_directory = "data/simulation/20220927_error2/"
 
-    l = 8
+    l = 20
     il, jl, kl = l, l, l
     time_compute_array = np.zeros((l, l, l))
     Verror_array = np.zeros((l, l, l))
@@ -22,57 +22,59 @@ def run():
     beta_array = np.zeros((l, l, l))
     eta_array = np.zeros((l, l, l))
 
+    nl = 1
+    npts_array = np.zeros(nl)
+
+    tol = 1.e-3
+
     par_dict = util.read_info(info_file_name)
     # Begin custom massive loop
     for i in range(il):
         for j in range(jl):
             for k in range(kl):
+                for npt in range(nl):
 
-                tol = 0.0005
-                npts = 256
-                par_dict['N']=          500000.0
-                par_dict['rh']=         0.02609300415934458
-                par_dict['alpha']=      0.8 + 0.07*i
-                par_dict['beta']=       9.0 + 0.6*j
-                par_dict['eta']=        5.5 + 0.35*k
-                # par_dict['alpha']=      alpha_expr(tol)
-                # par_dict['beta']=       beta_expr(tol)
-                # par_dict['eta']=        eta_expr(tol)
-                par_dict['nx']=         npts
-                par_dict['ny']=         npts
-                par_dict['nz']=         npts
-                par_dict['repeat']=     1
-                par_dict['prompt']=     -1
+                    npts = 256
+                    par_dict['N']=          500000.0
+                    par_dict['rh']=         0.02609300415934458
+                    par_dict['alpha']=      0.95 + 0.02*i
+                    par_dict['beta']=       8 + 0.3*j
+                    par_dict['eta']=        4.5 + 0.22*k
+                    # par_dict['alpha']=      alpha_expr(tol)
+                    # par_dict['beta']=       beta_expr(tol, par_dict['alpha'])
+                    # par_dict['eta']=        eta_expr(tol)
+                    par_dict['nx']=         npts
+                    par_dict['ny']=         npts
+                    par_dict['nz']=         npts
+                    par_dict['repeat']=     1
+                    par_dict['prompt']=     -1
 
-                alpha_array[i][j][k] = par_dict['alpha']
-                beta_array[i][j][k] = par_dict['beta']
-                eta_array[i][j][k] = par_dict['eta']
+                    alpha_array[i][j][k] = par_dict['alpha']
+                    beta_array[i][j][k] = par_dict['beta']
+                    eta_array[i][j][k] = par_dict['eta']
 
-                if(sys.argv[1] == 'run'):
-                    for key in par_dict:
-                        util.replace(key, str(par_dict[key]), info_file_name)
+                    if(sys.argv[1] == 'run'):
+                        for key in par_dict:
+                            util.replace(key, str(par_dict[key]), info_file_name)
 
-                    subprocess.call("./bin/CUFCM.o", shell=True)
-                    save_info_name, save_scalar_name, save_data_name = util.savefile(par_dict, save_directory, 2)
+                        subprocess.call("./bin/CUFCM.o", shell=True)
+                        save_info_name, save_scalar_name, save_data_name = util.savefile(par_dict, save_directory, 2)
 
-                    sim_dict = util.read_scalar(save_scalar_name)
-                    print("(", str(npts), str(par_dict['alpha']), par_dict['beta'], par_dict['eta'], ") "
-                          "Verror=", str(sim_dict["Verror"]),\
-                          "Werror=", str(sim_dict["Werror"]),\
-                          "time_compute=", str(sim_dict["time_compute"]))
+                        sim_dict = util.read_scalar(save_scalar_name)
+                        print("(", str(npts), str(par_dict['alpha']), par_dict['beta'], par_dict['eta'], ") "
+                            "Verror=", str(sim_dict["Verror"]),\
+                            "Werror=", str(sim_dict["Werror"]),\
+                            "time_compute=", str(sim_dict["time_compute"]))
 
-                if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1'):
-                    sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
-                    time_compute_array[i][j][k] = sim_dict['time_compute']
-                    Verror_array[i][j][k] = sim_dict['Verror']
-                    Werror_array[i][j][k] = sim_dict['Werror']
+                    if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1'):
+                        sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
+                        time_compute_array[i][j][k] = sim_dict['time_compute']
+                        Verror_array[i][j][k] = sim_dict['Verror']
+                        Werror_array[i][j][k] = sim_dict['Werror']
 
-                if(sys.argv[1] == 'clean'):
-                    subprocess.call("rm -f " + save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat", shell=True)
-                    subprocess.call("rm -f " + save_directory + "simulation_info" + util.parser(par_dict) + ".dat", shell=True)
-
-    # if(sys.argv[1] == 'run'):
-    #     print("Data files moved to " + save_directory)
+                    if(sys.argv[1] == 'clean'):
+                        subprocess.call("rm -f " + save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat", shell=True)
+                        subprocess.call("rm -f " + save_directory + "simulation_info" + util.parser(par_dict) + ".dat", shell=True)
 
     if(sys.argv[1] == 'plot1'):
         option = "1n"

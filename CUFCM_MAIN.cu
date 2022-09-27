@@ -78,6 +78,8 @@ int main(int argc, char** argv) {
 	const int ncell = M*M*M;
 	const int mapsize = 13*ncell;
 
+	const Real Volume_frac = (N*4.0/3.0*PI*rh*rh*rh) / (PI2*PI2*PI2);
+
 
 	/* Repeat number */
 	int warmup = 0;
@@ -127,7 +129,7 @@ int main(int argc, char** argv) {
 		const Real WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
 
 	#elif SOLVER_MODE == 0
-	
+
 		/* Monopole */
 		const Real sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
 		const Real sigmaFCMsq = sigmaFCM*sigmaFCM;
@@ -139,6 +141,9 @@ int main(int argc, char** argv) {
 		const Real sigmaFCMdipsq = sigmaFCMdip*sigmaFCMdip;
 		const Real anormFCMdip = 1.0/sqrt(2.0*PI*sigmaFCMdipsq);
 		const Real anormFCMdip2 = 2.0*sigmaFCMdipsq;
+
+		const Real StokesMob = 1.0/(6.0*PI*rh);
+		const Real WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
 
 	#endif
 
@@ -183,10 +188,13 @@ int main(int argc, char** argv) {
 			std::cout << "Beta:\t\t\t" << beta << "\n";
 			std::cout << "Eta:\t\t\t" << eta << "\n";
 		#endif
+		std::cout << "Sigma:\t\t\t" << sigmaFCM << "\n";
+		std::cout << "dx:\t\t\t" << dx<< "\n";
 		std::cout << "Cell number:\t\t" << M << "\n";
 		#if ENABLE_REPEAT == 1
 			std::cout << "Repeat number:\t\t" << repeat << "\n";
 		#endif
+		std::cout << "Volume fraction:\t" << Volume_frac << "\n";
 		
 		std::cout << std::endl;
 	}
@@ -801,17 +809,19 @@ int main(int argc, char** argv) {
 		Real* V_validation_device = malloc_device<Real>(3*N_truncate);
 		Real* W_validation_device = malloc_device<Real>(3*N_truncate);
 
+		Real hasimoto = Real(1.0) - Real(1.7601)*pow(Volume_frac, 1.0/3.0) - Real(1.5593)*pow(Volume_frac, 2.0);
+
 		const int num_thread_blocks_N_trunc = (N_truncate + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 		cufcm_compute_formula<<<num_thread_blocks_N_trunc, THREADS_PER_BLOCK>>>
 							(Y_device, V_validation_device, W_validation_device,
 							F_device, T_device, N, N_truncate,
-							sigmaFCM, sigmaFCMdip, StokesMob, WT1Mob);
+							sigmaFCM, sigmaFCMdip, StokesMob, WT1Mob, hasimoto);
 
 		copy_to_host<Real>(V_validation_device, V_validation, 3*N_truncate);
 		copy_to_host<Real>(W_validation_device, W_validation, 3*N_truncate);
 		Real Verror = percentage_error_magnitude(V_host, V_validation, N_truncate);
 		Real Werror = percentage_error_magnitude(W_host, W_validation, N_truncate);
-
+		
 		if(prompt > 1){
 			std::cout << "-------\nError\n-------\n";
 			std::cout << "%Y error:\t" << 0 << "\n";

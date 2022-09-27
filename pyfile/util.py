@@ -1,5 +1,6 @@
 from cProfile import label
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.special import erf
 
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
@@ -126,8 +127,9 @@ def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
         data_array = alpha_array[:, -1, -1]
         y_array = error_array[:, -1, -1]
     if(option[0] == "2"):
-        data_array = beta_array[-1, :, -1]
+        data_array = np.round(beta_array[-1, :, -1]*1.59)
         y_array = error_array[-1, :, -1]
+        print(y_array)
     if(option[0] == "3"):
         data_array = eta_array[-1, -1, :]
         y_array = error_array[-1, -1, :]
@@ -142,12 +144,22 @@ def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
     ax.plot(data_array, y_array, marker='o', label="data")
 
     if(option[1] == "f"):
-        params, cv = curve_fit(monoExp, data_array, y_array, (1, 10))
-        m, t = params
-        print(m, t)
         x_fit = np.linspace(data_array[0], data_array[-1], 20)
-        ax.plot(x_fit, monoExp(x_fit, m, t), label="fit curve")
-        ax.legend()
+        if(option[0] == "1"):
+            params, cv = curve_fit(monoGauss, data_array, y_array, (1, 10))
+            m, t = params
+            ax.plot(x_fit, monoGauss(x_fit, m, t), label="fit curve")
+        if(option[0] == "3"):
+            params, cv = curve_fit(monoExp, data_array, y_array, (1, 10))
+            m, t = params
+            ax.plot(x_fit, monoExp(x_fit, m, t), label="fit curve")
+        if(option[0] == "4"):
+            params, cv = curve_fit(monoExp, data_array, y_array, (1, 10))
+            m, t = params
+            ax.plot(x_fit, monoExp(x_fit, m, t), label="fit curve")
+        print(params)
+
+    ax.legend()
 
     # adding title and labels
     ax.set_title("Fit")
@@ -158,13 +170,23 @@ def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
     plt.show()
 
 def monoExp(x, m, t):
-    return m * np.exp(-t * x**2)
+    return m*np.exp(-t * x)
+
+def monoGauss(x, m, t):
+    return m*np.exp(-t * x**2)
 
 def alpha_expr(tol):
-    return np.sqrt(np.log10(tol/3.25)/(-9.48))
+    return np.sqrt(np.log10(tol/5.071050110367754)/(-10.224838558167573))
 
-def beta_expr(tol):
-    return 9.0 + (alpha_expr(tol) - 0.8)*10
+def beta_expr(tol, alpha):
+    tol_list = np.array([2.7155083e-01, 7.4106760e-02, 5.9791320e-02, 1.2188930e-02,
+                         8.8945900e-03, 1.3305500e-03, 8.9943000e-04, 9.7620000e-05, 
+                         6.3130000e-05, 8.0200000e-06, 6.7500000e-06, 5.7200000e-06])
+    ngd_list = np.array([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+    for i, val in enumerate(tol_list):
+        if tol > val:
+            return ngd_list[i]/alpha
+    return ngd_list[-1]/alpha
 
 def eta_expr(tol):
-    return 5.5 + (alpha_expr(tol) - 0.8)*6
+    return np.sqrt(np.log10(tol/6.300589575773176)/(-1.9832215241494984))
