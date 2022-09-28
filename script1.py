@@ -11,7 +11,7 @@ from pyfile.util import alpha_expr, beta_expr, eta_expr
 
 def run():
     info_file_name = "simulation_info"
-    save_directory = "data/simulation/20220928_npts1/"
+    save_directory = "data/simulation/20220927_error2/"
 
     l = 20
     il, jl, kl = l, l, l
@@ -22,39 +22,35 @@ def run():
     beta_array = np.zeros((l, l, l))
     eta_array = np.zeros((l, l, l))
 
-    nl = 200
+    nl = 1
     npts_array = np.zeros(nl)
-    time_compute_npts_array = np.zeros(nl)
-    Verror_npts_array = np.zeros(nl)
-    Werror_npts_array = np.zeros(nl)
 
-    tol_list = np.array([5.e-3, 1.e-3, 5.e-4, 1.e-4, 5.e-5, 1.e-5])
+    tol_list = np.array([.5e-3, 1e-3, .5e-4, 1e-4, .5e-5, 1e-5])
 
     par_dict = util.read_info(info_file_name)
     # Begin custom massive loop
-    for i in range(1):
-        for j in range(1):
-            for k in range(1):
+    for i in range(l):
+        for j in range(l):
+            for k in range(l):
                 for npt in range(nl):
 
-                    npts = 100 + npt*2
+                    npts = 256
                     par_dict['N']=          500000.0
                     par_dict['rh']=         0.02609300415934458
-                    # par_dict['alpha']=      0.95 + 0.02*i
-                    # par_dict['beta']=       8 + 0.3*j
-                    # par_dict['eta']=        4.5 + 0.22*k
-                    par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
+                    par_dict['alpha']=      0.95 + 0.02*i
+                    par_dict['beta']=       8 + 0.3*j
+                    par_dict['eta']=        4.5 + 0.22*k
+                    # par_dict['alpha'], par_dict['beta'], beta_expr(tol, par_dict['alpha']) = par_given_error(tol_list[k])
+                    # par_dict['eta']=        eta_expr(tol)
                     par_dict['nx']=         npts
                     par_dict['ny']=         npts
                     par_dict['nz']=         npts
-                    par_dict['repeat']=     40
+                    par_dict['repeat']=     1
                     par_dict['prompt']=     -1
 
                     alpha_array[i][j][k] = par_dict['alpha']
                     beta_array[i][j][k] = par_dict['beta']
                     eta_array[i][j][k] = par_dict['eta']
-
-                    npts_array[npt] = npts
 
                     if(sys.argv[1] == 'run'):
                         for key in par_dict:
@@ -69,16 +65,11 @@ def run():
                             "Werror=", str(sim_dict["Werror"]),\
                             "time_compute=", str(sim_dict["time_compute"]))
 
-                    if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1' or sys.argv[1] == 'plot_npts'):
+                    if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1'):
                         sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
-                        if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1'):
-                            time_compute_array[i][j][k] = sim_dict['time_compute']
-                            Verror_array[i][j][k] = sim_dict['Verror']
-                            Werror_array[i][j][k] = sim_dict['Werror']
-                        if(sys.argv[1] == 'plot_npts'):
-                            time_compute_npts_array[npt] = sim_dict['time_compute']
-                            Verror_npts_array[npt] = sim_dict['Verror']
-                            Werror_npts_array[npt] = sim_dict['Werror']
+                        time_compute_array[i][j][k] = sim_dict['time_compute']
+                        Verror_array[i][j][k] = sim_dict['Verror']
+                        Werror_array[i][j][k] = sim_dict['Werror']
 
                     if(sys.argv[1] == 'clean'):
                         subprocess.call("rm -f " + save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat", shell=True)
@@ -97,9 +88,6 @@ def run():
         if(len(sys.argv)>3):
             option[1] = float(sys.argv[3])
         util.plot_3Dheatmap(alpha_array, beta_array, eta_array, Verror_array, time_compute_array, option)
-
-    if(sys.argv[1] == 'plot_npts'):
-        util.plot_npts(npts_array, Verror_npts_array, time_compute_npts_array)
 
 run()
 

@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 
 
 	/* Repeat number */
-	int warmup = 0;
+	int warmup = 0.2*repeat;
 
 	#if SOLVER_MODE == 1
 

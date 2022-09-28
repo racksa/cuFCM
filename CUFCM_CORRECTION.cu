@@ -592,15 +592,15 @@ void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, i
                 wyi += (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
                 wzi += (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
 
-                vxi += temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
-                vyi += temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
-                vzi += temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+                vxi += temp1VF*F[3*j + 0]*hasimoto_ratio + temp2VF*xij*Fjdotx*hasimoto_ratio + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
+                vyi += temp1VF*F[3*j + 1]*hasimoto_ratio + temp2VF*yij*Fjdotx*hasimoto_ratio + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
+                vzi += temp1VF*F[3*j + 2]*hasimoto_ratio + temp2VF*zij*Fjdotx*hasimoto_ratio + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
             }
         }
 
-        vxi += F[3*i + 0]*(StokesMob);
-        vyi += F[3*i + 1]*(StokesMob);
-        vzi += F[3*i + 2]*(StokesMob);
+        vxi += F[3*i + 0]*(StokesMob)*hasimoto_ratio;
+        vyi += F[3*i + 1]*(StokesMob)*hasimoto_ratio;
+        vzi += F[3*i + 2]*(StokesMob)*hasimoto_ratio;
 
         wxi += T[3*i + 0]*(WT1Mob) ;
         wyi += T[3*i + 1]*(WT1Mob) ;
