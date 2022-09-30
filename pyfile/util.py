@@ -275,5 +275,5 @@ def fcm_par_given_error(tol, rh):
     beta_list = np.array([7.2, 8.0, 8.8, 9.6 ])
     for i, val in enumerate(tol_list):
         if tol >= val:
-            return alpha_list[i], beta_list[i], eta_list[i]
+            return alpha_list[i], beta_list[i], 0
     return alpha_list[-1], beta_list[-1], 0

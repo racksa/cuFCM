@@ -14,19 +14,11 @@
 
 
 #include "config.hpp"
-#if CONFIG_TYPE == 0
-	#include "config_fcm.hpp"
-#endif
-#include "CUFCM_FCM.cuh"
-#include "CUFCM_CORRECTION.cuh"
+
 #include "CUFCM_data.cuh"
 #include "CUFCM_SOLVER.cuh"
 
 #include "util/cuda_util.hpp"
-#include "util/CUFCM_linklist.hpp"
-#include "util/CUFCM_print.hpp"
-// #include "util/CUFCM_hashing.hpp"
-#include "util/maths_util.hpp"
 
 
 int main(int argc, char** argv) {

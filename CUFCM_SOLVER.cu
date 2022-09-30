@@ -14,9 +14,6 @@
 
 
 #include "config.hpp"
-#if CONFIG_TYPE == 0
-	#include "config_fcm.hpp"
-#endif
 #include "CUFCM_FCM.cuh"
 #include "CUFCM_CORRECTION.cuh"
 #include "CUFCM_data.cuh"
@@ -81,30 +78,17 @@ void FCM_solver::prompt_info() {
 
 __host__
 void FCM_solver::init_config(){
-    #if CONFIG_TYPE == 0
-            N = NP;
-            rh = RH;
-            alpha = ALPHA;
-            beta = BETA;
-            eta = ETA;
-            nx = NX;
-            ny = NY;
-            nz = NZ;
-            repeat = 1;
-            prompt = 10;
-        #elif CONFIG_TYPE == 1
-            read_config(values, "simulation_info");
-            N = values[0];
-            rh = values[1];
-            alpha = values[2];
-            beta = values[3];
-            eta = values[4];
-            nx = values[5];
-            ny = values[6];
-            nz = values[7];
-            repeat = values[8];
-            prompt = values[9];
-        #endif
+        read_config(values, "simulation_info");
+        N = values[0];
+        rh = values[1];
+        alpha = values[2];
+        beta = values[3];
+        eta = values[4];
+        nx = values[5];
+        ny = values[6];
+        nz = values[7];
+        repeat = values[8];
+        prompt = values[9];
 
     /* Deduced FCM parameters */
         grid_size = nx*ny*nz;

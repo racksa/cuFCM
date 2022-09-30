@@ -40,7 +40,7 @@ def run():
                     par_dict['N']=          500000.0
                     par_dict['rh']=         0.02609300415934458
                     par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
-                    # par_dict['alpha'], par_dict['beta'], par_dict['eta'] = fcm_par_given_error(1.e-3)
+                    # par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.fcm_par_given_error(1.e-3, par_dict['rh'])
                     npts = 270
                     par_dict['nx']=         npts
                     par_dict['ny']=         npts

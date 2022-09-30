@@ -5,7 +5,6 @@
 #include <cufft.h>
 
 #include "config.hpp"
-#include "config_fcm.hpp"
 #include "CUFCM_FCM.cuh"
 #include <cub/cub.cuh>
 
@@ -61,21 +60,21 @@ void cufcm_precompute_gauss(int N, int ngd, Real* Y,
         // old function
         for(i = 0; i < ngd; i++){
             xg = xc - ngdh + (i); 
-            indx[ngd*np + i] = xg - NX * ((int) floor( ((Real) xg) / ((Real) NX)));
+            indx[ngd*np + i] = xg - nx * ((int) floor( ((Real) xg) / ((Real) nx)));
             xx = ((Real) xg)*dx-Y[3*np + 0];
             gaussx[ngd*np + i] = E3*int_pow(E2x,i+1-ngdh)*gaussgrid[i];
             grad_gaussx_dip[ngd*np + i] = - xx / sigmadipsq;
             xdis[ngd*np + i] = xx*xx;
 
             yg = yc - ngdh + (i);
-            indy[ngd*np + i] = yg - NX * ((int) floor( ((Real) yg) / ((Real) NX)));
+            indy[ngd*np + i] = yg - ny * ((int) floor( ((Real) yg) / ((Real) ny)));
             xx = ((Real) yg)*dx - Y[3*np + 1];
             gaussy[ngd*np + i] = int_pow(E2y,i+1-ngdh)*gaussgrid[i];
             grad_gaussy_dip[ngd*np + i] = - xx / sigmadipsq;
             ydis[ngd*np + i] = xx*xx;
 
             zg = zc - ngdh + (i);
-            indz[ngd*np + i] = zg - NX * ((int) floor( ((Real) zg) / ((Real) NX)));
+            indz[ngd*np + i] = zg - nz * ((int) floor( ((Real) zg) / ((Real) nz)));
             xx = ((Real) zg)*dx-Y[3*np + 2];
             gaussz[ngd*np + i] = int_pow(E2z,i+1-ngdh)*gaussgrid[i];
             grad_gaussz_dip[ngd*np + i] = - xx / sigmadipsq;
@@ -147,7 +146,7 @@ void cufcm_mono_dipole_distribution_tpp_register(myCufftReal *fx, myCufftReal *f
                     g21xx = g21*xx;
                     g31xx = g31*xx;
                 
-                    ind = ii + jj*NX + kk*NX*NY;
+                    ind = ii + jj*nx + kk*nx*ny;
 
                     r2 = xx2 + yy2 + zz2;
                     temp = gx*gy*gz;
@@ -237,7 +236,7 @@ void cufcm_mono_dipole_distribution_tpp_recompute(myCufftReal *fx, myCufftReal *
                     g21xx = g21*xx;
                     g31xx = g31*xx;
                 
-                    ind = ii + jj*NX + kk*NX*NY;
+                    ind = ii + jj*nx + kk*nx*ny;
 
                     r2 = xx2 + yy2 + zz2;
                     temp = gx*gy*gz;
@@ -418,11 +417,11 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
             Real grady = - yy / sigmadipsq;
             Real gradz = - zz / sigmadipsq;
 
-            int ii = xg - NX * floor( xg / NX);
-            int jj = yg - NY * floor( yg / NY);
-            int kk = zg - NZ * floor( zg / NZ);
+            int ii = xg - nx * floor( xg / nx);
+            int jj = yg - ny * floor( yg / ny);
+            int kk = zg - nz * floor( zg / nz);
 
-            int ind = ii + jj*NX + kk*NX*NY;
+            int ind = ii + jj*nx + kk*nx*ny;
             Real r2 = xx*xx + yy*yy + zz*zz;
             Real temp = gx*gy*gz;
             Real temp2 = (Real)0.5 * pdmag / sigmasq;
@@ -660,7 +659,7 @@ void cufcm_particle_velocities_tpp_register(myCufftReal *ux, myCufftReal *uy, my
                     xx = grad_gaussx_dip[ngd*np + i];
                     xx2 = xdis[ngd*np + i];
 
-                    ind = ii + jj*NX + kk*NX*NY;
+                    ind = ii + jj*nx + kk*nx*ny;
 
                     r2 = xx2 + yy2 + zz2;
                     temp = gx*gy*gz;
@@ -738,7 +737,7 @@ void cufcm_particle_velocities_tpp_recompute(myCufftReal *ux, myCufftReal *uy, m
                     gx = anorm*exp(-xx*xx/anorm2)*norm;
                     xx = - xx / sigmadipsq;
                     
-                    ind = ii + jj*NX + kk*NX*NY;
+                    ind = ii + jj*nx + kk*nx*ny;
 
                     r2 = xx2 + yy2 + zz2;
                     temp = gx*gy*gz;
@@ -951,7 +950,7 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
             grady = - yy / sigmadipsq;
             gradz = - zz / sigmadipsq;
             
-            ind = ii + jj*NX + kk*NX*NY;
+            ind = ii + jj*nx + kk*nx*ny;
             r2 = xx*xx + yy*yy + zz*zz;
             temp = gx*gy*gz*norm;
             temp5 = (1 + temp3*r2 - temp4);
@@ -1392,21 +1391,21 @@ void cufcm_precompute_gauss_loop(int N, int ngd, Real* Y,
         // old function
         for(i = 0; i < ngd; i++){
             xg = xc - ngdh + (i); 
-            indx[ngd*np + i] = xg - NX * ((int) floor( ((Real) xg) / ((Real) NX)));
+            indx[ngd*np + i] = xg - nx * ((int) floor( ((Real) xg) / ((Real) nx)));
             xx = ((Real) xg)*dx-Y[3*np + 0];
             gaussx[ngd*np + i] = E3*int_pow(E2x,i+1-ngdh)*gaussgrid[i];
             grad_gaussx_dip[ngd*np + i] = - xx / sigmadipsq;
             xdis[ngd*np + i] = xx*xx;
 
             yg = yc - ngdh + (i);
-            indy[ngd*np + i] = yg - NX * ((int) floor( ((Real) yg) / ((Real) NX)));
+            indy[ngd*np + i] = yg - nx * ((int) floor( ((Real) yg) / ((Real) nx)));
             xx = ((Real) yg)*dx - Y[3*np + 1];
             gaussy[ngd*np + i] = int_pow(E2y,i+1-ngdh)*gaussgrid[i];
             grad_gaussy_dip[ngd*np + i] = - xx / sigmadipsq;
             ydis[ngd*np + i] = xx*xx;
 
             zg = zc - ngdh + (i);
-            indz[ngd*np + i] = zg - NX * ((int) floor( ((Real) zg) / ((Real) NX)));
+            indz[ngd*np + i] = zg - nx * ((int) floor( ((Real) zg) / ((Real) nx)));
             xx = ((Real) zg)*dx-Y[3*np + 2];
             gaussz[ngd*np + i] = int_pow(E2z,i+1-ngdh)*gaussgrid[i];
             grad_gaussz_dip[ngd*np + i] = - xx / sigmadipsq;
@@ -1474,7 +1473,7 @@ void cufcm_mono_dipole_distribution_tpp_loop(myCufftReal *fx, myCufftReal *fy, m
                     g23zz = g23*zz;
                     g33zz = g33*zz;
 
-                    ind = ii + jj*NX + kk*NX*NY;
+                    ind = ii + jj*nx + kk*nx*ny;
 
                     r2 = xx2 + yy2 + zz2;
                     temp = gx*gy*gz;
@@ -1530,7 +1529,7 @@ void cufcm_particle_velocities_loop(myCufftReal *ux, myCufftReal *uy, myCufftRea
                     zz = grad_gaussz_dip[ngd*np + k];
                     zz2 = zdis[ngd*np + k];
 
-                    ind = ii + jj*NX + kk*NX*NY;
+                    ind = ii + jj*nx + kk*nx*ny;
 
                     r2 = xx2 + yy2 + zz2;
                     temp = gx*gy*gz;
@@ -1595,10 +1594,10 @@ void cufcm_test_force(myCufftReal* fx, myCufftReal* fy, myCufftReal* fz, Real nx
 }
 
 void cufcm_test_force_loop(myCufftReal* fx, myCufftReal* fy, myCufftReal* fz, Real nx, Real ny, Real nz){
-    for(int k=0; k<NZ; k++){
-        for(int j=0; j<NY; j++){
-            for(int i=0; k<NX; i++){
-                const int index = i + j*NX + k*NX*NY;
+    for(int k=0; k<nz; k++){
+        for(int j=0; j<ny; j++){
+            for(int i=0; k<nx; i++){
+                const int index = i + j*nx + k*nx*ny;
 
                 fx[index] = 1 + 3*(i+j*k) + 7*(j+2) + 3*(k+2);
                 fy[index] = 1 + 2*(i+j+k) + 3*(j*j) + 2*(k*i);
@@ -1612,10 +1611,10 @@ __global__
 void normalise_array(myCufftReal* ux, myCufftReal* uy, myCufftReal* uz, Real nx, Real ny, Real nz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
-    const Real temp = 1.0/((Real)GRID_SIZE);
+    const Real temp = 1.0/((Real)nx*ny*nz);
 
     // Stay in the loop as long as any thread in the block still needs to compute velocities.
-    for(int i = index; i < GRID_SIZE; i += stride){
+    for(int i = index; i < nx*ny*nz; i += stride){
         ux[i] *= temp;
         uy[i] *= temp;
         uz[i] *= temp;

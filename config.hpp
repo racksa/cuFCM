@@ -23,10 +23,6 @@
 // 2 = 10^-5
 // 3 = 10^-6
 
-#define CONFIG_TYPE 1
-// 0 = Config FCM at compile time
-// 1 = Read config at run time
-
 #define ENABLE_REPEAT 1
 // 0 = Dont repeat
 // 1 = Reapeat measurement
@@ -101,4 +97,5 @@
 #endif
 
 #define NGD_UAMMD 9
+#define NGD 9
 #endif
