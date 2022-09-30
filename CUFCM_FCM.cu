@@ -6,7 +6,7 @@
 
 #include "config.hpp"
 #include "config_fcm.hpp"
-#include "CUFCM_FCM.hpp"
+#include "CUFCM_FCM.cuh"
 #include <cub/cub.cuh>
 
 
@@ -549,7 +549,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
 __global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
                       myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
-                      Real* q, Real* qpad, Real* qsq, Real* qpadsq, int nx, int ny, int nz){
+                      int nx, int ny, int nz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -563,11 +563,19 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         const int indj = (i - indk*(ny*fft_nx))/fft_nx;
         const int indi = i - indk*(ny*fft_nx) - indj*fft_nx;
 
-        Real q1 = q[indi];
-        Real q2 = q[indj];
-        Real q3 = q[indk];
-        Real qq = qsq[indi] + qsq[indj] + qsq[indk];
+        // Real q1 = q[indi];
+        // Real q2 = q[indj];
+        // Real q3 = q[indk];
+        // Real qq = qsq[indi] + qsq[indj] + qsq[indk];
+        // Real norm = (Real)1.0/(qq);
+
+        int nptsh = nx/2;
+        Real q1 = (indi < nptsh || indi == nptsh)? Real(indi) : Real(indi - nx);
+        Real q2 = (indj < nptsh || indj == nptsh)? Real(indj) : Real(indj - ny);
+        Real q3 = (indk < nptsh || indk == nptsh)? Real(indk) : Real(indk - nz);
+        Real qq = q1*q1 + q2*q2 + q3*q3;
         Real norm = (Real)1.0/(qq);
+
 
         Real f1_re = fk_x[i].x;
         Real f1_im = fk_x[i].y;
@@ -1088,9 +1096,9 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
             Vx += ux_temp*temp5;
             Vy += uy_temp*temp5;
             Vz += uz_temp*temp5;
-            Wx += (Real)-0.5*(uz_temp*grady - uy_temp*gradz);
-            Wy += (Real)-0.5*(ux_temp*gradz - uz_temp*gradx);
-            Wz += (Real)-0.5*(uy_temp*gradx - ux_temp*grady);
+            Wx += Real(-0.5)*(uz_temp*grady - uy_temp*gradz);
+            Wy += Real(-0.5)*(ux_temp*gradz - uz_temp*gradx);
+            Wz += Real(-0.5)*(uy_temp*gradx - ux_temp*grady);
         }
         
         // Reduction

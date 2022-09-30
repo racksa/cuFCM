@@ -1,4 +1,5 @@
 #pragma once
+#include "config.hpp"
 
 __device__ __host__
 Real f(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);

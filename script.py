@@ -11,9 +11,9 @@ from pyfile.util import alpha_expr, beta_expr, eta_expr
 
 def run():
     info_file_name = "simulation_info"
-    save_directory = "data/simulation/20220928_npts1/"
+    save_directory = "data/simulation/20220929_fcm_error1/"
 
-    l = 20
+    l = 1
     il, jl, kl = l, l, l
     time_compute_array = np.zeros((l, l, l))
     Verror_array = np.zeros((l, l, l))
@@ -22,7 +22,7 @@ def run():
     beta_array = np.zeros((l, l, l))
     eta_array = np.zeros((l, l, l))
 
-    nl = 200
+    nl = 1
     npts_array = np.zeros(nl)
     time_compute_npts_array = np.zeros(nl)
     Verror_npts_array = np.zeros(nl)
@@ -37,18 +37,16 @@ def run():
             for k in range(1):
                 for npt in range(nl):
 
-                    npts = 100 + npt*2
                     par_dict['N']=          500000.0
                     par_dict['rh']=         0.02609300415934458
-                    # par_dict['alpha']=      0.95 + 0.02*i
-                    # par_dict['beta']=       8 + 0.3*j
-                    # par_dict['eta']=        4.5 + 0.22*k
                     par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
+                    # par_dict['alpha'], par_dict['beta'], par_dict['eta'] = fcm_par_given_error(1.e-3)
+                    npts = 270
                     par_dict['nx']=         npts
                     par_dict['ny']=         npts
                     par_dict['nz']=         npts
-                    par_dict['repeat']=     40
-                    par_dict['prompt']=     -1
+                    par_dict['repeat']=     100
+                    par_dict['prompt']=     10
 
                     alpha_array[i][j][k] = par_dict['alpha']
                     beta_array[i][j][k] = par_dict['beta']

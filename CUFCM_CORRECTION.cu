@@ -4,7 +4,7 @@
 #include <cufft.h>
 
 #include "config.hpp"
-#include "CUFCM_CORRECTION.hpp"
+#include "CUFCM_CORRECTION.cuh"
 
 __device__ __host__
 Real f(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){

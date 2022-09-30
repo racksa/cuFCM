@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-Real percentage_error(Real *data, Real *ref_data, int N){
+inline Real percentage_error(Real *data, Real *ref_data, int N){
     Real ret;
     Real x_ref, y_ref, z_ref;
     Real x, y, z;
@@ -32,7 +32,7 @@ Real percentage_error(Real *data, Real *ref_data, int N){
 }
 
 
-Real percentage_error_magnitude(Real *data, Real *ref_data, int N){
+inline Real percentage_error_magnitude(Real *data, Real *ref_data, int N){
     Real ret = Real(0.0);
 
     for(int np = 0; np < N; np++){
@@ -56,7 +56,7 @@ Real percentage_error_magnitude(Real *data, Real *ref_data, int N){
 }
 
 
-Real mean(Real *data, int length){
+inline Real mean(Real *data, int length){
     Real ret = 0;
     for(int i = 0; i<length; i++){
         ret += data[i];
@@ -65,7 +65,7 @@ Real mean(Real *data, int length){
 }
 
 
-Real stdv(Real *data, int length){
+inline Real stdv(Real *data, int length){
     Real avg = mean(data, length);
     Real ret = 0;
     for(int i = 0; i<length; i++){

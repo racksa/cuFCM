@@ -32,7 +32,7 @@ void read_config(Real *values, const char *file_name);
 __global__
 void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, int pad, Real nx, Real ny, Real nz);
 
-void init_pos(Real *Y, Real rad, int N);
+void init_pos_random_check(Real *Y, Real rad, int N);
 
 __global__
 void init_pos_random_overlapping(Real *Y, int N, curandState *states);
@@ -42,7 +42,7 @@ void init_pos_lattice_random(Real *Y, Real rad, int N, curandState *states);
 
 void init_force(Real *F, Real rad, int N);
 
-void init_pos_gpu(Real *Y, Real rad, int N);
+void init_pos_random_check_gpu(Real *Y, Real rad, int N);
 
 __global__
 void check_overlap(Real x, Real y, Real z, Real *Y, Real rad, int np, int *check);

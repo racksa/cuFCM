@@ -135,24 +135,24 @@ void copy_to_host_async(const T* from, T* to, size_t n, cudaStream_t stream=NULL
 ///////////////////////////////////////////////////////////////////////////////
 
 // global variables for managing access to profiler
-bool is_running_nvprof = false;
-std::mutex gpu_profiler_mutex;
+// bool is_running_nvprof = false;
+// std::mutex gpu_profiler_mutex;
 
-void start_nvprof() {
-    std::lock_guard<std::mutex> guard(gpu_profiler_mutex);
-    if (!is_running_nvprof) {
-        cudaProfilerStart();
-    }
-    is_running_nvprof = true;
-}
+// void start_nvprof() {
+//     std::lock_guard<std::mutex> guard(gpu_profiler_mutex);
+//     if (!is_running_nvprof) {
+//         cudaProfilerStart();
+//     }
+//     is_running_nvprof = true;
+// }
 
-void stop_nvprof() {
-    std::lock_guard<std::mutex> guard(gpu_profiler_mutex);
-    if (is_running_nvprof) {
-        cudaProfilerStop();
-    }
-    is_running_nvprof = false;
-}
+// void stop_nvprof() {
+//     std::lock_guard<std::mutex> guard(gpu_profiler_mutex);
+//     if (is_running_nvprof) {
+//         cudaProfilerStop();
+//     }
+//     is_running_nvprof = false;
+// }
 
 
 #endif

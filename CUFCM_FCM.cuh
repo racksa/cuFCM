@@ -57,7 +57,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
 __global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
                       myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
-                      Real* q, Real* qpad, Real* qsq, Real* qpadsq, int nx, int ny, int nz);
+                      int nx, int ny, int nz);
 
 __global__
 void cufcm_particle_velocities_tpp_register(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz, int N,

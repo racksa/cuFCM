@@ -1,4 +1,4 @@
-#include "CUFCM_data.hpp"
+#include "CUFCM_data.cuh"
 #include <cstdio>
 #include <iostream>
 #include <fstream>
@@ -72,19 +72,19 @@ void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name
 void write_init_data(Real *Y, Real *F, Real *T, int N){
     FILE *pfile;
     printf("Writing position data...\n");
-    pfile = fopen("./init_data/new/pos_data.dat", "w");
+    pfile = fopen("./data/init_data/new/pos_data.dat", "w");
     for(int i = 0; i < N; i++){
         fprintf(pfile, "%.8f %.8f %.8f\n", Y[3*i + 0], Y[3*i + 1], Y[3*i + 2]);
     }
     fclose(pfile);
     printf("Writing force data...\n");
-    pfile = fopen("./init_data/new/force_data.dat", "w");
+    pfile = fopen("./data/init_data/new/force_data.dat", "w");
     for(int i = 0; i < N; i++){
         fprintf(pfile, "%.8f %.8f %.8f\n", F[3*i + 0], F[3*i + 1], F[3*i + 2]);
     }
     fclose(pfile);
     printf("Writing torque data...\n");
-    pfile = fopen("./init_data/new/torque_data.dat", "w");
+    pfile = fopen("./data/init_data/new/torque_data.dat", "w");
     for(int i = 0; i < N; i++){
         fprintf(pfile, "%.8f %.8f %.8f\n", T[3*i + 0], T[3*i + 1], T[3*i + 2]);
     }
@@ -151,7 +151,7 @@ void read_config(Real *values, const char *file_name){
     }
 }
 
-void init_pos(Real *Y, Real rad, int N){
+void init_pos_random_check(Real *Y, Real rad, int N){
     int check = 0;
     Real rsq = 0.0, xi = 0.0, yi = 0.0, zi = 0.0, xij = 0.0, yij = 0.0, zij = 0.0, rsqcheck = 4.0*rad*rad;
 
@@ -189,7 +189,7 @@ void init_pos(Real *Y, Real rad, int N){
     return;
 }
 
-void init_pos_gpu(Real *Y, Real rad, int N){
+void init_pos_random_check_gpu(Real *Y, Real rad, int N){
 
     Real x, y, z;
     Real rsqcheck = 4.0*rad*rad;

@@ -138,13 +138,13 @@ def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array, time_compute
         cbar.set_label("Compute time")
         ax.set_title("Compute time for Error=" + str(option[1]))
 
-    
     # adding title and labels
     ax.set_xlabel(r'$\alpha$')
     ax.set_ylabel(r'$\beta$')
     ax.set_zlabel(r'$\eta$')
     plt.savefig('img/'+save_name, format='eps')
     plt.show()
+
 
 def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
     l = len(alpha_array[:, 0, 0])
@@ -193,6 +193,7 @@ def plot_1D_fit(alpha_array, beta_array, eta_array, error_array, option="1n"):
     plt.savefig('img/plot'+option+'.eps', format='eps')
     plt.show()
 
+
 def plot_npts(npts_array, error_array, time_compute_array):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
@@ -219,6 +220,7 @@ def plot_npts(npts_array, error_array, time_compute_array):
     ax2.set_ylabel('Compute time s')
     plt.savefig('img/npts.eps', format='eps')
     plt.show()
+
 
 def layer_array(error_array, tol):
     ret = np.ones(np.shape(error_array))
@@ -266,3 +268,12 @@ def par_given_error(tol):
         if tol >= val:
             return alpha_list[i], beta_list[i], eta_list[i]
     return alpha_list[-1], beta_list[-1], eta_list[-1]
+
+def fcm_par_given_error(tol, rh):
+    tol_list = np.array([5.e-3, 1.e-3, 1.e-4, 1.e-5])
+    alpha_list = np.array([0.98, 1.1, 1.22, 1.31])
+    beta_list = np.array([7.2, 8.0, 8.8, 9.6 ])
+    for i, val in enumerate(tol_list):
+        if tol >= val:
+            return alpha_list[i], beta_list[i], eta_list[i]
+    return alpha_list[-1], beta_list[-1], 0

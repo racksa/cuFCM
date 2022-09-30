@@ -38,9 +38,8 @@ python3 script.py run
 ```bash
 python3 script.py plot3 #mode #tol
 ```
-Different
 \#mode=1: plot error heatmap
 
 \#mode=2: plot compute time
 
-For \#mode=2, an additional argument \#tol can be passed to filter simulations of the specitied tol.
+For \#mode=2, an additional argument \#tol can be passed to filter simulations of the tol.

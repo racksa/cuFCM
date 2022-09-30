@@ -1,10 +1,10 @@
-N=1
+N=500000.0
 rh=0.02609300415934458
 alpha=0.97
 beta=8.9
 eta=4.94
-nx=494
-ny=494
-nz=494
-repeat=1
+nx=270
+ny=270
+nz=270
+repeat=100
 prompt=10

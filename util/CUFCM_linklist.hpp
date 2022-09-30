@@ -15,12 +15,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 /* Hash functions */
 __host__ __device__
-uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M){
+inline uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M){
 	return xi + (yi + zi*M)*M;
 }
 
 __host__ __device__
-uint64_t morton_encode_for(unsigned int x, unsigned int y, unsigned int z, int M){
+inline uint64_t morton_encode_for(unsigned int x, unsigned int y, unsigned int z, int M){
 	uint64_t answer = 0;
 	for (uint64_t i = 0; i < (sizeof(uint64_t)* CHAR_BIT)/3; ++i) {
 		answer |= ((x & ((uint64_t)1 << i)) << 2*i) | ((y & ((uint64_t)1 << i)) << (2*i + 1)) | ((z & ((uint64_t)1 << i)) << (2*i + 2));
@@ -45,7 +45,7 @@ inline uint64_t mortonEncode_magicbits(unsigned int x, unsigned int y, unsigned 
 }
 
 __device__ __host__
-int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+inline int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int xi, yi, zi;
 	xi = fmodf((x+M), M);
 	yi = fmodf((y+M), M);
@@ -56,7 +56,7 @@ int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, 
 
 /* Linklist functions */
 __device__ __host__
-void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+inline void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	int imap=0, tempmap=0;
 	unsigned int iz = 0, iy = 0, ix = 0;
 	for(iz = 0; iz < M; iz++){
@@ -84,47 +84,7 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 	return;
 }
 
-__global__
-void bulkmap(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
-
-    // int imap=0, tempmap=0;
-
-    for(int i = index; i<M*M*M; i+= stride){
-
-        printf("ERROR kernel does not accept function pointers");
-
-        // const int iz = (i)/(M*M);
-        // const int iy = (i - iz*M)/M;
-        // const int ix = i - iz*(M*M) - iy*M;
-
-        // int xi, yi, zi;
-        // xi = fmodf((ix+M), M);
-        // yi = fmodf((iy+M), M);
-        // zi = fmodf((iz+M), M);
-
-        // tempmap=icell(M, ix, iy, iz, f);
-        // imap=tempmap*13;
-        // map[imap]=icell(M, ix+1, iy, iz, f);
-        // map[imap+1]=icell(M, ix+1, iy+1, iz, f);
-        // map[imap+2]=icell(M, ix, iy+1, iz, f);
-        // map[imap+3]=icell(M, ix-1, iy+1, iz, f);
-        // map[imap+4]=icell(M, ix+1, iy, iz-1, f);
-        // map[imap+5]=icell(M, ix+1, iy+1, iz-1, f);
-        // map[imap+6]=icell(M, ix, iy+1, iz-1, f);
-        // map[imap+7]=icell(M, ix-1, iy+1, iz-1, f);
-        // map[imap+8]=icell(M, ix+1, iy, iz+1, f);
-        // map[imap+9]=icell(M, ix+1, iy+1, iz+1, f);
-        // map[imap+10]=icell(M, ix, iy+1, iz+1, f);
-        // map[imap+11]=icell(M, ix-1, iy+1, iz+1, f);
-        // map[imap+12]=icell(M, ix, iy, iz+1, f);
-    }
-	return;
-}
-
-
-void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+inline void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	uint64_t index;
 	int ncell = M*M*M;
 	unsigned int xi, yi, zi;
@@ -155,14 +115,14 @@ void link_loop(int *list, int *head, Real *Y, int M, int N, uint64_t (*f)(unsign
 ///////////////////////////////////////////////////////////////////////////////
 // Particle sorting
 ///////////////////////////////////////////////////////////////////////////////
-void swap(int* a, int* b){
+inline void swap(int* a, int* b){
     int t = *a;
     *a = *b;
     *b = t;
 }
 
 
-void swap_Y(Real *Y, int i, int j){
+inline void swap_Y(Real *Y, int i, int j){
     Real t0 = Y[3*i + 0];
     Real t1 = Y[3*i + 1];
     Real t2 = Y[3*i + 2];
@@ -175,7 +135,7 @@ void swap_Y(Real *Y, int i, int j){
 }
 
 
-int partition (int arr[], Real *Y, int low, int high){
+inline int partition (int arr[], Real *Y, int low, int high){
     int pivot = arr[high];  // selecting last element as pivot
     int i = (low - 1);  // index of smaller element
  
@@ -197,7 +157,7 @@ int partition (int arr[], Real *Y, int low, int high){
 
 /* a[] is the key array, p is starting index, that is 0, 
     and r is the last index of array. */
-void quicksort(int *a, Real *Y, int p, int r){
+inline void quicksort(int *a, Real *Y, int p, int r){
     if(p < r)
     {
         int q;
@@ -210,7 +170,7 @@ void quicksort(int *a, Real *Y, int p, int r){
 /* A[] --> Array to be sorted,
 l --> Starting index,
 h --> Ending index */
-void quicksortIterative(int *a, Real *Y, int l, int h)
+inline void quicksortIterative(int *a, Real *Y, int l, int h)
 {
     // Create an auxiliary stack
     int stack[h - l + 1];
@@ -242,7 +202,7 @@ void quicksortIterative(int *a, Real *Y, int l, int h)
     }
 }
 
-int partition_1D (int arr[], int *Y, int low, int high){
+inline int partition_1D (int arr[], int *Y, int low, int high){
     int pivot = arr[high];  // selecting last element as pivot
     int i = (low - 1);  // index of smaller element
  
@@ -261,7 +221,7 @@ int partition_1D (int arr[], int *Y, int low, int high){
     return (i + 1);
 }
 
-void quicksort_1D(int a[], int *Y, int p, int r){
+inline void quicksort_1D(int a[], int *Y, int p, int r){
     if(p < r)
     {
         int q;
