@@ -37,7 +37,7 @@ def run():
             for k in range(1):
                 for npt in range(nl):
 
-                    par_dict['N']=          500000.0
+                    par_dict['N']=          100.0
                     par_dict['rh']=         0.02609300415934458
                     par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
                     # par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.fcm_par_given_error(1.e-3, par_dict['rh'])
@@ -58,7 +58,7 @@ def run():
                         for key in par_dict:
                             util.replace(key, str(par_dict[key]), info_file_name)
 
-                        subprocess.call("./bin/CUFCM.o", shell=True)
+                        subprocess.call("./bin/CUFCM", shell=True)
                         save_info_name, save_scalar_name, save_data_name = util.savefile(par_dict, save_directory, 2)
 
                         sim_dict = util.read_scalar(save_scalar_name)

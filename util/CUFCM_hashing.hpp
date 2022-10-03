@@ -11,8 +11,52 @@
 #include <cufft.h>
 #include "../config.hpp"
 
+__device__ __host__
+inline int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+	int xi, yi, zi;
+	xi = fmodf((x+M), M);
+	yi = fmodf((y+M), M);
+	zi = fmodf((z+M), M);
+
+	return f(xi, yi, zi, M);
+}
+
+__host__ __device__
+inline uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M){
+	return xi + (yi + zi*M)*M;
+}
+
+__device__ __host__
+inline void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+	int imap=0, tempmap=0;
+	unsigned int iz = 0, iy = 0, ix = 0;
+	for(iz = 0; iz < M; iz++){
+		for(iy = 0; iy < M; iy++){
+			for(ix = 0; ix < M; ix++){
+				// printf("\t---------bulkmap(%d %d %d)---------\n", ix, iy, iz);
+				tempmap=icell(M, ix, iy, iz, linear_encode);
+				imap=tempmap*13;
+				map[imap]=icell(M, ix+1, iy, iz, f);
+				map[imap+1]=icell(M, ix+1, iy+1, iz, f);
+				map[imap+2]=icell(M, ix, iy+1, iz, f);
+				map[imap+3]=icell(M, ix-1, iy+1, iz, f);
+				map[imap+4]=icell(M, ix+1, iy, iz-1, f);
+				map[imap+5]=icell(M, ix+1, iy+1, iz-1, f);
+				map[imap+6]=icell(M, ix, iy+1, iz-1, f);
+				map[imap+7]=icell(M, ix-1, iy+1, iz-1, f);
+				map[imap+8]=icell(M, ix+1, iy, iz+1, f);
+				map[imap+9]=icell(M, ix+1, iy+1, iz+1, f);
+				map[imap+10]=icell(M, ix, iy+1, iz+1, f);
+				map[imap+11]=icell(M, ix-1, iy+1, iz+1, f);
+				map[imap+12]=icell(M, ix, iy, iz+1, f);
+			}
+		}
+	}
+	return;
+}
+
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+inline void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -28,21 +72,8 @@ void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, uint64_t (*f)(un
 	return;
 }
 
-void create_hash(int *hash, Real *Y, int N, Real dx, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
-	int xc, yc, zc;
-
-	for(int np = 0; np < N; np++){
-		xc = (int) (Y[3*np + 0]/dx);
-		yc = (int) (Y[3*np + 1]/dx);
-		zc = (int) (Y[3*np + 2]/dx);
-
-		hash[np] = xc + (yc + zc*M)*M;
-	}
-	return;
-}
-
 __global__
-void particle_index_range(int *particle_index, int N){
+inline void particle_index_range(int *particle_index, int N){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -55,7 +86,7 @@ void particle_index_range(int *particle_index, int N){
 
 template <typename T>
 __global__
-void copy_device(T *from, T *to, int L){
+inline void copy_device(T *from, T *to, int L){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -68,7 +99,7 @@ void copy_device(T *from, T *to, int L){
 
 template <typename T>
 __global__
-void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
+inline void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -83,7 +114,7 @@ void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
 }
 
 
-void sort_index_by_key(int *key, int *index, int N){
+inline void sort_index_by_key(int *key, int *index, int N){
 	void     *d_temp_storage = NULL;
 	size_t   temp_storage_bytes = 0;
 
@@ -104,7 +135,7 @@ void sort_index_by_key(int *key, int *index, int N){
 }
 
 __global__
-void create_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int N){
+inline void create_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int N){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 

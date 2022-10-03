@@ -38,6 +38,9 @@ __global__
 void init_pos_random_overlapping(Real *Y, int N, curandState *states);
 
 __global__
+void init_pos_lattice(Real *Y, Real rad, int N);
+
+__global__
 void init_pos_lattice_random(Real *Y, Real rad, int N, curandState *states);
 
 void init_force(Real *F, Real rad, int N);

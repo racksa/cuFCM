@@ -18,6 +18,7 @@
 #include "CUFCM_CORRECTION.cuh"
 #include "CUFCM_data.cuh"
 #include "CUFCM_SOLVER.cuh"
+#include "CUFCM_RANDOMPACKER.cuh"
 
 #include "util/cuda_util.hpp"
 #include "util/CUFCM_linklist.hpp"
@@ -205,12 +206,7 @@ void FCM_solver::init_cuda(){
 	time_start = get_time();
 
 	aux_host = malloc_host<Real>(3*N);					    aux_device = malloc_device<Real>(3*N);
-	// Y_host = malloc_host<Real>(3*N);					    
-	// F_host = malloc_host<Real>(3*N);				        
-    // T_host = malloc_host<Real>(3*N);						
-    Y_device = malloc_device<Real>(3*N);
-    F_device = malloc_device<Real>(3*N);
-    T_device = malloc_device<Real>(3*N);
+
     V_host = malloc_host<Real>(3*N);						V_device = malloc_device<Real>(3*N);
     W_host = malloc_host<Real>(3*N);						W_device = malloc_device<Real>(3*N);
 
@@ -236,36 +232,10 @@ void FCM_solver::init_cuda(){
     cell_start_host = malloc_host<int>(ncell);						 cell_start_device = malloc_device<int>(ncell);
     cell_end_host = malloc_host<int>(ncell);						 cell_end_device = malloc_device<int>(ncell);
 
-	#if	GATHER_TYPE == 0
-
-        gaussx_host = malloc_host<Real>(ngd*N);				 gaussx_device = malloc_device<Real>(ngd*N);
-        gaussy_host = malloc_host<Real>(ngd*N);				 gaussy_device = malloc_device<Real>(ngd*N);
-        gaussz_host = malloc_host<Real>(ngd*N);				 gaussz_device = malloc_device<Real>(ngd*N);
-        grad_gaussx_dip_host = malloc_host<Real>(ngd*N);		 grad_gaussx_dip_device = malloc_device<Real>(ngd*N);
-        grad_gaussy_dip_host = malloc_host<Real>(ngd*N);		 grad_gaussy_dip_device = malloc_device<Real>(ngd*N);
-        grad_gaussz_dip_host = malloc_host<Real>(ngd*N);		 grad_gaussz_dip_device = malloc_device<Real>(ngd*N);
-        gaussgrid_host = malloc_host<Real>(ngd);				 gaussgrid_device = malloc_device<Real>(ngd);
-        xdis_host = malloc_host<Real>(ngd*N);					 xdis_device = malloc_device<Real>(ngd*N);
-        ydis_host = malloc_host<Real>(ngd*N);					 ydis_device = malloc_device<Real>(ngd*N);
-        zdis_host = malloc_host<Real>(ngd*N);					 zdis_device = malloc_device<Real>(ngd*N);
-        indx_host = malloc_host<int>(ngd*N);					 indx_device = malloc_device<int>(ngd*N);
-        indy_host = malloc_host<int>(ngd*N);					 indy_device = malloc_device<int>(ngd*N);
-        indz_host = malloc_host<int>(ngd*N);					 indz_device = malloc_device<int>(ngd*N);
-
-	#endif
-
 	#if CORRECTION_TYPE == 0
 
 		 head_host = malloc_host<int>(ncell);					 head_device = malloc_device<int>(ncell);
 		 list_host = malloc_host<int>(N);						 list_device = malloc_device<int>(N);
-
-	#endif
-
-	#if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
-
-		 Y_hash_host = malloc_host<int>(N);								 Y_hash_device = malloc_device<int>(N);	
-		 F_hash_host = malloc_host<int>(N);								 F_hash_device = malloc_device<int>(N);
-		 T_hash_host = malloc_host<int>(N);								 T_hash_device = malloc_device<int>(N);
 
 	#endif
 
@@ -288,18 +258,23 @@ void FCM_solver::init_cuda(){
 	num_thread_blocks_GRID = (grid_size + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	num_thread_blocks_NX = (nx + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
-	curandState *dev_random;
+	
 	cudaMalloc((void**)&dev_random, num_thread_blocks_N*THREADS_PER_BLOCK*sizeof(curandState));
 
 	time_cuda_initialisation += get_time() - time_start;
 }
 
 __host__ 
-void FCM_solver::hydrodynamic_solver(Real *Y_input, Real *F_input, Real *T_input){
+void FCM_solver::hydrodynamic_solver(Real *Y_host_input, Real *F_host_input, Real *T_host_input,
+                                    Real *Y_device_input, Real * F_device_input, Real *T_device_input){
 
-    Y_host = Y_input;
-    F_host = F_input;
-    T_host = T_input;
+    Y_host = Y_host_input;
+    F_host = F_host_input;
+    T_host = T_host_input;
+
+    Y_device = Y_device_input;
+    F_device = F_device_input;
+    T_device = T_device_input;
 
     reset_grid();
 
@@ -312,6 +287,8 @@ void FCM_solver::hydrodynamic_solver(Real *Y_input, Real *F_input, Real *T_input
     gather();
 
     correction();
+
+    sortback();
 
     rept += 1;
 
@@ -333,55 +310,23 @@ void FCM_solver::spatial_hashing(){
     ///////////////////////////////////////////////////////////////////////////////
     cudaDeviceSynchronize();	time_start = get_time();
 
-    /* CPU Hashing */	
-    #if SPATIAL_HASHING == 0 or SPATIAL_HASHING == 1
+    // Create Hash (i, j, k) -> Hash
+    create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, linear_encode);
 
-        for(int i = 0; i < N; i++){
-            particle_index_host[i] = i;
-        }
-        create_hash(Y_hash_host, Y_host, N, dx, M, linear_encode);
-        create_hash(F_hash_host, Y_host, N, dx, M, linear_encode);
-        create_hash(T_hash_host, Y_host, N, dx, M, linear_encode);
-        create_hash(particle_cellhash_host, Y_host, N, dx, M, linear_encode);
+    // Sort particle index by hash
+    particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
+    sort_index_by_key(particle_cellhash_device, particle_index_device, N);
 
-    #endif
-    
-    /* Sorting */
-    #if SPATIAL_HASHING == 1
+    // Sort pos/force/torque by particle index
+    copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+    sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
+    copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
+    sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, F_device, aux_device, N);
+    copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
+    sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, T_device, aux_device, N);
 
-        quicksortIterative(Y_hash_host, Y_host, 0, N - 1);
-        quicksortIterative(F_hash_host, F_host, 0, N - 1);
-        quicksortIterative(T_hash_host, T_host, 0, N - 1);
-        quicksort_1D(particle_cellhash_host, particle_index_host, 0, N - 1);	
-
-    #endif
-
-    copy_to_device<Real>(Y_host, Y_device, 3*N);
-    copy_to_device<Real>(F_host, F_device, 3*N);
-    copy_to_device<Real>(T_host, T_device, 3*N);
-
-    /* GPU Hashing */
-    #if SPATIAL_HASHING == 2
-
-        // Create Hash (i, j, k) -> Hash
-        particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
-        create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, linear_encode);
-
-        // Sort particle index by hash
-        sort_index_by_key(particle_cellhash_device, particle_index_device, N);
-
-        // Sort pos/force/torque by particle index
-        copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
-        sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
-        copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
-        sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, F_device, aux_device, N);
-        copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
-        sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, T_device, aux_device, N);
-
-        // Find cell starting/ending points
-        create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
-
-    #endif
+    // Find cell starting/ending points
+    create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
 
     cudaDeviceSynchronize();	time_hashing_array[rept] = get_time() - time_start;
     ///////////////////////////////////////////////////////////////////////////////
@@ -526,18 +471,7 @@ void FCM_solver::gather(){
 
     #if SOLVER_MODE == 1
 
-        #if GATHER_TYPE == 0
-
-            cufcm_particle_velocities_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, N,
-                                        V_device, W_device,
-                                        pdmag, sigmaGRIDsq,
-                                        gaussx_device, gaussy_device, gaussz_device,
-                                        grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
-                                        xdis_device, ydis_device, zdis_device,
-                                        indx_device, indy_device, indz_device,
-                                        ngd, dx, nx, ny, nz);
-
-        #elif GATHER_TYPE == 1
+        #if GATHER_TYPE == 1
 
             cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
                                         Y_device,
@@ -640,9 +574,9 @@ void FCM_solver::correction(){
 }
 
 __host__
-void FCM_solver::finish(){
-    /* Sort back */
-    #if SPATIAL_HASHING == 2 and SORT_BACK == 1
+void FCM_solver::sortback(){
+     /* Sort back */
+    #if SORT_BACK == 1
 
         particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, N);
         sort_index_by_key(particle_index_device, sortback_index_device, N);
@@ -653,40 +587,26 @@ void FCM_solver::finish(){
         copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(W_device, aux_device, 3*N);
         sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, W_device, aux_device, N);
 
-        #if OUTPUT_TO_FILE == 1
+        copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+        sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
 
-            copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
-            sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
+        copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
+        sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, F_device, aux_device, N);
 
-            copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
-            sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, F_device, aux_device, N);
-
-            copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
-            sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, T_device, aux_device, N);
-
-        #endif
+        copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
+        sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, T_device, aux_device, N);
 
     #endif
+}
 
+__host__
+void FCM_solver::finish(){
+   
 	copy_to_host<Real>(Y_device, Y_host, 3*N);
 	copy_to_host<Real>(F_device, F_host, 3*N);
 	copy_to_host<Real>(T_device, T_host, 3*N);
 	copy_to_host<Real>(V_device, V_host, 3*N);
 	copy_to_host<Real>(W_device, W_host, 3*N);
-
-	#if SPATIAL_HASHING == 1 and SORT_BACK == 1
-
-		copy_to_host<Real>(V_device, V_host, 3*N);
-		copy_to_host<Real>(W_device, W_host, 3*N);
-
-		for(int i = 0; i < N; i++){
-			F_hash_host[i] = particle_index_host[i];
-			T_hash_host[i] = particle_index_host[i];
-		}
-		quicksort(F_hash_host, V_host, 0, N - 1);
-		quicksort(T_hash_host, W_host, 0, N - 1);
-
-	#endif
 
 	/* Print */
 	// for(int i = N-10; i < N; i++){
@@ -777,7 +697,6 @@ void FCM_solver::finish(){
 			N_truncate = int(N);
 		}
 		
-	
 		Real* V_validation = malloc_host<Real>(3*N);
 		Real* W_validation = malloc_host<Real>(3*N);
 		Real* V_validation_device = malloc_device<Real>(3*N_truncate);

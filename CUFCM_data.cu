@@ -279,6 +279,27 @@ void init_pos_lattice_random(Real *Y, Real rad, int N, curandState *states){
 }
 
 __global__
+void init_pos_lattice(Real *Y, Real rad, int N){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    int NP = ceil(cbrtf(N));
+    Real dpx = PI2/(Real)NP;
+    Real gaph = (dpx - (Real)2.0*rad)/(Real)2.0;
+
+    for(int np = index; np < N; np += stride){
+        const int k = np/(NP*NP);
+        const int j = (np - k*NP*NP)/NP;
+        const int i = np - k*NP*NP - j*NP;
+
+        Y[3*np + 0] = 0.5*dpx + i*dpx;
+        Y[3*np + 1] = 0.5*dpx + j*dpx;
+        Y[3*np + 2] = 0.5*dpx + k*dpx;
+    }
+    return;
+}
+
+__global__
 void append(Real x, Real y, Real z, Real *Y, int np){
     Y[3*np + 0] = x;
     Y[3*np + 1] = y;
@@ -373,3 +394,5 @@ void init_wave_vector(Real *q, Real *qsq, Real *qpad, Real *qpadsq, int nptsh, i
 	}
     return;
 }
+
+

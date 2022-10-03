@@ -43,24 +43,15 @@
 // 4 = Block per particle (BPP) shared dynamic
 
 #define GATHER_TYPE 4
-// 0 = Thread per particle (TPP) register
+// 0 = Thread per particle (TPP) register   **deprecated
 // 1 = Thread per particle (TPP) recompute
 // 2 = Block per particle (BPP) shared  **default
 // 3 = Block per particle (BPP) recompute
 // 4 = Block per particle (BPP) shared dynamic
 
-#define SPATIAL_HASHING 2
-// 0 = Spatial hashing for correction, but without sorting
-// 1 = Spatial hashing and sorting
-// 2 = Spatial hashing and sorting (GPU)    **default
-
-#if SOLVER_MODE == 1 and SPATIAL_HASHING != 2
-    #define CORRECTION_TYPE 0
-#else
-    #define CORRECTION_TYPE 1
+#define CORRECTION_TYPE 1
 // 0 = Linklist
-// 1 = Spatial hashing (TPP)  (must have SPATIAL_HASHING == 2)    **default
-#endif
+// 1 = Spatial hashing (TPP)   **default
 
 #define SORT_BACK 1
 // 0 = Do not sort back

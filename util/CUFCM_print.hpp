@@ -1,13 +1,13 @@
-#pragma once
+// #pragma once
 
-#include <chrono>
-#include <cmath>
-#include <iostream>
-#include <limits.h>
-#include <stdint.h>
+// #include <chrono>
+// #include <cmath>
+// #include <iostream>
+// #include <limits.h>
+// #include <stdint.h>
 
-#include <cufft.h>
-#include "../config.hpp"
+// #include <cufft.h>
+// #include "../config.hpp"
 
 
 ///////////////////////////////////////////////////////////////////////////////

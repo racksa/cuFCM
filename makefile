@@ -2,7 +2,7 @@ NVCC_FLAGS=-arch=sm_60 -std=c++14 -O3 -I../include
 
 LINK=-lcublas -lcufft -llapacke -lcblas -lcurand -lcuda -lineinfo
 
-CUFCM_FILES = CUFCM_MAIN.cu CUFCM_FCM.cu CUFCM_SOLVER.cu CUFCM_data.cu CUFCM_CORRECTION.cu
+CUFCM_FILES = CUFCM_MAIN.cu CUFCM_FCM.cu CUFCM_SOLVER.cu CUFCM_data.cu CUFCM_CORRECTION.cu CUFCM_RANDOMPACKER.cu
 
 
 
@@ -10,10 +10,10 @@ UAMMDINCLUDEFLAGS=-I$(CUDA_ROOT)/include -I$(UAMMD_ROOT)/src -I$(UAMMD_ROOT)/src
 
 
 CUFCM : CUFCM_MAIN.cu
-	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) $(LINK) -o bin/CUFCM.o
+	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) $(LINK) -o bin/CUFCM
 
 clean :
-	rm -f bin/CUFCM.0
+	rm -f bin/CUFCM
 
 
 # UAMMD makefile

@@ -7,8 +7,8 @@ public:
     int N, nx, ny, nz, repeat, prompt, warmup;
     Real rh, alpha, beta, eta;
     Real values[100];
-    int grid_size, fft_grid_size, ngd, M, ncell, mapsize;
-    Real dx, Rc_fac, Rc, Rcsq, cellL, Volume_frac;
+    int grid_size, fft_grid_size, ngd;
+    Real dx, Rc_fac, Rc, Rcsq,  Volume_frac;
 
     /* Timing */
     Real time_start, time_cuda_initialisation, time_readfile;
@@ -33,8 +33,12 @@ public:
         *particle_index_host, *particle_index_device,
         *sortback_index_host, *sortback_index_device;
 
+    int M, ncell, mapsize;
+    
 	int *cell_start_host, *cell_start_device,
         *cell_end_host, *cell_end_device;
+
+    Real cellL;
 
     #if	GATHER_TYPE == 0
 
@@ -70,9 +74,9 @@ public:
 
 	int *map_host, *map_device;
     /* cuda thread */
-    int num_thread_blocks_GRID = (grid_size + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
-	int num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
-	int num_thread_blocks_NX = (nx + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+    int num_thread_blocks_GRID;
+	int num_thread_blocks_N;
+	int num_thread_blocks_NX;
 	curandState *dev_random;
 
     #if SOLVER_MODE == 1
@@ -108,7 +112,8 @@ public:
     void init_cuda();
 
     __host__
-    void hydrodynamic_solver(Real *Y_host, Real *F_host, Real *T_host);
+    void hydrodynamic_solver(Real *Y_host_input, Real *F_host_input, Real *T_host_input,
+                             Real *Y_device_input, Real * F_device_input, Real *T_device_input);
 
     __host__
     void reset_grid();
@@ -127,6 +132,9 @@ public:
 
     __host__
     void correction();
+
+    __host__
+    void sortback();
 
     __host__
     void finish();

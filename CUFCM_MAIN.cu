@@ -17,6 +17,7 @@
 
 #include "CUFCM_data.cuh"
 #include "CUFCM_SOLVER.cuh"
+#include "CUFCM_RANDOMPACKER.cuh"
 
 #include "util/cuda_util.hpp"
 
@@ -42,11 +43,15 @@ int main(int argc, char** argv) {
 
 		read_init_data(Y_host, N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
 		read_init_data(F_host, N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
-		read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");	
+		read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
 
 		// read_init_data(Y_host, N, "./data/init_data/N16777216/pos-N16777216-rh008089855.dat");
 		// read_init_data(F_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855.dat");
 		// read_init_data(T_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855-2.dat");
+
+		copy_to_device<Real>(Y_host, Y_device, 3*N);
+		copy_to_device<Real>(F_host, F_device, 3*N);
+		copy_to_device<Real>(T_host, T_device, 3*N);
 
 	#elif INIT_FROM_FILE == 0
 
@@ -68,14 +73,18 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Start repeat
 	///////////////////////////////////////////////////////////////////////////////
-	FCM_solver solver;
 
-	for(int t = 0; t < repeat; t++){
-		solver.hydrodynamic_solver(Y_host, F_host, T_host);
-	}
-	printf("finished loop:)\n");
+	/* Create FCM solver */
+	random_packer packer(Y_device, N);
 
-	solver.finish();
+	// FCM_solver solver;
+	// for(int t = 0; t < repeat; t++){
+	// 	solver.hydrodynamic_solver(Y_host, F_host, T_host,
+	// 							   Y_device, F_device, T_device);
+	// }
+	// printf("finished loop:)\n");
+
+	// solver.finish();
 
 	return 0;
 }
