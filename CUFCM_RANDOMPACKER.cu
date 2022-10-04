@@ -5,9 +5,9 @@
 #include "config.hpp"
 #include "CUFCM_data.cuh"
 #include "CUFCM_RANDOMPACKER.cuh"
+#include "CUFCM_CELLLIST.cuh"
 
 #include "util/cuda_util.hpp"
-// #include "util/CUFCM_linklist.hpp"
 #include "util/CUFCM_hashing.hpp"
 #include "util/maths_util.hpp"
 
@@ -19,10 +19,8 @@ void check_overlap_gpu(Real *Y, Real rad, int N,
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    int icell = 0, jcello = 0, jcell = 0;
-
     for(int i = index; i < N; i += stride){
-        icell = particle_cellindex[i];
+        int icell = particle_cellindex[i];
         
         Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
         Real xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0;
@@ -43,17 +41,18 @@ void check_overlap_gpu(Real *Y, Real rad, int N,
                     if (rijsq < rad*rad){
                         printf("ERROR: Overlap between %d and %d within same cell\n", i, j);
                     }
-
                 }
             }
-            
         }
-        jcello = 13*icell;
+        int jcello = 13*icell;
         /* inter-cell interactions */
         /* corrections apply to both parties in different cells */
         for(int nabor = 0; nabor < 13; nabor++){
-            jcell = map[jcello + nabor];
-            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
+            int jcell = map[jcello + nabor];
+            // if(i == 79){
+            //     printf("icell %d jcell(%d %d)\n",cell_start[icell], cell_end[icell], cell_start[jcell], cell_end[jcell]);
+            // }
+            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){                
                 xij = xi - Y[3*j + 0];
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
@@ -64,10 +63,8 @@ void check_overlap_gpu(Real *Y, Real rad, int N,
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
                     if (rijsq < rad*rad){
-                        printf("ERROR: Overlap between %d and %d in different cells\n", i, j);
-                        printf("icell=%d jcell=%d\n", icell, jcell);
+                        printf("ERROR: Overlap between %d in %d and %d in %d \n", i, icell, j, jcell);
                     }
-
                 }
             }
         }
@@ -82,15 +79,15 @@ void box(Real *Y, int N){
     const int stride = blockDim.x*gridDim.x;
 
     for(int i = index; i < N; i += stride){
-        Y[3*i + 0] -= PI2 * (Real) ((int) (Y[3*i + 0]/PI));
-        Y[3*i + 1] -= PI2 * (Real) ((int) (Y[3*i + 1]/PI));
-        Y[3*i + 2] -= PI2 * (Real) ((int) (Y[3*i + 2]/PI));
+        Y[3*i + 0] -= PI2 * floorf(Y[3*i + 0]/PI2);
+        Y[3*i + 1] -= PI2 * floorf(Y[3*i + 1]/PI2);
+        Y[3*i + 2] -= PI2 * floorf(Y[3*i + 2]/PI2);
     }
-    return ;
+
 }
 
 __global__
-void init_drag(Real *F, Real rad, int N, Real Fref,  curandState *states){
+void init_drag(Real *F, Real rad, int N, Real Fref, curandState *states){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -103,9 +100,9 @@ void init_drag(Real *F, Real rad, int N, Real Fref,  curandState *states){
         rnd2 = curand_uniform (&states[index]);
         rnd3 = curand_uniform (&states[index]);
 
-        F[3*i + 0] = Fref*rnd1;
-        F[3*i + 1] = Fref*rnd2;
-        F[3*i + 2] = Fref*rnd3;
+        F[3*i + 0] = Fref*(rnd1 - Real(0.5));
+        F[3*i + 1] = Fref*(rnd2 - Real(0.5));
+        F[3*i + 2] = Fref*(rnd3 - Real(0.5));
 
     }
     return ;
@@ -122,17 +119,16 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    int icell = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
     Real fxi = (Real)0.0, fyi = (Real)0.0, fzi = (Real)0.0;
 
     for(int i = index; i < N; i += stride){
-        icell = particle_cellindex[i];
+        int icell = particle_cellindex[i];
         
         Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
         Real xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0;
         /* intra-cell interactions */
         /* corrections only apply to particle i */
-        for(j = cell_start[icell]; j < cell_end[icell]; j++){
+        for(int j = cell_start[icell]; j < cell_end[icell]; j++){
             if(i != j){
                 Real xij = xi - Y[3*j + 0];
                 Real yij = yi - Y[3*j + 1];
@@ -150,9 +146,9 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
                     Real temp2 = (Rcsq - rijsq)/temp;
                     temp2 = temp2*temp2;
 
-                    Real fxij = Fref*temp2*temp2*xij/(2.0*rad);
-                    Real fyij = Fref*temp2*temp2*yij/(2.0*rad);
-                    Real fzij = Fref*temp2*temp2*zij/(2.0*rad);
+                    Real fxij = Real(2.0)*Fref*temp2*temp2*xij/(Real(2.0)*rad);
+                    Real fyij = Real(2.0)*Fref*temp2*temp2*yij/(Real(2.0)*rad);
+                    Real fzij = Real(2.0)*Fref*temp2*temp2*zij/(Real(2.0)*rad);
 
                     fxi += fxij;
                     fyi += fyij;
@@ -162,12 +158,12 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
             }
             
         }
-        jcello = 13*icell;
+        int jcello = 13*icell;
         /* inter-cell interactions */
         /* corrections apply to both parties in different cells */
-        for(nabor = 0; nabor < 13; nabor++){
-            jcell = map[jcello + nabor];
-            for(j = cell_start[jcell]; j < cell_end[jcell]; j++){
+        for(int nabor = 0; nabor < 13; nabor++){
+            int jcell = map[jcello + nabor];
+            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
 
                 if(i==j){
                     printf("LOOPING SAME CELL\n");
@@ -210,6 +206,18 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
 }
 
 __global__
+void compute_stokes(Real *F, Real *V, Real rad, int N){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    for(int i = index; i < N; i += stride){
+        V[3*i + 0] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 0];
+        V[3*i + 1] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 1];
+        V[3*i + 2] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 2];
+    }
+}
+
+__global__
 void move_forward(Real *Y, Real *V, Real dt, int N){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
@@ -219,47 +227,25 @@ void move_forward(Real *Y, Real *V, Real dt, int N){
         Y[3*i + 1] += V[3*i + 1] * dt;
         Y[3*i + 2] += V[3*i + 2] * dt;
     }
+
 }
 
 
 __host__
-random_packer::random_packer(Real *Y_input, int N_input){
+random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, int N_input){
 
-    Y_device = Y_input;
+    Y_host = Y_host_input;
+    Y_device = Y_device_input;
 
     N = N_input;
 
-    dt = Real(0.01);
-
-    Fref = Real(1.0);
-
     init_cuda();
-
-    printf("pass1\n");
 
     init_pos_lattice<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N);
 
-    printf("pass2\n");
-
     spatial_hashing();
 
-    printf("pass3\n");
-
     init_drag<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(init_F_device, rh, N, 1.0, dev_random);
-
-    printf("pass4\n");
-
-    copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(init_F_device, F_device, 3*N);
-
-    // apply_repulsion<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N,
-    //                 particle_cellindex_device, cell_start_device, cell_end_device,
-    //                 map_device,
-    //                 ncell, Rcsq,
-    //                 Fref);
-
-    printf("pass5\n");
-
-    finish();
 
 }
 
@@ -269,9 +255,11 @@ void random_packer::init_cuda(){
     read_config(values, "simulation_info");
     N = values[0];
     rh = values[1];
+    dt = values[10];
+    Fref = values[11];
 
     /* Neighbour list */
-    Rc = PI2;
+    Rc = 4*rh;
     Rcsq = Rc*Rc;
     M = (int) (PI2/Rc);
     if(M < 3){
@@ -284,12 +272,10 @@ void random_packer::init_cuda(){
     printf("Cell number: %d\n", M);
 
     aux_host = malloc_host<Real>(3*N);					    aux_device = malloc_device<Real>(3*N);
-    Y_host = malloc_host<Real>(3*N);
     F_host = malloc_host<Real>(3*N);						F_device = malloc_device<Real>(3*N);
     init_F_host = malloc_host<Real>(3*N);					init_F_device = malloc_device<Real>(3*N);
     V_host = malloc_host<Real>(3*N);						V_device = malloc_device<Real>(3*N);
 
-    particle_cellindex_host = malloc_host<int>(N);					 particle_cellindex_device = malloc_device<int>(N);
     particle_cellhash_host = malloc_host<int>(N);					 particle_cellhash_device = malloc_device<int>(N);
     particle_index_host = malloc_host<int>(N);						 particle_index_device = malloc_device<int>(N);
     sortback_index_host = malloc_host<int>(N);						 sortback_index_device = malloc_device<int>(N);
@@ -340,25 +326,35 @@ void random_packer::update(){
     copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(init_F_device, F_device, 3*N);
 
     apply_repulsion<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N,
-                    particle_cellindex_device, cell_start_device, cell_end_device,
+                    particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, Rcsq,
                     Fref);
 
+    compute_stokes<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, V_device, rh, N);
+
     move_forward<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, dt, N);
+
+    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N);
+
 }
-
-
 
 __host__
 void random_packer::finish(){
+
+    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N);
+
     check_overlap_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N,
-                      particle_cellindex_device, cell_start_device, cell_end_device, 
+                      particle_cellhash_device, cell_start_device, cell_end_device, 
                       map_device, ncell, Rcsq);
 
-    copy_to_host<Real>(Y_device, Y_host, 3*N);
-	copy_to_host<Real>(F_device, F_host, 3*N);
-	copy_to_host<Real>(V_device, V_host, 3*N);
+    return;
+}
 
-    write_data(Y_host, F_host, V_host, V_host, N, "./data/simulation/simulation_data.dat");
+__host__
+void random_packer::write(){
+
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+
+    write_pos(Y_host, rh, N, "data/simulation/spherepacking.dat");
 }

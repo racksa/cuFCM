@@ -19,6 +19,7 @@
 #include "CUFCM_data.cuh"
 #include "CUFCM_SOLVER.cuh"
 #include "CUFCM_RANDOMPACKER.cuh"
+#include "CUFCM_CELLLIST.cuh"
 
 #include "util/cuda_util.hpp"
 #include "util/CUFCM_linklist.hpp"
@@ -224,7 +225,6 @@ void FCM_solver::init_cuda(){
 	uk_y_host = malloc_host<myCufftComplex>(fft_grid_size);		uk_y_device = malloc_device<myCufftComplex>(fft_grid_size);
 	uk_z_host = malloc_host<myCufftComplex>(fft_grid_size);		uk_z_device = malloc_device<myCufftComplex>(fft_grid_size);
 
-    particle_cellindex_host = malloc_host<int>(N);					 particle_cellindex_device = malloc_device<int>(N);
     particle_cellhash_host = malloc_host<int>(N);					 particle_cellhash_device = malloc_device<int>(N);
     particle_index_host = malloc_host<int>(N);						 particle_index_device = malloc_device<int>(N);
     sortback_index_host = malloc_host<int>(N);						 sortback_index_device = malloc_device<int>(N);
@@ -266,7 +266,7 @@ void FCM_solver::init_cuda(){
 
 __host__ 
 void FCM_solver::hydrodynamic_solver(Real *Y_host_input, Real *F_host_input, Real *T_host_input,
-                                    Real *Y_device_input, Real * F_device_input, Real *T_device_input){
+                                     Real *Y_device_input, Real * F_device_input, Real *T_device_input){
 
     Y_host = Y_host_input;
     F_host = F_host_input;
@@ -577,7 +577,7 @@ __host__
 void FCM_solver::sortback(){
      /* Sort back */
     #if SORT_BACK == 1
-
+        
         particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, N);
         sort_index_by_key(particle_index_device, sortback_index_device, N);
 
@@ -607,20 +607,6 @@ void FCM_solver::finish(){
 	copy_to_host<Real>(T_device, T_host, 3*N);
 	copy_to_host<Real>(V_device, V_host, 3*N);
 	copy_to_host<Real>(W_device, W_host, 3*N);
-
-	/* Print */
-	// for(int i = N-10; i < N; i++){
-	// 	printf("%d V ( ", i);
-	// 	for(int n = 0; n < 3; n++){
-	// 		printf("%.8f ", V_host[3*i + n]);
-	// 	}
-	// 	printf(")     \t");
-	// 	printf("W ( ");
-	// 	for(int n = 0; n < 3; n++){
-	// 		printf("%.8f ", W_host[3*i + n]);
-	// 	}
-	// 	printf(")\n");
-	// }
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
@@ -661,7 +647,6 @@ void FCM_solver::finish(){
 		std::cout << "PTPS:\t" << PTPS << " /s\n";
 		std::cout << std::endl;
 	}
-	
 	///////////////////////////////////////////////////////////////////////////////
 	// Check error
 	///////////////////////////////////////////////////////////////////////////////
@@ -723,6 +708,7 @@ void FCM_solver::finish(){
 		}
 		
 	#endif
+
 	///////////////////////////////////////////////////////////////////////////////
 	// Write to file
 	///////////////////////////////////////////////////////////////////////////////

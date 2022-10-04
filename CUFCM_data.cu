@@ -69,6 +69,18 @@ void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name
     fclose(pfile);
 }
 
+void write_pos(Real *Y, Real rh, int N, const char *file_name){
+    FILE *pfile;
+    pfile = fopen(file_name, "a");
+    fprintf(pfile, "#\n");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "%.6f %.6f %.6f %.6f %.6f \n", 
+        Y[3*i + 0], Y[3*i + 1], Y[3*i + 2], rh, 0.0);
+        }
+    fprintf(pfile, "\n");
+    fclose(pfile);
+}
+
 void write_init_data(Real *Y, Real *F, Real *T, int N){
     FILE *pfile;
     printf("Writing position data...\n");
@@ -91,7 +103,6 @@ void write_init_data(Real *Y, Real *F, Real *T, int N){
     fclose(pfile);
     printf("Finished writing...\n");
 }
-
 
 void write_time(Real time_cuda_initialisation, 
                 Real time_readfile,

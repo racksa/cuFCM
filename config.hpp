@@ -31,7 +31,7 @@
 
 #define HASH_ENCODE_FUNC linear_encode
 
-#define INIT_FROM_FILE 1
+#define INIT_FROM_FILE 0
 // 0 = Generate random packing
 // 1 = Read initial data from file
 

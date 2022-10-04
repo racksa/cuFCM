@@ -36,13 +36,6 @@ public:
          *init_F_host, *init_F_device,
 	     *V_host, *V_device;
 
-
-    /* sorting & cell list */
-    int *particle_cellindex_host, *particle_cellindex_device,
-        *particle_cellhash_host, *particle_cellhash_device,
-        *particle_index_host, *particle_index_device,
-        *sortback_index_host, *sortback_index_device;
-
     int M, ncell, mapsize;
     int *map_host, *map_device;
     
@@ -58,7 +51,10 @@ public:
 
 
     __host__
-    random_packer(Real *Y_input, int N_input);
+    random_packer(Real *Y_host_input, Real *Y_device_input, int N_input);
+
+    __host__
+    void init_cuda();
     
     __host__
     void spatial_hashing();
@@ -70,10 +66,16 @@ public:
     void update();
 
     __host__
-    void init_cuda();
+    void finish();
 
     __host__
-    void finish();
+    void write();
+
+private:
+    /* sorting & cell list */
+    int *particle_cellhash_host, *particle_cellhash_device,
+        *particle_index_host, *particle_index_device,
+        *sortback_index_host, *sortback_index_device;
 
 
 };

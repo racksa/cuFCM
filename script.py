@@ -37,7 +37,7 @@ def run():
             for k in range(1):
                 for npt in range(nl):
 
-                    par_dict['N']=          100.0
+                    par_dict['N']=          500000.0
                     par_dict['rh']=         0.02609300415934458
                     par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
                     # par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.fcm_par_given_error(1.e-3, par_dict['rh'])
@@ -45,8 +45,10 @@ def run():
                     par_dict['nx']=         npts
                     par_dict['ny']=         npts
                     par_dict['nz']=         npts
-                    par_dict['repeat']=     100
+                    par_dict['repeat']=     2
                     par_dict['prompt']=     10
+                    par_dict['dt']=         0.002
+                    par_dict['Fref']=       par_dict['rh']
 
                     alpha_array[i][j][k] = par_dict['alpha']
                     beta_array[i][j][k] = par_dict['beta']

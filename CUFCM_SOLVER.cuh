@@ -28,8 +28,7 @@ public:
 	               *uk_y_host, *uk_y_device, *uk_z_host, *uk_z_device;
     
     /* sorting & cell list */
-    int *particle_cellindex_host, *particle_cellindex_device,
-        *particle_cellhash_host, *particle_cellhash_device,
+    int *particle_cellhash_host, *particle_cellhash_device,
         *particle_index_host, *particle_index_device,
         *sortback_index_host, *sortback_index_device;
 

@@ -29,12 +29,19 @@ int main(int argc, char** argv) {
 
 	Real values[100];
 	read_config(values, "simulation_info");
+	Real rh = values[1];
 	int N = values[0];
 	int repeat = values[8];
+
+	int num_thread_blocks_N;
+    curandState *dev_random;
+	num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	cudaMalloc((void**)&dev_random, num_thread_blocks_N*THREADS_PER_BLOCK*sizeof(curandState));
 
 	Real* Y_host = malloc_host<Real>(3*N);						Real* Y_device = malloc_device<Real>(3*N);
 	Real* F_host = malloc_host<Real>(3*N);						Real* F_device = malloc_device<Real>(3*N);
 	Real* T_host = malloc_host<Real>(3*N);						Real* T_device = malloc_device<Real>(3*N);
+
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
@@ -55,11 +62,19 @@ int main(int argc, char** argv) {
 
 	#elif INIT_FROM_FILE == 0
 
-		// init_pos_random_check_gpu(Y_device, rh, N);
-		// init_pos_random_overlapping<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, dev_random);
-		init_pos_lattice_random<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N, dev_random);
 		init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, rh, N, dev_random);
 		init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, rh, N, dev_random);
+
+		{
+			random_packer *packer = new random_packer(Y_host, Y_device, N);
+
+			for(int t = 0; t < 2; t++){
+				packer->update();
+				packer->write();
+			}
+			packer->finish();
+			printf("finished packing");
+		}
 
 		printf("Copying to host...\n");
 		copy_to_host<Real>(Y_device, Y_host, 3*N);
@@ -72,19 +87,18 @@ int main(int argc, char** argv) {
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Start repeat
-	///////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////	
 
 	/* Create FCM solver */
-	random_packer packer(Y_device, N);
+	cudaDeviceSynchronize();
+	FCM_solver *solver = new FCM_solver;;
+	for(int t = 0; t < repeat; t++){
+		solver->hydrodynamic_solver(Y_host, F_host, T_host,
+								    Y_device, F_device, T_device);
+	}
+	printf("finished loop:)\n");
 
-	// FCM_solver solver;
-	// for(int t = 0; t < repeat; t++){
-	// 	solver.hydrodynamic_solver(Y_host, F_host, T_host,
-	// 							   Y_device, F_device, T_device);
-	// }
-	// printf("finished loop:)\n");
-
-	// solver.finish();
+	solver->finish();
 
 	return 0;
 }
