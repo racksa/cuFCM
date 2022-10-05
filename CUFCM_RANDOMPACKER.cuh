@@ -29,6 +29,7 @@ public:
     int N;
     Real rh;
     Real values[100];
+    int *overlap_counter;
 
     Real *aux_host, *aux_device,
          *Y_host, *Y_device,

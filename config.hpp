@@ -13,7 +13,7 @@
 #define PI2sqrt_inv 0.3989422804014327
 #define SQRT2 1.4142135623730951
 
-#define SOLVER_MODE 1
+#define SOLVER_MODE 0
 // 0 = FCM
 // 1 = Fast FCM
 

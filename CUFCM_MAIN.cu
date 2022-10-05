@@ -29,9 +29,9 @@ int main(int argc, char** argv) {
 
 	Real values[100];
 	read_config(values, "simulation_info");
-	Real rh = values[1];
 	int N = values[0];
 	int repeat = values[8];
+	int packrep = values[12];
 
 	int num_thread_blocks_N;
     curandState *dev_random;
@@ -62,21 +62,29 @@ int main(int argc, char** argv) {
 
 	#elif INIT_FROM_FILE == 0
 
+		Real rh = values[1];
+		
 		init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, rh, N, dev_random);
 		init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, rh, N, dev_random);
 
 		{
+			FILE *pfile;
+			pfile = fopen("data/simulation/spherepacking.dat", "w");
+			fclose(pfile);
+			
 			random_packer *packer = new random_packer(Y_host, Y_device, N);
-
-			for(int t = 0; t < 2; t++){
+			for(int t = 0; t < packrep; t++){
+				std::cout << "\rGenerating random spheres iteration: " << t+1 << "/" << packrep;
 				packer->update();
-				packer->write();
+				if(t>packrep-11){
+					packer->write();
+				}
 			}
 			packer->finish();
-			printf("finished packing");
+			printf("\nFinished packing");
 		}
 
-		printf("Copying to host...\n");
+		printf("\nCopying to host...\n");
 		copy_to_host<Real>(Y_device, Y_host, 3*N);
 		copy_to_host<Real>(F_device, F_host, 3*N);
 		copy_to_host<Real>(T_device, T_host, 3*N);
@@ -93,10 +101,11 @@ int main(int argc, char** argv) {
 	cudaDeviceSynchronize();
 	FCM_solver *solver = new FCM_solver;;
 	for(int t = 0; t < repeat; t++){
+		std::cout << "\rComputing repeat " << t+1 << "/" << repeat;
 		solver->hydrodynamic_solver(Y_host, F_host, T_host,
 								    Y_device, F_device, T_device);
 	}
-	printf("finished loop:)\n");
+	printf("\nFinished loop:)\n");
 
 	solver->finish();
 

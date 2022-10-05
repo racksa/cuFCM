@@ -237,6 +237,9 @@ def layer_array(error_array, tol):
                     ret[i][j][k] = 1
     return ret
 
+def compute_rad(N, volume_frac):
+    return (6*np.pi**2*volume_frac/N)**(1./3.)
+
 def monoExp(x, m, t):
     return m*np.exp(-t * x)
 

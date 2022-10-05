@@ -7,7 +7,7 @@ import matplotlib.cm as cm
 import numpy as np
 from pylab import *
 from pyfile import util
-from pyfile.util import alpha_expr, beta_expr, eta_expr
+from pyfile.util import alpha_expr, beta_expr, compute_rad, eta_expr
 
 def run():
     info_file_name = "simulation_info"
@@ -31,24 +31,34 @@ def run():
     tol_list = np.array([5.e-3, 1.e-3, 5.e-4, 1.e-4, 5.e-5, 1.e-5])
 
     par_dict = util.read_info(info_file_name)
+    
+    solver_type = 0
     # Begin custom massive loop
     for i in range(1):
         for j in range(1):
             for k in range(1):
                 for npt in range(nl):
-
+                    
                     par_dict['N']=          500000.0
-                    par_dict['rh']=         0.02609300415934458
-                    par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
-                    # par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.fcm_par_given_error(1.e-3, par_dict['rh'])
-                    npts = 270
+                    # par_dict['rh']=         0.02609300415934458
+                    par_dict['rh']=         compute_rad(par_dict['N'], 0.15)
+                    if(solver_type == 1):
+                        par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
+                        npts = 270
+                    elif(solver_type == 0):
+                        par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.fcm_par_given_error(1.e-3, par_dict['rh'])
+                        dx = par_dict['rh']/(par_dict['alpha'] * np.sqrt(np.pi))
+                        npts = int(2*np.pi/dx)
+                        dx = 2*np.pi/npts
+                        par_dict['alpha'] = par_dict['rh']/(dx * np.sqrt(np.pi))
                     par_dict['nx']=         npts
                     par_dict['ny']=         npts
                     par_dict['nz']=         npts
-                    par_dict['repeat']=     2
+                    par_dict['repeat']=     10
                     par_dict['prompt']=     10
-                    par_dict['dt']=         0.002
+                    par_dict['dt']=         0.1
                     par_dict['Fref']=       par_dict['rh']
+                    par_dict['packrep']=    50
 
                     alpha_array[i][j][k] = par_dict['alpha']
                     beta_array[i][j][k] = par_dict['beta']

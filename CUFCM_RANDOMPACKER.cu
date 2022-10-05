@@ -1,3 +1,4 @@
+#include <asm-generic/errno.h>
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
@@ -79,9 +80,31 @@ void box(Real *Y, int N){
     const int stride = blockDim.x*gridDim.x;
 
     for(int i = index; i < N; i += stride){
-        Y[3*i + 0] -= PI2 * floorf(Y[3*i + 0]/PI2);
-        Y[3*i + 1] -= PI2 * floorf(Y[3*i + 1]/PI2);
-        Y[3*i + 2] -= PI2 * floorf(Y[3*i + 2]/PI2);
+        if(Y[3*i + 0]>PI2){
+            Y[3*i + 0] -= PI2;
+        }
+        if(Y[3*i + 0]<0){
+            Y[3*i + 0] += PI2;
+        }
+
+        if(Y[3*i + 1]>PI2){
+            Y[3*i + 1] -= PI2;
+        }
+        if(Y[3*i + 1]<0){
+            Y[3*i + 1] += PI2;
+        }
+
+        if(Y[3*i + 2]>PI2){
+            Y[3*i + 2] -= PI2;
+        }
+        if(Y[3*i + 2]<0){
+            Y[3*i + 2] += PI2;
+        }
+
+
+        // Y[3*i + 0] -= PI2 * floorf(Y[3*i + 0]/PI2);
+        // Y[3*i + 1] -= PI2 * floorf(Y[3*i + 1]/PI2);
+        // Y[3*i + 2] -= PI2 * floorf(Y[3*i + 2]/PI2);
     }
 
 }
@@ -119,9 +142,9 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    Real fxi = (Real)0.0, fyi = (Real)0.0, fzi = (Real)0.0;
 
     for(int i = index; i < N; i += stride){
+        Real fxi = (Real)0.0, fyi = (Real)0.0, fzi = (Real)0.0;
         int icell = particle_cellindex[i];
         
         Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
@@ -134,21 +157,25 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * (Real) ((int) (xij/PI));
-                yij = yij - PI2 * (Real) ((int) (yij/PI));
-                zij = zij - PI2 * (Real) ((int) (zij/PI));
+                xij = xij - PI2 * Real(int(xij/PI));
+                yij = yij - PI2 * Real(int(yij/PI));
+                zij = zij - PI2 * Real(int(zij/PI));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
 
                     Real rij = sqrtf(rijsq);
-                    Real temp = Rcsq - Real(4.0) * rad * rad;
-                    Real temp2 = (Rcsq - rijsq)/temp;
-                    temp2 = temp2*temp2;
+                    // Real temp = Rcsq - Real(4.0) * rad * rad;
+                    // Real temp2 = (Rcsq - rijsq)/temp;
+                    // temp2 = temp2*temp2;
 
-                    Real fxij = Real(2.0)*Fref*temp2*temp2*xij/(Real(2.0)*rad);
-                    Real fyij = Real(2.0)*Fref*temp2*temp2*yij/(Real(2.0)*rad);
-                    Real fzij = Real(2.0)*Fref*temp2*temp2*zij/(Real(2.0)*rad);
+                    // Real fxij = Real(4.0)*Fref*temp2*temp2*xij/(Real(2.0)*rad);
+                    // Real fyij = Real(4.0)*Fref*temp2*temp2*yij/(Real(2.0)*rad);
+                    // Real fzij = Real(4.0)*Fref*temp2*temp2*zij/(Real(2.0)*rad);
+
+                    Real fxij = Fref*xij/rijsq;
+                    Real fyij = Fref*yij/rijsq;
+                    Real fzij = Fref*zij/rijsq;
 
                     fxi += fxij;
                     fyi += fyij;
@@ -164,28 +191,29 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
         for(int nabor = 0; nabor < 13; nabor++){
             int jcell = map[jcello + nabor];
             for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
-
-                if(i==j){
-                    printf("LOOPING SAME CELL\n");
-                }
                 xij = xi - Y[3*j + 0];
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * ((Real) ((int) (xij/PI)));
-                yij = yij - PI2 * ((Real) ((int) (yij/PI)));
-                zij = zij - PI2 * ((Real) ((int) (zij/PI)));
+                xij = xij - PI2 * Real(int(xij/PI));
+                yij = yij - PI2 * Real(int(yij/PI));
+                zij = zij - PI2 * Real(int(zij/PI));
+
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
+
                     Real rij = sqrtf(rijsq);
+                    // Real temp = Rcsq - Real(4.0) * rad * rad;
+                    // Real temp2 = (Rcsq - rijsq)/temp;
+                    // temp2 = temp2*temp2;
 
-                    Real temp = Rcsq - Real(4.0) * rad * rad;
-                    Real temp2 = (Rcsq - rijsq)/temp;
-                    temp2 = temp2*temp2;
+                    // Real fxij = Real(4.0)*Fref*temp2*temp2*xij/(Real(2.0)*rad);
+                    // Real fyij = Real(4.0)*Fref*temp2*temp2*yij/(Real(2.0)*rad);
+                    // Real fzij = Real(4.0)*Fref*temp2*temp2*zij/(Real(2.0)*rad);
 
-                    Real fxij = Fref*temp2*temp2*xij/(2.0*rad);
-                    Real fyij = Fref*temp2*temp2*yij/(2.0*rad);
-                    Real fzij = Fref*temp2*temp2*zij/(2.0*rad);
+                    Real fxij = Fref*xij/rijsq;
+                    Real fyij = Fref*yij/rijsq;
+                    Real fzij = Fref*zij/rijsq;
 
                     fxi += fxij;
                     fyi += fyij;
@@ -211,9 +239,12 @@ void compute_stokes(Real *F, Real *V, Real rad, int N){
     const int stride = blockDim.x*gridDim.x;
 
     for(int i = index; i < N; i += stride){
-        V[3*i + 0] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 0];
-        V[3*i + 1] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 1];
-        V[3*i + 2] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 2];
+        // V[3*i + 0] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 0];
+        // V[3*i + 1] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 1];
+        // V[3*i + 2] = Real(1.0)/(Real(6.0)*PI*rad) * F[3*i + 2];
+        V[3*i + 0] = F[3*i + 0];
+        V[3*i + 1] = F[3*i + 1];
+        V[3*i + 2] = F[3*i + 2];
     }
 }
 
@@ -241,11 +272,13 @@ random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, int N_inp
 
     init_cuda();
 
-    init_pos_lattice<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N);
+    init_pos_lattice<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N);
 
     spatial_hashing();
 
-    init_drag<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(init_F_device, rh, N, 1.0, dev_random);
+    init_drag<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(init_F_device, rh, N, Fref, dev_random);
+
+    write();
 
 }
 

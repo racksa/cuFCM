@@ -290,13 +290,13 @@ void init_pos_lattice_random(Real *Y, Real rad, int N, curandState *states){
 }
 
 __global__
-void init_pos_lattice(Real *Y, Real rad, int N){
+void init_pos_lattice(Real *Y, int N){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
     int NP = ceil(cbrtf(N));
     Real dpx = PI2/(Real)NP;
-    Real gaph = (dpx - (Real)2.0*rad)/(Real)2.0;
+    // Real gaph = (dpx - (Real)2.0*rad)/(Real)2.0;
 
     for(int np = index; np < N; np += stride){
         const int k = np/(NP*NP);
