@@ -7,11 +7,12 @@ import matplotlib.cm as cm
 import numpy as np
 from pylab import *
 from pyfile import util
-from pyfile.util import alpha_expr, beta_expr, compute_rad, eta_expr
+from pyfile.util import alpha_expr, beta_expr, compute_fastfcm_npts, compute_rad, eta_expr
 
 def run():
     info_file_name = "simulation_info"
-    save_directory = "data/simulation/20220929_fcm_error1/"
+    save_directory = "data/simulation/20221006_fcm/"
+    save_directory2 = "data/simulation/20221006_fastfcm/"
 
     l = 1
     il, jl, kl = l, l, l
@@ -23,76 +24,102 @@ def run():
     eta_array = np.zeros((l, l, l))
 
     nl = 1
-    npts_array = np.zeros(nl)
-    time_compute_npts_array = np.zeros(nl)
-    Verror_npts_array = np.zeros(nl)
-    Werror_npts_array = np.zeros(nl)
+    svar_array = np.zeros(nl)
+    time_compute_svar_array = np.zeros(nl)
+    time_compute_svar_array2 = np.zeros(nl)
+    Verror_svar_array = np.zeros(nl)
+    Werror_svar_array = np.zeros(nl)
+    
 
     tol_list = np.array([5.e-3, 1.e-3, 5.e-4, 1.e-4, 5.e-5, 1.e-5])
 
     par_dict = util.read_info(info_file_name)
     
-    solver_type = 0
+    solver_type = 1
+    # 0: FCM
+    # 1: Fast FCM
+
+    if(sys.argv[1] == 'plot_n'):
+        solver_start = 0
+        solver_end = 2
+    else:
+        solver_start = solver_type
+        solver_end = solver_type + 1
+
     # Begin custom massive loop
     for i in range(1):
         for j in range(1):
             for k in range(1):
-                for npt in range(nl):
+                for svar in range(nl):
+                    for current_solver in range(solver_start, solver_end):
                     
-                    par_dict['N']=          500000.0
-                    # par_dict['rh']=         0.02609300415934458
-                    par_dict['rh']=         compute_rad(par_dict['N'], 0.15)
-                    if(solver_type == 1):
-                        par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
-                        npts = 270
-                    elif(solver_type == 0):
-                        par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.fcm_par_given_error(1.e-3, par_dict['rh'])
-                        dx = par_dict['rh']/(par_dict['alpha'] * np.sqrt(np.pi))
-                        npts = int(2*np.pi/dx)
-                        dx = 2*np.pi/npts
-                        par_dict['alpha'] = par_dict['rh']/(dx * np.sqrt(np.pi))
-                    par_dict['nx']=         npts
-                    par_dict['ny']=         npts
-                    par_dict['nz']=         npts
-                    par_dict['repeat']=     10
-                    par_dict['prompt']=     10
-                    par_dict['dt']=         0.1
-                    par_dict['Fref']=       par_dict['rh']
-                    par_dict['packrep']=    50
+                        n = 500000 + 100000*svar
+                        par_dict['N']=          n
+                        par_dict['rh']=         0.02609300415934458
+                        # par_dict['rh']=         compute_rad(par_dict['N'], 0.15)
+                        if(current_solver == 1):
+                            par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
+                            npts = compute_fastfcm_npts(par_dict['rh'])
+                        elif(current_solver == 0):
+                            par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.fcm_par_given_error(1.e-3, par_dict['rh'])
+                            dx = par_dict['rh']/(par_dict['alpha'] * np.sqrt(np.pi))
+                            npts = 2*int(np.pi/dx)
+                            dx = 2*np.pi/npts
+                            par_dict['alpha'] = par_dict['rh']/(dx * np.sqrt(np.pi))
+                            par_dict['eta'] = (np.pi/12)/(par_dict['alpha'] * dx)
+                        par_dict['nx']=         npts
+                        par_dict['ny']=         npts
+                        par_dict['nz']=         npts
+                        par_dict['repeat']=     40
+                        par_dict['prompt']=     10
+                        par_dict['dt']=         0.1
+                        par_dict['Fref']=       par_dict['rh']
+                        par_dict['packrep']=    50
 
-                    alpha_array[i][j][k] = par_dict['alpha']
-                    beta_array[i][j][k] = par_dict['beta']
-                    eta_array[i][j][k] = par_dict['eta']
+                        alpha_array[i][j][k] = par_dict['alpha']
+                        beta_array[i][j][k] = par_dict['beta']
+                        eta_array[i][j][k] = par_dict['eta']
 
-                    npts_array[npt] = npts
+                        # single_var_array[svar] = npts
+                        svar_array[svar] = n
 
-                    if(sys.argv[1] == 'run'):
-                        for key in par_dict:
-                            util.replace(key, str(par_dict[key]), info_file_name)
+                        if(sys.argv[1] == 'run'):
+                            for key in par_dict:
+                                util.replace(key, str(par_dict[key]), info_file_name)
 
-                        subprocess.call("./bin/CUFCM", shell=True)
-                        save_info_name, save_scalar_name, save_data_name = util.savefile(par_dict, save_directory, 2)
+                            subprocess.call("./bin/CUFCM", shell=True)
+                            if(current_solver == 0):
+                                save_info_name, save_scalar_name, save_data_name = util.savefile(par_dict, save_directory, 2)
+                            if(current_solver == 1):
+                                save_info_name, save_scalar_name, save_data_name = util.savefile(par_dict, save_directory2, 2)
 
-                        sim_dict = util.read_scalar(save_scalar_name)
-                        print("(", str(npts), str(par_dict['alpha']), par_dict['beta'], par_dict['eta'], ") "
-                            "Verror=", str(sim_dict["Verror"]),\
-                            "Werror=", str(sim_dict["Werror"]),\
-                            "time_compute=", str(sim_dict["time_compute"]))
+                            sim_dict = util.read_scalar(save_scalar_name)
+                            print("(", str(npts), str(par_dict['alpha']), par_dict['beta'], par_dict['eta'], ") "
+                                "Verror=", str(sim_dict["Verror"]),\
+                                "Werror=", str(sim_dict["Werror"]),\
+                                "time_compute=", str(sim_dict["time_compute"]))
 
-                    if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1' or sys.argv[1] == 'plot_npts'):
-                        sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
-                        if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1'):
-                            time_compute_array[i][j][k] = sim_dict['time_compute']
-                            Verror_array[i][j][k] = sim_dict['Verror']
-                            Werror_array[i][j][k] = sim_dict['Werror']
-                        if(sys.argv[1] == 'plot_npts'):
-                            time_compute_npts_array[npt] = sim_dict['time_compute']
-                            Verror_npts_array[npt] = sim_dict['Verror']
-                            Werror_npts_array[npt] = sim_dict['Werror']
+                        if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1' or sys.argv[1] == 'plot_npts'):
+                            sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
+                            if(sys.argv[1] == 'plot3' or sys.argv[1] == 'plot1'):
+                                time_compute_array[i][j][k] = sim_dict['time_compute']
+                                Verror_array[i][j][k] = sim_dict['Verror']
+                                Werror_array[i][j][k] = sim_dict['Werror']
+                            if(sys.argv[1] == 'plot_npts'):
+                                time_compute_svar_array[svar] = sim_dict['time_compute']
+                                Verror_svar_array[svar] = sim_dict['Verror']
+                                Werror_svar_array[svar] = sim_dict['Werror']
+                        if(sys.argv[1] == 'plot_n'):
+                            if(current_solver == 0):
+                                sim_dict = util.read_scalar(save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat")
+                                time_compute_svar_array[svar] = sim_dict['time_compute']
+                            elif(current_solver == 1):
+                                sim_dict2 = util.read_scalar(save_directory2 + "simulation_scalar" + util.parser(par_dict) + ".dat")
+                                time_compute_svar_array2[svar] = sim_dict2['time_compute']
 
-                    if(sys.argv[1] == 'clean'):
-                        subprocess.call("rm -f " + save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat", shell=True)
-                        subprocess.call("rm -f " + save_directory + "simulation_info" + util.parser(par_dict) + ".dat", shell=True)
+                        if(sys.argv[1] == 'clean'):
+                            subprocess.call("rm -f " + save_directory + "simulation_scalar" + util.parser(par_dict) + ".dat", shell=True)
+                            subprocess.call("rm -f " + save_directory + "simulation_info" + util.parser(par_dict) + ".dat", shell=True)
 
     if(sys.argv[1] == 'plot1'):
         option = "1n"
@@ -109,7 +136,10 @@ def run():
         util.plot_3Dheatmap(alpha_array, beta_array, eta_array, Verror_array, time_compute_array, option)
 
     if(sys.argv[1] == 'plot_npts'):
-        util.plot_npts(npts_array, Verror_npts_array, time_compute_npts_array)
+        util.plot_npts(svar_array, Verror_svar_array, time_compute_svar_array)
+
+    if(sys.argv[1] == 'plot_n'):
+        util.plot_n(svar_array, time_compute_svar_array, time_compute_svar_array2)
 
 run()
 

@@ -222,6 +222,42 @@ def plot_npts(npts_array, error_array, time_compute_array):
     plt.show()
 
 
+def plot_n(n_array, time_compute_array, time_compute_array2):
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ptps_array = n_array/time_compute_array
+    ptps_array2 = n_array/time_compute_array2
+    
+    fcm_cutoff_point = len(n_array)
+    for i, t in enumerate(time_compute_array):
+        if (i > 0 and abs(t - time_compute_array[i-1]) < 1.e-5):
+            fcm_cutoff_point = i
+            break
+    
+    # plot data
+    # min_time = time_compute_array.min()
+    # min_cor_npts = npts_array[np.where(time_compute_array == min_time) ]
+    # min_cor_error = error_array[np.where(time_compute_array == min_time) ]
+   
+    # print("Best timing: " + str(min_time))
+    # print("Corresponding N: " + str(min_cor_npts))
+    # print("Corresponding error: " + str(min_cor_error))
+    # print("Corresponding PTPS: " + str(500000/min_time))
+    ax.plot(n_array[:fcm_cutoff_point], ptps_array[:fcm_cutoff_point], marker='o', c='r', label="FCM")
+    ax.plot(n_array, ptps_array2, marker='+', c='b', label="Fast FCM")
+    # ax2.plot(n_array, time_compute_array, marker='+', label="Compute time")
+    ax.legend(loc='upper right')
+    # ax2.legend(loc='upper right')
+    
+    # adding title and labels
+    ax.set_title("PTPS vs. N")
+    ax.set_xlabel('N')
+    ax.set_ylabel('PTPS')
+    # ax2.set_ylabel('Compute time s')
+    plt.savefig('img/PTPS_N.eps', format='eps')
+    plt.show()
+
+
 def layer_array(error_array, tol):
     ret = np.ones(np.shape(error_array))
     for i in range(np.shape(error_array)[0]):
@@ -239,6 +275,9 @@ def layer_array(error_array, tol):
 
 def compute_rad(N, volume_frac):
     return (6*np.pi**2*volume_frac/N)**(1./3.)
+
+def compute_fastfcm_npts(rad):
+    return 2*int(rad * 270. / 0.02609300415934458 /2)
 
 def monoExp(x, m, t):
     return m*np.exp(-t * x)
