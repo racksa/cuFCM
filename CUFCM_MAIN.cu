@@ -26,11 +26,11 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Initialise parameters
 	///////////////////////////////////////////////////////////////////////////////
-
 	Real values[100];
 	read_config(values, "simulation_info");
 	int N = values[0];
 	int repeat = values[8];
+	int prompt = values[9];
 	int packrep = values[12];
 
 	int num_thread_blocks_N;
@@ -48,9 +48,13 @@ int main(int argc, char** argv) {
 
 	#if INIT_FROM_FILE == 1
 
-		read_init_data(Y_host, N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
-		read_init_data(F_host, N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
-		read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
+		read_init_data(Y_host, N, "./data/init_data/new/pos_data.dat");
+		read_init_data(F_host, N, "./data/init_data/new/force_data.dat");
+		read_init_data(T_host, N, "./data/init_data/new/torque_data.dat");
+
+		// read_init_data(Y_host, N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
+		// read_init_data(F_host, N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
+		// read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
 
 		// read_init_data(Y_host, N, "./data/init_data/N16777216/pos-N16777216-rh008089855.dat");
 		// read_init_data(F_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855.dat");
@@ -101,11 +105,16 @@ int main(int argc, char** argv) {
 	cudaDeviceSynchronize();
 	FCM_solver *solver = new FCM_solver;;
 	for(int t = 0; t < repeat; t++){
-		std::cout << "\rComputing repeat " << t+1 << "/" << repeat;
+		if(prompt > 5){
+			std::cout << "\rComputing repeat " << t+1 << "/" << repeat;
+		}
 		solver->hydrodynamic_solver(Y_host, F_host, T_host,
 								    Y_device, F_device, T_device);
 	}
-	printf("\nFinished loop:)\n");
+	if(prompt > 5){
+		printf("\nFinished loop:)\n");
+	}
+	
 
 	solver->finish();
 

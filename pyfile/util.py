@@ -1,4 +1,5 @@
 from cProfile import label
+from re import A
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.special import erf
 
@@ -9,6 +10,8 @@ import numpy as np
 import subprocess
 import os
 import random
+import pandas as pd
+from settings import *
 
 def find_pos(line, symbol):
     """Find position of symbol
@@ -55,9 +58,13 @@ def read_info(fileName, symbol='='):
     return ret
 
 
-def read_scalar(fileName, symbol='='):
+def read_scalar(idict, solver, symbol='='):
     """Read scalar and create dict
     """
+    if solver == 0:
+        fileName = save_directory + "simulation_scalar" + parser(idict) + ".dat"
+    if solver == 1:
+        fileName = save_directory2 + "simulation_scalar" + parser(idict) + ".dat"
     ret = {}
     infoFile = open(fileName, 'r')
     lines = infoFile.readlines()
@@ -66,6 +73,33 @@ def read_scalar(fileName, symbol='='):
         ret[lines[row][:sep-1]] = float(lines[row][sep:])
     infoFile.close()
     return ret
+
+# def read_scalar(fileName, symbol='='):
+#     """Read scalar and create dict
+#     """
+#     ret = {}
+#     infoFile = open(fileName, 'r')
+#     lines = infoFile.readlines()
+#     for row in range(len(lines)):
+#         sep = find_pos(lines[row], symbol)
+#         ret[lines[row][:sep-1]] = float(lines[row][sep:])
+#     infoFile.close()
+#     return ret
+
+
+def read_data(filePath, t, N):
+    '''Read simulation data at time frame t
+    '''
+    read_frame = pd.read_csv(filePath, delimiter=' ', header=None, skiprows=t*(N+1), nrows=N)
+
+    vx = read_frame[6]
+    vy = read_frame[7]
+    vz = read_frame[8]
+    wx = read_frame[9]
+    wy = read_frame[10]
+    wz = read_frame[11]
+
+    return vx, vy, vz, wx, wy, wz
 
 
 def parser(idict):
@@ -233,21 +267,10 @@ def plot_n(n_array, time_compute_array, time_compute_array2):
         if (i > 0 and abs(t - time_compute_array[i-1]) < 1.e-5):
             fcm_cutoff_point = i
             break
-    
-    # plot data
-    # min_time = time_compute_array.min()
-    # min_cor_npts = npts_array[np.where(time_compute_array == min_time) ]
-    # min_cor_error = error_array[np.where(time_compute_array == min_time) ]
-   
-    # print("Best timing: " + str(min_time))
-    # print("Corresponding N: " + str(min_cor_npts))
-    # print("Corresponding error: " + str(min_cor_error))
-    # print("Corresponding PTPS: " + str(500000/min_time))
+
     ax.plot(n_array[:fcm_cutoff_point], ptps_array[:fcm_cutoff_point], marker='o', c='r', label="FCM")
     ax.plot(n_array, ptps_array2, marker='+', c='b', label="Fast FCM")
-    # ax2.plot(n_array, time_compute_array, marker='+', label="Compute time")
     ax.legend(loc='upper right')
-    # ax2.legend(loc='upper right')
     
     # adding title and labels
     ax.set_title("PTPS vs. N")
@@ -319,3 +342,18 @@ def fcm_par_given_error(tol, rh):
         if tol >= val:
             return alpha_list[i], beta_list[i], 6
     return alpha_list[-1], beta_list[-1], 6
+
+def par_reference(rad):
+    return 1.3, 11., 8., compute_fastfcm_npts(rad)
+
+def execute(pars, solver, mode=2):
+        for key in pars:
+            replace(key, str(pars[key]), info_file_name)
+        if(solver == 0):
+            subprocess.call(cufcm_dir + "bin/FCM", shell=True)
+            return savefile(pars, save_directory, mode)
+        if(solver == 1):
+            subprocess.call(cufcm_dir + "bin/CUFCM", shell=True)
+            return savefile(pars, save_directory2, mode)
+        if(solver == -1):
+            subprocess.call(cufcm_dir + "bin/RANDOM", shell=True)

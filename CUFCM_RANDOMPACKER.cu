@@ -9,7 +9,6 @@
 #include "CUFCM_CELLLIST.cuh"
 
 #include "util/cuda_util.hpp"
-#include "util/CUFCM_hashing.hpp"
 #include "util/maths_util.hpp"
 
 __global__

@@ -1,8 +1,9 @@
-NVCC_FLAGS=-arch=sm_60 -std=c++14 -O3 -I../include
+NVCC_FLAGS=-arch=sm_75 -std=c++14 -O3 -I../include
 
 LINK=-lcublas -lcufft -llapacke -lcblas -lcurand -lcuda -lineinfo
 
-CUFCM_FILES = CUFCM_MAIN.cu CUFCM_CELLLIST.cu CUFCM_FCM.cu CUFCM_data.cu CUFCM_CORRECTION.cu CUFCM_SOLVER.cu CUFCM_RANDOMPACKER.cu
+RANDOM_GENERATOR_FILES = CUFCM_RANDOM_MAIN.cu CUFCM_RANDOMPACKER.cu CUFCM_data.cu CUFCM_CELLLIST.cu
+CUFCM_FILES =  CUFCM_MAIN.cu CUFCM_CELLLIST.cu CUFCM_FCM.cu CUFCM_data.cu CUFCM_CORRECTION.cu CUFCM_SOLVER.cu CUFCM_RANDOMPACKER.cu
 
 
 
@@ -11,6 +12,12 @@ UAMMDINCLUDEFLAGS=-I$(CUDA_ROOT)/include -I$(UAMMD_ROOT)/src -I$(UAMMD_ROOT)/src
 
 CUFCM : CUFCM_MAIN.cu
 	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) $(LINK) -o bin/CUFCM
+
+FCM : CUFCM_MAIN.cu
+	nvcc $(NVCC_FLAGS) $(CUFCM_FILES) $(LINK) -o bin/FCM
+
+RANDOM_GENERATOR : CUFCM_RANDOM_MAIN.cu
+	nvcc $(NVCC_FLAGS) $(RANDOM_GENERATOR_FILES) $(LINK) -o bin/RANDOM
 
 clean :
 	rm -f bin/CUFCM
@@ -31,15 +38,6 @@ INCLUDEFLAGS=-I$(CUDA_ROOT)/include -I$(UAMMD_ROOT)/src -I$(UAMMD_ROOT)/src/thir
 NVCCFLAGS=-ccbin=$(CXX) -std=c++14 -O3 $(INCLUDEFLAGS) -DMAXLOGLEVEL=$(LOG_LEVEL) $(DOUBLE_PRECISION) --extended-lambda
 
 CUFCM_FILES_NOMAIN = incorporate/CUFCM_INCORPORATE.cu
-# all: $(patsubst %.cu, %, $(wildcard *.cu))
-
-# %: %.cu Makefile
-# 	$(NVCC) $(NVCCFLAGS) $< -o $(@:.out=)
-
-# clean: $(patsubst %.cu, %.clean, $(wildcard *.cu))
-
-# %.clean:
-# 	rm -f $(@:.clean=)
 
 spread_with_UAMMD : incorporate/spread_interpolate.cu
 	nvcc $(NVCC_FLAGS) incorporate/spread_interpolate.cu $(CUFCM_FILES_NOMAIN) $(NVCCFLAGS) -o bin/spread $(LINK)

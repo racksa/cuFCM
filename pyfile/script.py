@@ -1,18 +1,24 @@
 from distutils.log import error
 import sys
+from pathlib import Path
+import os
 import subprocess
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 from pylab import *
-from pyfile import util
-from pyfile.util import alpha_expr, beta_expr, compute_fastfcm_npts, compute_rad, eta_expr
+from settings import *
+import util
+import simulator
+
+sim = simulator.SIM()
+
+sim.start_loop(1)
+
+
 
 def run():
-    info_file_name = "simulation_info"
-    save_directory = "data/simulation/20221006_fcm/"
-    save_directory2 = "data/simulation/20221006_fastfcm/"
 
     l = 1
     il, jl, kl = l, l, l
@@ -59,7 +65,7 @@ def run():
                         # par_dict['rh']=         compute_rad(par_dict['N'], 0.15)
                         if(current_solver == 1):
                             par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.par_given_error(1.e-3)
-                            npts = compute_fastfcm_npts(par_dict['rh'])
+                            npts = util.compute_fastfcm_npts(par_dict['rh'])
                         elif(current_solver == 0):
                             par_dict['alpha'], par_dict['beta'], par_dict['eta'] = util.fcm_par_given_error(1.e-3, par_dict['rh'])
                             dx = par_dict['rh']/(par_dict['alpha'] * np.sqrt(np.pi))
@@ -141,7 +147,10 @@ def run():
     if(sys.argv[1] == 'plot_n'):
         util.plot_n(svar_array, time_compute_svar_array, time_compute_svar_array2)
 
-run()
+# run()
+
+
+
 
 
 # Parameter explanation:
