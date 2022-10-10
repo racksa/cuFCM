@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	// Initialise parameters
 	///////////////////////////////////////////////////////////////////////////////
 	Real values[100];
-	read_config(values, "simulation_info");
+	read_config(values, "simulation_info_long");
 	int N = values[0];
 	Real rh = values[1];
 	int repeat = values[8];

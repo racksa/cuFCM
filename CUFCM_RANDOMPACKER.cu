@@ -284,7 +284,7 @@ random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, int N_inp
 
 __host__
 void random_packer::init_cuda(){
-    read_config(values, "simulation_info");
+    read_config(values, "simulation_info_long");
     N = values[0];
     rh = values[1];
     dt = values[10];
@@ -300,8 +300,6 @@ void random_packer::init_cuda(){
     cellL = PI2 / (Real)M;
     ncell = M*M*M;
     mapsize = 13*ncell;
-
-    printf("Cell number: %d\n", M);
 
     aux_host = malloc_host<Real>(3*N);					    aux_device = malloc_device<Real>(3*N);
     F_host = malloc_host<Real>(3*N);						F_device = malloc_device<Real>(3*N);

@@ -58,13 +58,10 @@ def read_info(fileName, symbol='='):
     return ret
 
 
-def read_scalar(idict, solver, symbol='='):
+def read_scalar(idict, symbol='='):
     """Read scalar and create dict
     """
-    if solver == 0:
-        fileName = save_directory + "simulation_scalar" + parser(idict) + ".dat"
-    if solver == 1:
-        fileName = save_directory2 + "simulation_scalar" + parser(idict) + ".dat"
+    fileName = save_directory + "simulation_scalar" + parser(idict) + ".dat"
     ret = {}
     infoFile = open(fileName, 'r')
     lines = infoFile.readlines()
@@ -73,6 +70,14 @@ def read_scalar(idict, solver, symbol='='):
         ret[lines[row][:sep-1]] = float(lines[row][sep:])
     infoFile.close()
     return ret
+
+
+def write_scalar(idict, sim_dict):
+    """Write scalar and create dict
+    """
+    fileName = save_directory + "simulation_scalar" + parser(idict) + ".dat"
+    for key in sim_dict:
+        replace(key, str(sim_dict[key]), fileName)
 
 # def read_scalar(fileName, symbol='='):
 #     """Read scalar and create dict
@@ -90,7 +95,7 @@ def read_scalar(idict, solver, symbol='='):
 def read_data(filePath, t, N):
     '''Read simulation data at time frame t
     '''
-    read_frame = pd.read_csv(filePath, delimiter=' ', header=None, skiprows=t*(N+1), nrows=N)
+    read_frame = pd.read_csv(filePath, delimiter=' ', header=None, skiprows=int(t*(N+1)), nrows=N)
 
     vx = read_frame[6]
     vy = read_frame[7]
@@ -98,7 +103,6 @@ def read_data(filePath, t, N):
     wx = read_frame[9]
     wy = read_frame[10]
     wz = read_frame[11]
-
     return vx, vy, vz, wx, wy, wz
 
 
@@ -123,7 +127,7 @@ def savefile(idict, directory, mode=1):
     save_data_name = directory + "simulation_data" + parser(idict) + ".dat"
 
     if(mode>0):
-        subprocess.call("cp " + "simulation_info " + save_info_name, shell=True)
+        subprocess.call("cp " + info_file_name + " " + save_info_name, shell=True)
     if(mode>1):
         subprocess.call("cp " + "data/simulation/simulation_scalar.dat " + save_scalar_name, shell=True)
     if(mode>2):
@@ -140,15 +144,15 @@ def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array, time_compute
 
     # setting error layer
     layer = layer_array(error_array, option[1])
-    size_array = layer*50
+    markersize_array = layer*50
     if(option[0] == 2):
         time_compute_layer = time_compute_array*layer
         min_value = time_compute_layer[time_compute_layer > 0].min()
         min_index = np.where(time_compute_layer == min_value)
         print("Min compute time for error=" + str(option[1]) + " is " + str(min_value) + " at " + str(min_index))
-        print("Corresponding (alpha beta eta):" + str(alpha_array[min_index]) + ' '\
-                                                + str(beta_array[min_index]) + ' '\
-                                                + str(eta_array[min_index]) + ' ')
+        print("Corresponding (alpha beta eta):" + str(alpha_array[min_index][0]) + ' '\
+                                                + str(beta_array[min_index][0]) + ' '\
+                                                + str(eta_array[min_index][0]) + ' ')
 
     # setting color bar
     color_map = cm.ScalarMappable(cmap=cmap_name)
@@ -168,7 +172,7 @@ def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array, time_compute
         ax.set_title("Error heatmap")
     if(option[0] == 2):
         img = ax.scatter(alpha_array, beta_array, eta_array, marker='s',
-                        s=size_array, c=time_compute_array, cmap=cmap_name)
+                        s=markersize_array, c=time_compute_array, cmap=cmap_name)
         cbar.set_label("Compute time")
         ax.set_title("Compute time for Error=" + str(option[1]))
 
@@ -296,11 +300,24 @@ def layer_array(error_array, tol):
                     ret[i][j][k] = 1
     return ret
 
+
+def layer_array_1D(error_array, tol):
+    ret = np.ones(len(error_array))
+    for i in range(len(error_array)):
+        if error_array[i] > tol:
+            ret[i] = 0
+        elif (i>0) and (error_array[i-1]<= tol):
+            ret[i] = 0
+        else:
+            ret[i] = 1
+    return ret
+
+
 def compute_rad(N, volume_frac):
     return (6*np.pi**2*volume_frac/N)**(1./3.)
 
 def compute_fastfcm_npts(rad):
-    return 2*int(rad * 270. / 0.02609300415934458 /2)
+    return 2*int(0.02609300415934458 * 256. / rad /2)
 
 def monoExp(x, m, t):
     return m*np.exp(-t * x)
@@ -308,21 +325,21 @@ def monoExp(x, m, t):
 def monoGauss(x, m, t):
     return m*np.exp(-t * x**2)
 
-def alpha_expr(tol):
-    return np.sqrt(np.log10(tol/5.071050110367754)/(-10.224838558167573))
+# def alpha_expr(tol):
+#     return np.sqrt(np.log10(tol/5.071050110367754)/(-10.224838558167573))
 
-def beta_expr(tol, alpha):
-    tol_list = np.array([2.7155083e-01, 7.4106760e-02, 5.9791320e-02, 1.2188930e-02,
-                         8.8945900e-03, 1.3305500e-03, 8.9943000e-04, 9.7620000e-05, 
-                         6.3130000e-05, 8.0200000e-06, 6.7500000e-06, 5.7200000e-06])
-    ngd_list = np.array([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
-    for i, val in enumerate(tol_list):
-        if tol >= val:
-            return ngd_list[i]/alpha
-    return ngd_list[-1]/alpha
+# def beta_expr(tol, alpha):
+#     tol_list = np.array([2.7155083e-01, 7.4106760e-02, 5.9791320e-02, 1.2188930e-02,
+#                          8.8945900e-03, 1.3305500e-03, 8.9943000e-04, 9.7620000e-05, 
+#                          6.3130000e-05, 8.0200000e-06, 6.7500000e-06, 5.7200000e-06])
+#     ngd_list = np.array([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+#     for i, val in enumerate(tol_list):
+#         if tol >= val:
+#             return ngd_list[i]/alpha
+#     return ngd_list[-1]/alpha
 
-def eta_expr(tol):
-    return np.sqrt(np.log10(tol/6.300589575773176)/(-1.9832215241494984))
+# def eta_expr(tol):
+#     return np.sqrt(np.log10(tol/6.300589575773176)/(-1.9832215241494984))
 
 def par_given_error(tol):
     tol_list = np.array([5.e-3, 1.e-3, 5.e-4, 1.e-4, 5.e-5, 1.e-5])
@@ -346,7 +363,7 @@ def fcm_par_given_error(tol, rh):
 def par_reference(rad):
     return 1.3, 11., 8., compute_fastfcm_npts(rad)
 
-def execute(pars, solver, mode=2):
+def execute(pars, mode=2):
         for key in pars:
             replace(key, str(pars[key]), info_file_name)
         if(solver == 0):
@@ -354,6 +371,16 @@ def execute(pars, solver, mode=2):
             return savefile(pars, save_directory, mode)
         if(solver == 1):
             subprocess.call(cufcm_dir + "bin/CUFCM", shell=True)
-            return savefile(pars, save_directory2, mode)
-        if(solver == -1):
-            subprocess.call(cufcm_dir + "bin/RANDOM", shell=True)
+            return savefile(pars, save_directory, mode)
+        
+
+def execute_random_generator(pars):
+    for key in pars:
+        replace(key, str(pars[key]), info_file_name)
+    subprocess.call(cufcm_dir + "bin/RANDOM", shell=True)
+
+def percentage_error_magnitude(x, xref):
+    return np.mean( modulus(x-xref) / modulus(xref) )
+
+def modulus(vec):
+    return np.sqrt(np.sum(vec*vec, 0))

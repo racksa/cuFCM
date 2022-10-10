@@ -83,25 +83,25 @@ void write_pos(Real *Y, Real rh, int N, const char *file_name){
 
 void write_init_data(Real *Y, Real *F, Real *T, int N){
     FILE *pfile;
-    printf("Writing position data...\n");
+    // printf("Writing position data...\n");
     pfile = fopen("./data/init_data/new/pos_data.dat", "w");
     for(int i = 0; i < N; i++){
         fprintf(pfile, "%.8f %.8f %.8f\n", Y[3*i + 0], Y[3*i + 1], Y[3*i + 2]);
     }
     fclose(pfile);
-    printf("Writing force data...\n");
+    // printf("Writing force data...\n");
     pfile = fopen("./data/init_data/new/force_data.dat", "w");
     for(int i = 0; i < N; i++){
         fprintf(pfile, "%.8f %.8f %.8f\n", F[3*i + 0], F[3*i + 1], F[3*i + 2]);
     }
     fclose(pfile);
-    printf("Writing torque data...\n");
+    // printf("Writing torque data...\n");
     pfile = fopen("./data/init_data/new/torque_data.dat", "w");
     for(int i = 0; i < N; i++){
         fprintf(pfile, "%.8f %.8f %.8f\n", T[3*i + 0], T[3*i + 1], T[3*i + 2]);
     }
     fclose(pfile);
-    printf("Finished writing...\n");
+    // printf("Finished writing...\n");
 }
 
 void write_time(Real time_cuda_initialisation, 

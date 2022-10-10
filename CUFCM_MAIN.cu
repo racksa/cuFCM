@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 	// Initialise parameters
 	///////////////////////////////////////////////////////////////////////////////
 	Real values[100];
-	read_config(values, "simulation_info");
+	read_config(values, "simulation_info_long");
 	int N = values[0];
 	int repeat = values[8];
 	int prompt = values[9];
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
 	FCM_solver *solver = new FCM_solver;;
 	for(int t = 0; t < repeat; t++){
 		if(prompt > 5){
-			std::cout << "\rComputing repeat " << t+1 << "/" << repeat;
+			std::cout << "\r====Computing repeat " << t+1 << "/" << repeat;
 		}
 		solver->hydrodynamic_solver(Y_host, F_host, T_host,
 								    Y_device, F_device, T_device);

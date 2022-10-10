@@ -80,7 +80,7 @@ void FCM_solver::prompt_info() {
 
 __host__
 void FCM_solver::init_config(){
-        read_config(values, "simulation_info");
+        read_config(values, "simulation_info_long");
         N = values[0];
         rh = values[1];
         alpha = values[2];
@@ -278,17 +278,45 @@ void FCM_solver::hydrodynamic_solver(Real *Y_host_input, Real *F_host_input, Rea
 
     reset_grid();
 
+    if(prompt> 6){
+        printf("Finished reseting grid\n");
+    }
+
     spatial_hashing();
+
+    if(prompt> 6){
+        printf("Finished spatial hasing\n");
+    }
 
     spread();
 
+    if(prompt> 6){
+        printf("Finished spreading\n");
+    }
+
     fft_solve();
+
+    if(prompt> 6){
+        printf("Finished fft\n");
+    }
 
     gather();
 
+    if(prompt> 6){
+        printf("Finished gathering\n");
+    }
+
     correction();
 
+    if(prompt> 6){
+        printf("Finished correction\n");
+    }
+
     sortback();
+
+    if(prompt> 6){
+        printf("Finished sorting back\n");
+    }
 
     rept += 1;
 
