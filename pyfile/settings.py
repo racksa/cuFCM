@@ -4,8 +4,8 @@ import os
 
 cufcm_dir = '/data/hs2216/CUFCM/'
 info_file_name = "simulation_info_long"
-fcm_directory = cufcm_dir + "data/simulation/20221010_fcm/"
-fastfcm_directory = cufcm_dir + "data/simulation/20221010_fastfcm/"
+fcm_directory = cufcm_dir + "data/simulation/20221011_fcm/"
+fastfcm_directory = cufcm_dir + "data/simulation/20221011_fastfcm2/"
 
 solver = 1
 if(solver == 0):

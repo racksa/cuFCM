@@ -62,6 +62,9 @@ def read_scalar(idict, symbol='='):
     """Read scalar and create dict
     """
     fileName = save_directory + "simulation_scalar" + parser(idict) + ".dat"
+    if not os.path.isfile(fileName):
+        print('Error file name' + fileName)
+        return False
     ret = {}
     infoFile = open(fileName, 'r')
     lines = infoFile.readlines()
@@ -305,11 +308,11 @@ def layer_array_1D(error_array, tol):
     ret = np.ones(len(error_array))
     for i in range(len(error_array)):
         if error_array[i] > tol:
-            ret[i] = 0
-        elif (i>0) and (error_array[i-1]<= tol):
-            ret[i] = 0
+            ret[i] = 0.
+        # elif (i>0) and (error_array[i-1]<= tol):
+        #     ret[i] = 0
         else:
-            ret[i] = 1
+            ret[i] = 1.
     return ret
 
 
@@ -384,3 +387,11 @@ def percentage_error_magnitude(x, xref):
 
 def modulus(vec):
     return np.sqrt(np.sum(vec*vec, 0))
+
+color_codex = {0: 'r',
+               1: 'b',
+               2: 'g',
+               3: 'y',
+               4: 'cyan',
+               5: 'grey',
+               6: 'balck'}

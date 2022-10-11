@@ -18,14 +18,7 @@ class SIM:
     def __init__(self):
         pardict = util.read_info(info_file_name)
         # Initialise parameters
-        # pardict['N']=          500000.0
-        # pardict['rh']=         0.02609300415934458
-        # pardict['alpha'], pardict['beta'], pardict['eta'] = util.par_given_error(1.e-3)
-        # npts = 270
-        # pardict['nx']=         npts
-        # pardict['ny']=         npts
-        # pardict['nz']=         npts
-        pardict['repeat']=     40
+        pardict['repeat']=     50
         pardict['prompt']=     -1
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
@@ -34,28 +27,35 @@ class SIM:
         self.pars = pardict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (6, 3, 6)
+        self.search_grid_shape = (5, 1, 5)
         self.npts_search_shape = 10
+
+        self.nphi = 5
+        self.nn = 20
+        loopshape = (self.nphi, self.nn)
+        self.optimal_time_compute_array = np.zeros(loopshape)
+        self.optimal_Verror_array = np.zeros(loopshape)
+        self.optimal_Werror_array = np.zeros(loopshape)
+        self.optimal_alpha_array = np.zeros(loopshape)
+        self.optimal_beta_array = np.zeros(loopshape)
+        self.optimal_eta_array = np.zeros(loopshape)
+        self.optimal_npts_array = np.zeros(loopshape)
+        self.phi_array = np.zeros(loopshape)
+        self.n_array = np.zeros(loopshape)
+
+        self.siminfo = True
 
 
     def start_loop(self):
-        nphi = 4
-        nn = 10
-        loopshape = (nphi, nn)
-        time_compute_array = np.zeros(loopshape)
-        Verror_array = np.zeros(loopshape)
-        Werror_array = np.zeros(loopshape)
-        phi_array = np.zeros(loopshape)
-        n_array = np.zeros(loopshape)
 
-        for i in range(nphi):
-            for j in range(nn):
-                phi=                        0.05 + i*0.05
+        for i in range(3, self.nphi):
+            for j in range(self.nn-10):
+                phi=                        0.08 + i*0.08
                 self.pars['N']=             100000.0 + 100000.0*j
                 self.pars['rh']=            util.compute_rad(self.pars['N'], phi)
                 self.pars['Fref']=          self.pars['rh']
+                self.print_siminfo(i, j)
                 if(sys.argv[1] == 'run'):
-                    self.print_siminfo(i, j)
                     util.execute_random_generator(self.pars)
                     self.get_reference()
 
@@ -71,11 +71,71 @@ class SIM:
                 self.print_scalar(sim_dict)
                 util.write_scalar(self.pars, sim_dict)
 
-                Verror_array[i, j] = sim_dict["Verror"]
-                Werror_array[i, j] = sim_dict["Werror"]
-                time_compute_array[i, j] = sim_dict["time_compute"]
-                phi_array[i, j] = phi
-                n_array[i, j] = self.pars['N']
+                self.optimal_time_compute_array[i, j] = sim_dict["time_compute"]
+                self.optimal_Verror_array[i, j] = sim_dict["Verror"]
+                self.optimal_Werror_array[i, j] = sim_dict["Werror"]
+                self.optimal_alpha_array[i, j] = self.pars['alpha']
+                self.optimal_beta_array[i, j] = self.pars['beta']
+                self.optimal_eta_array[i, j] = self.pars['eta']
+                self.optimal_npts_array[i, j] = self.pars['nx']
+
+                self.phi_array[i, j] = phi
+                self.n_array[i, j] = self.pars['N']
+        
+        self.save_optimal_arrays()
+
+
+    def analyse(self):
+        self.load_optimal_arrays()
+        print('Optimal parameters:')
+        optimal_parameters = [[self.optimal_alpha_array[i, j], self.optimal_beta_array[i, j],\
+                self.optimal_eta_array[i, j], self.optimal_npts_array[i, j]] \
+                for i in range(self.nphi) for j in range(self.nn)]
+        for i in optimal_parameters:
+            print(i)
+
+        print(self.optimal_time_compute_array)
+
+    
+    def plot_optimal(self):
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        
+        for i, n in enumerate(self.n_array):
+            ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
+            ax.plot(self.n_array[i], ptps_array, marker='o', c=util.color_codex[i], label=str(self.phi_array[i][0]))
+        ax.legend()
+        
+        # adding title and labels
+        ax.set_title("PTPS vs. N")
+        ax.set_xlabel('N')
+        ax.set_ylabel('PTPS')
+        plt.savefig('img/npts.eps', format='eps')
+        plt.show()
+
+
+    def save_optimal_arrays(self):
+        np.save(save_directory + 'optimal_timecompute_array.npy', self.optimal_time_compute_array)
+        np.save(save_directory + 'optimal_Verror_array.npy', self.optimal_Verror_array)
+        np.save(save_directory + 'optimal_Werror_array.npy', self.optimal_Werror_array)
+        np.save(save_directory + 'optimal_alpha_array.npy', self.optimal_alpha_array)
+        np.save(save_directory + 'optimal_beta_array.npy', self.optimal_beta_array)
+        np.save(save_directory + 'optimal_eta_array.npy', self.optimal_eta_array)
+        np.save(save_directory + 'optimal_npts_array.npy', self.optimal_npts_array)
+        np.save(save_directory + 'phi_array.npy', self.phi_array)
+        np.save(save_directory + 'n_array.npy', self.n_array)
+
+
+    def load_optimal_arrays(self):
+        self.optimal_time_compute_array = np.load(save_directory + 'optimal_timecompute_array.npy')
+        self.optimal_Verror_array = np.load(save_directory + 'optimal_Verror_array.npy')
+        self.optimal_Werror_array = np.load(save_directory + 'optimal_Werror_array.npy')
+        self.optimal_alpha_array = np.load(save_directory + 'optimal_alpha_array.npy')
+        self.optimal_beta_array = np.load(save_directory + 'optimal_beta_array.npy')
+        self.optimal_eta_array = np.load(save_directory + 'optimal_eta_array.npy')
+        self.optimal_npts_array = np.load(save_directory + 'optimal_npts_array.npy')
+        self.phi_array = np.load(save_directory + 'phi_array.npy')
+        self.n_array = np.load(save_directory + 'n_array.npy')
 
 
     def get_reference(self):
@@ -95,10 +155,13 @@ class SIM:
 
 
     def print_scalar(self, sim_dict):
-        print("(", str(self.pars['nx']), str(self.pars['alpha']), self.pars['beta'], self.pars['eta'], ") "
-                                "Verror=", str(sim_dict["Verror"]),\
-                                "Werror=", str(sim_dict["Werror"]),\
-                                "time_compute=", str(sim_dict["time_compute"]))
+        if(self.siminfo):
+            print("(", str(self.pars['nx']), str(self.pars['alpha']), self.pars['beta'], self.pars['eta'], ") "
+                                    "Verror=", str(sim_dict["Verror"]),\
+                                    "Werror=", str(sim_dict["Werror"]),\
+                                    "time_compute=", str(sim_dict["time_compute"]))
+
+
 
     def print_siminfo(self, i, j):
         print('\n===========================================')
@@ -123,10 +186,10 @@ class SIM:
         for i in range(self.search_grid_shape[0]):
             for j in range(self.search_grid_shape[1]):
                 for k in range(self.search_grid_shape[2]):
-                    self.pars['alpha']=      0.9 + 0.05*i
-                    ngd = 8.001 + j
+                    self.pars['alpha']=      0.93 + 0.01*i
+                    ngd=                     9.00
                     self.pars['beta']=       ngd / self.pars['alpha']
-                    self.pars['eta']=        4.0 + 0.4*k
+                    self.pars['eta']=        4.7 + 0.1*k
                     npts = util.compute_fastfcm_npts(self.pars['rh'])
                     self.pars['nx']=         npts
                     self.pars['ny']=         npts
@@ -136,18 +199,19 @@ class SIM:
                         save_info_name, save_scalar_name, save_data_name = util.execute(self.pars)
 
                     sim_dict = util.read_scalar(self.pars)
-                    if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run'):
-                        sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
+                    if(sim_dict):
+                        if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run'):
+                            sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
 
-                    time_compute_array[i, j, k] = sim_dict["time_compute"]
-                    Verror_array[i, j, k] = sim_dict["Verror"]
-                    Werror_array[i, j, k] = sim_dict["Werror"]
-                    alpha_array[i, j, k] = self.pars['alpha']
-                    beta_array[i, j, k] = self.pars['beta']
-                    eta_array[i, j, k] = self.pars['eta']
+                        time_compute_array[i, j, k] = sim_dict["time_compute"]
+                        Verror_array[i, j, k] = sim_dict["Verror"]
+                        Werror_array[i, j, k] = sim_dict["Werror"]
+                        alpha_array[i, j, k] = self.pars['alpha']
+                        beta_array[i, j, k] = self.pars['beta']
+                        eta_array[i, j, k] = self.pars['eta']
 
-                    self.print_scalar(sim_dict)
-                    util.write_scalar(self.pars, sim_dict)
+                        self.print_scalar(sim_dict)
+                        util.write_scalar(self.pars, sim_dict)
 
         layer = util.layer_array(Verror_array, tol)
         time_compute_layer = time_compute_array*layer
@@ -159,11 +223,12 @@ class SIM:
         optimal_beta = beta_array[min_index][0]
         optimal_eta = eta_array[min_index][0]
 
+        self.pars['alpha']=         optimal_alpha
+        self.pars['beta']=          optimal_beta
+        self.pars['eta']=           optimal_eta
+
         for npt in range(self.npts_search_shape):
-            self.pars['alpha']=         optimal_alpha
-            self.pars['beta']=          optimal_beta
-            self.pars['eta']=           optimal_eta
-            npts = util.compute_fastfcm_npts(self.pars['rh']) + 4*npt
+            npts = util.compute_fastfcm_npts(self.pars['rh']) + 4*(npt+1)
             self.pars['nx']=         npts
             self.pars['ny']=         npts
             self.pars['nz']=         npts
@@ -172,24 +237,27 @@ class SIM:
                 save_info_name, save_scalar_name, save_data_name = util.execute(self.pars)
 
             sim_dict = util.read_scalar(self.pars)
-            if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run'):
-                sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
 
-            time_compute_array_1D[npt] = sim_dict["time_compute"]
-            Verror_array_1D[npt] = sim_dict["Verror"]
-            Werror_array_1D[npt] = sim_dict["Werror"]
-            npts_array[npt] = self.pars['nx']
+            if(sim_dict):
+                if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run'):
+                    sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
 
-            self.print_scalar(sim_dict)
-            util.write_scalar(self.pars, sim_dict)
+                time_compute_array_1D[npt] = sim_dict["time_compute"]
+                Verror_array_1D[npt] = sim_dict["Verror"]
+                Werror_array_1D[npt] = sim_dict["Werror"]
+                npts_array[npt] = self.pars['nx']
+
+                self.print_scalar(sim_dict)
+                util.write_scalar(self.pars, sim_dict)
         
-        layer = util.layer_array_1D(Verror_array_1D, tol)
-        time_compute_layer_1D = time_compute_array_1D*layer
+        layer_1D = util.layer_array_1D(Verror_array_1D, tol)
+        time_compute_layer_1D = time_compute_array_1D*layer_1D
         min_time = time_compute_layer_1D[time_compute_layer_1D > 0].min()
         min_index = np.where(time_compute_layer_1D == min_time)
-        optimal_npts = npts_array[min_index][0]
         optimal_Verror = Verror_array_1D[min_index][0]
         optimal_Werror = Werror_array_1D[min_index][0]
+        optimal_npts = npts_array[min_index][0]
+
 
         print("Min compute time for error=" + str(tol) + " is " + str(min_time))
         print("Corresponding (alpha beta eta):" + str(optimal_alpha) + ' '\

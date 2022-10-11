@@ -152,6 +152,7 @@ void read_config(Real *values, const char *file_name){
                 continue;
             }
             auto delimiterPos = line.find("=");
+            // TODO: implement isFLoat() to take file name as input
             Real value = (Real) std::stod(line.substr(delimiterPos + 1));
             values[line_count] = value;
             line_count += 1;

@@ -14,8 +14,12 @@ import simulator
 
 sim = simulator.SIM()
 
-sim.start_loop()
+if(sys.argv[1] == 'run' or sys.argv[1] == 'read'):
+    sim.start_loop()
 
+if(sys.argv[1] == 'read_np'):
+    sim.analyse()
+    sim.plot_optimal()
 
 
 # def run():
