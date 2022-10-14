@@ -32,15 +32,6 @@ __device__ __host__
 Real Q(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
 
 __global__
-void cufcm_pair_correction_linklist(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
-                    int *map, int *head, int *list,
-                    int ncell, Real Rrefsq,
-                    Real pdmag,
-                    Real sigma, Real sigmasq,
-                    Real sigmaFCM, Real sigmaFCMsq,
-                    Real sigmaFCMdip, Real sigmaFCMdipsq);
-
-__global__
 void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
                                 Real StokesMob, Real ModStokesMob,
                                 Real PDStokesMob, Real BiLapMob,
@@ -63,16 +54,3 @@ void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, i
                     Real StokesMob,
                     Real WT1Mob,
                     Real hasimoto_ratio);
-
-void cufcm_pair_correction_loop(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
-                    int *map, int *head, int *list,
-                    int ncell, Real Rrefsq,
-                    Real pdmag,
-                    Real sigma, Real sigmasq,
-                    Real sigmaFCM, Real sigmaFCMsq,
-                    Real sigmaFCMdip, Real sigmaFCMdipsq);
-
-void cufcm_self_correction_loop(Real* V, Real* W, Real* F, Real* T, int N,
-                                Real StokesMob, Real ModStokesMob,
-                                Real PDStokesMob, Real BiLapMob,
-                                Real WT1Mob, Real WT2Mob);

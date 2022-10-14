@@ -91,26 +91,27 @@ void FCM_solver::init_config(){
         nz = values[7];
         repeat = values[8];
         prompt = values[9];
+        boxsize = values[13];
 
     /* Deduced FCM parameters */
         grid_size = nx*ny*nz;
         fft_grid_size = (nx/2+1)*ny*nz;
-        dx = PI2/nx;
+        dx = boxsize/nx;
         ngd = round(alpha*beta);
         Rc_fac = Real(eta*alpha);
 
         /* Neighbour list */
         Rc = Rc_fac*dx;
         Rcsq = Rc*Rc;
-        M = (int) (PI2/Rc);
+        M = (int) (boxsize/Rc);
         if(M < 3){
             M = 3;
         }
-        cellL = PI2 / (Real)M;
+        cellL = boxsize / (Real)M;
         ncell = M*M*M;
         mapsize = 13*ncell;
 
-        Volume_frac = (N*4.0/3.0*PI*rh*rh*rh) / (PI2*PI2*PI2);
+        Volume_frac = (N*4.0/3.0*PI*rh*rh*rh) / (boxsize*boxsize*boxsize);
 
         /* Repeat number */
         warmup = 0.2*repeat;

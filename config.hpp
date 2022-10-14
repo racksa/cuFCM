@@ -13,6 +13,9 @@
 #define PI2sqrt_inv 0.3989422804014327
 #define SQRT2 1.4142135623730951
 
+#define BOXSIZE (PI2)
+#define BOXSIZE_H (BOXSIZE/2)
+
 #define SOLVER_MODE 1
 // 0 = FCM
 // 1 = Fast FCM
@@ -61,7 +64,7 @@
 // 0 = Dont write to file
 // 1 = Write to file    **default
 
-#define CHECK_ERROR 0
+#define CHECK_ERROR 1
 // 0 = Dont check error
 // 1 = Check error from file  **default
 // 2 = Check error from random sample

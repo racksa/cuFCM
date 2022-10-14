@@ -12,7 +12,7 @@
 #include "util/maths_util.hpp"
 
 __global__
-void check_overlap_gpu(Real *Y, Real rad, int N, 
+void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rcsq){
@@ -32,9 +32,9 @@ void check_overlap_gpu(Real *Y, Real rad, int N,
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * (Real) ((int) (xij/PI));
-                yij = yij - PI2 * (Real) ((int) (yij/PI));
-                zij = zij - PI2 * (Real) ((int) (zij/PI));
+                xij = xij - box_size * (Real) ((int) (xij/(box_size/Real(2.0))));
+                yij = yij - box_size * (Real) ((int) (yij/(box_size/Real(2.0))));
+                zij = zij - box_size * (Real) ((int) (zij/(box_size/Real(2.0))));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
@@ -57,9 +57,9 @@ void check_overlap_gpu(Real *Y, Real rad, int N,
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * ((Real) ((int) (xij/PI)));
-                yij = yij - PI2 * ((Real) ((int) (yij/PI)));
-                zij = zij - PI2 * ((Real) ((int) (zij/PI)));
+                xij = xij - box_size * ((Real) ((int) (xij/(box_size/Real(2.0)))));
+                yij = yij - box_size * ((Real) ((int) (yij/(box_size/Real(2.0)))));
+                zij = zij - box_size * ((Real) ((int) (zij/(box_size/Real(2.0)))));
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
                     if (rijsq < rad*rad){
@@ -74,36 +74,31 @@ void check_overlap_gpu(Real *Y, Real rad, int N,
 }
 
 __global__
-void box(Real *Y, int N){
+void box(Real *Y, int N, Real box_size){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
     for(int i = index; i < N; i += stride){
-        if(Y[3*i + 0]>PI2){
-            Y[3*i + 0] -= PI2;
+        if(Y[3*i + 0]>box_size){
+            Y[3*i + 0] -= box_size;
         }
         if(Y[3*i + 0]<0){
-            Y[3*i + 0] += PI2;
+            Y[3*i + 0] += box_size;
         }
 
-        if(Y[3*i + 1]>PI2){
-            Y[3*i + 1] -= PI2;
+        if(Y[3*i + 1]>box_size){
+            Y[3*i + 1] -= box_size;
         }
         if(Y[3*i + 1]<0){
-            Y[3*i + 1] += PI2;
+            Y[3*i + 1] += box_size;
         }
 
-        if(Y[3*i + 2]>PI2){
-            Y[3*i + 2] -= PI2;
+        if(Y[3*i + 2]>box_size){
+            Y[3*i + 2] -= box_size;
         }
         if(Y[3*i + 2]<0){
-            Y[3*i + 2] += PI2;
+            Y[3*i + 2] += box_size;
         }
-
-
-        // Y[3*i + 0] -= PI2 * floorf(Y[3*i + 0]/PI2);
-        // Y[3*i + 1] -= PI2 * floorf(Y[3*i + 1]/PI2);
-        // Y[3*i + 2] -= PI2 * floorf(Y[3*i + 2]/PI2);
     }
 
 }
@@ -132,7 +127,7 @@ void init_drag(Real *F, Real rad, int N, Real Fref, curandState *states){
 
 
 __global__
-void apply_repulsion(Real* Y, Real *F, Real rad, int N,
+void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rcsq,
@@ -156,9 +151,9 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * Real(int(xij/PI));
-                yij = yij - PI2 * Real(int(yij/PI));
-                zij = zij - PI2 * Real(int(zij/PI));
+                xij = xij - box_size * Real(int(xij/(box_size/Real(2.0))));
+                yij = yij - box_size * Real(int(yij/(box_size/Real(2.0))));
+                zij = zij - box_size * Real(int(zij/(box_size/Real(2.0))));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
@@ -194,9 +189,9 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N,
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
 
-                xij = xij - PI2 * Real(int(xij/PI));
-                yij = yij - PI2 * Real(int(yij/PI));
-                zij = zij - PI2 * Real(int(zij/PI));
+                xij = xij - box_size * Real(int(xij/(box_size/Real(2.0))));
+                yij = yij - box_size * Real(int(yij/(box_size/Real(2.0))));
+                zij = zij - box_size * Real(int(zij/(box_size/Real(2.0))));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
@@ -262,16 +257,17 @@ void move_forward(Real *Y, Real *V, Real dt, int N){
 
 
 __host__
-random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, int N_input){
+random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, int N_input, Real box_size){
 
     Y_host = Y_host_input;
     Y_device = Y_device_input;
 
     N = N_input;
+    boxsize = box_size;
 
     init_cuda();
 
-    init_pos_lattice<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N);
+    init_pos_lattice<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
 
     spatial_hashing();
 
@@ -293,11 +289,11 @@ void random_packer::init_cuda(){
     /* Neighbour list */
     Rc = 4*rh;
     Rcsq = Rc*Rc;
-    M = (int) (PI2/Rc);
+    M = (int) (boxsize/Rc);
     if(M < 3){
         M = 3;
     }
-    cellL = PI2 / (Real)M;
+    cellL = boxsize / (Real)M;
     ncell = M*M*M;
     mapsize = 13*ncell;
 
@@ -355,7 +351,7 @@ void random_packer::update(){
 
     copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(init_F_device, F_device, 3*N);
 
-    apply_repulsion<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N,
+    apply_repulsion<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, boxsize,
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, Rcsq,
@@ -365,16 +361,16 @@ void random_packer::update(){
 
     move_forward<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, dt, N);
 
-    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N);
+    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
 
 }
 
 __host__
 void random_packer::finish(){
 
-    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N);
+    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
 
-    check_overlap_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N,
+    check_overlap_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N, boxsize,
                       particle_cellhash_device, cell_start_device, cell_end_device, 
                       map_device, ncell, Rcsq);
 

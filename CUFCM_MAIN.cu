@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
 	int repeat = values[8];
 	int prompt = values[9];
 	int packrep = values[12];
+	Real boxsize = values[13];
 
 	int num_thread_blocks_N;
     curandState *dev_random;
@@ -48,21 +49,28 @@ int main(int argc, char** argv) {
 
 	#if INIT_FROM_FILE == 1
 
-		read_init_data(Y_host, N, "./data/init_data/new/pos_data.dat");
-		read_init_data(F_host, N, "./data/init_data/new/force_data.dat");
-		read_init_data(T_host, N, "./data/init_data/new/torque_data.dat");
+		// read_init_data(Y_host, N, "./data/init_data/new/pos_data.dat");
+		// read_init_data(F_host, N, "./data/init_data/new/force_data.dat");
+		// read_init_data(T_host, N, "./data/init_data/new/torque_data.dat");
 
-		// read_init_data(Y_host, N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
-		// read_init_data(F_host, N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
-		// read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
+		read_init_data(Y_host, N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
+		read_init_data(F_host, N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
+		read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
 
 		// read_init_data(Y_host, N, "./data/init_data/N16777216/pos-N16777216-rh008089855.dat");
 		// read_init_data(F_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855.dat");
 		// read_init_data(T_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855-2.dat");
 
+		for(int i = 0; i<3*N; i++){
+			Y_host[i] = Y_host[i] * boxsize/PI2;
+			// F_host[i] = F_host[i] * 6.0;
+			// T_host[i] = T_host[i] * 0.0;
+		}
+
 		copy_to_device<Real>(Y_host, Y_device, 3*N);
 		copy_to_device<Real>(F_host, F_device, 3*N);
 		copy_to_device<Real>(T_host, T_device, 3*N);
+
 
 	#elif INIT_FROM_FILE == 0
 

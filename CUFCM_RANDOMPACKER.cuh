@@ -2,19 +2,19 @@
 #include "config.hpp"
 
 __global__
-void check_overlap_gpu(Real *Y, Real rad, int N, 
+void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq);
 
 __global__
-void box(Real *Y, int N);
+void box(Real *Y, int N, Real box_size);
 
 __global__
 void apply_drag(Real *Y, Real *F, Real rad, int N, Real Fref, curandState *states);
 
 __global__
-void apply_repulsion(Real* Y, Real *F, Real rad, int N,
+void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,
@@ -28,6 +28,7 @@ class random_packer{
 public:
     int N;
     Real rh;
+    Real boxsize;
     Real values[100];
     int *overlap_counter;
 
@@ -52,7 +53,7 @@ public:
 
 
     __host__
-    random_packer(Real *Y_host_input, Real *Y_device_input, int N_input);
+    random_packer(Real *Y_host_input, Real *Y_device_input, int N_input, Real box_size);
 
     __host__
     void init_cuda();

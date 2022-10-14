@@ -304,13 +304,24 @@ def layer_array(error_array, tol):
     return ret
 
 
-def layer_array_1D(error_array, tol):
+def filter_array(error_array, tol):
+    ret = np.ones(np.shape(error_array))
+    for i in range(np.shape(error_array)[0]):
+        for j in range(np.shape(error_array)[1]):
+            for k in range(np.shape(error_array)[2]):
+                for l in range(np.shape(error_array)[3]):
+                    if error_array[i][j][k][l] > tol:
+                        ret[i][j][k][l] = 0.
+                    else:
+                        ret[i][j][k][l] = 1.
+    return ret
+
+
+def filter_array_1D(error_array, tol):
     ret = np.ones(len(error_array))
     for i in range(len(error_array)):
         if error_array[i] > tol:
             ret[i] = 0.
-        # elif (i>0) and (error_array[i-1]<= tol):
-        #     ret[i] = 0
         else:
             ret[i] = 1.
     return ret
@@ -318,6 +329,9 @@ def layer_array_1D(error_array, tol):
 
 def compute_rad(N, volume_frac):
     return (6*np.pi**2*volume_frac/N)**(1./3.)
+
+def compute_phi(N, rad):
+    return 4./3.*np.pi*rad**3*N/(2.*np.pi)**3
 
 def compute_fastfcm_npts(rad):
     return 2*int(0.02609300415934458 * 256. / rad /2)

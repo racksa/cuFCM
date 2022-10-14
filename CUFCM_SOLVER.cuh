@@ -6,6 +6,7 @@ class FCM_solver{
 public:
     int N, nx, ny, nz, repeat, prompt, warmup;
     Real rh, alpha, beta, eta;
+    Real boxsize;
     Real values[100];
     int grid_size, fft_grid_size, ngd;
     Real dx, Rc_fac, Rc, Rcsq,  Volume_frac;
