@@ -59,7 +59,7 @@ Real Q(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam){
 }
 
 __global__
-void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
+void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,
@@ -98,9 +98,9 @@ void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* 
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - BOXSIZE * (Real) ((int) (xij/BOXSIZE_H));
-                yij = yij - BOXSIZE * (Real) ((int) (yij/BOXSIZE_H));
-                zij = zij - BOXSIZE * (Real) ((int) (zij/BOXSIZE_H));
+                xij = xij - boxsize * (Real) ((int) (xij/(boxsize/Real(2.0))));
+                yij = yij - boxsize * (Real) ((int) (yij/(boxsize/Real(2.0))));
+                zij = zij - boxsize * (Real) ((int) (zij/(boxsize/Real(2.0))));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rrefsq){
@@ -174,9 +174,9 @@ void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* 
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
 
-                xij = xij - BOXSIZE * ((Real) ((int) (xij/BOXSIZE_H)));
-                yij = yij - BOXSIZE * ((Real) ((int) (yij/BOXSIZE_H)));
-                zij = zij - BOXSIZE * ((Real) ((int) (zij/BOXSIZE_H)));
+                xij = xij - boxsize * ((Real) ((int) (xij/(boxsize/Real(2.0)))));
+                yij = yij - boxsize * ((Real) ((int) (yij/(boxsize/Real(2.0)))));
+                zij = zij - boxsize * ((Real) ((int) (zij/(boxsize/Real(2.0)))));
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rrefsq){
                     Real rij = sqrtf(rijsq);
@@ -259,7 +259,7 @@ void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* 
 }
 
 __global__
-void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
+void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
                                 Real StokesMob, Real ModStokesMob,
                                 Real PDStokesMob, Real BiLapMob,
                                 Real WT1Mob, Real WT2Mob){
@@ -279,7 +279,7 @@ void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
 }
 
 __global__
-void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,
+void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate, Real boxsize,
                     Real sigmaFCM,
                     Real sigmaFCMdip,
                     Real StokesMob,
@@ -306,9 +306,9 @@ void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, i
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - BOXSIZE * (Real) ((int) (xij/BOXSIZE_H));
-                yij = yij - BOXSIZE * (Real) ((int) (yij/BOXSIZE_H));
-                zij = zij - BOXSIZE * (Real) ((int) (zij/BOXSIZE_H));
+                xij = xij - boxsize * (Real) ((int) (xij/(boxsize/Real(2.0))));
+                yij = yij - boxsize * (Real) ((int) (yij/(boxsize/Real(2.0))));
+                zij = zij - boxsize * (Real) ((int) (zij/(boxsize/Real(2.0))));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 Real rij = sqrtf(rijsq);

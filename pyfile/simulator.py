@@ -163,7 +163,7 @@ class SIM:
 
 
     def run_test(self):
-        fac = 1.0
+        fac = 2.0
         npts = 270
         self.pars['N']=          500000.0
         self.pars['rh']=         0.02609300415934458*fac
@@ -173,17 +173,19 @@ class SIM:
         self.pars['nx']=         npts
         self.pars['ny']=         npts
         self.pars['nz']=         npts
-        self.pars['repeat']=     50
+        self.pars['Fref']=       fac**2
+        self.pars['repeat']=     1
         self.pars['prompt']=     5
         self.pars['boxsize']=    np.pi*2*fac
-        self.get_reference()
+
+        # self.get_reference()
         save_info_name, save_scalar_name, save_data_name = util.execute(self.pars, 3)
 
-        sim_dict = util.read_scalar(self.pars)
-        if(sim_dict):
-            if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run' or sys.argv[1] == 'test'):
-                sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
-        self.print_scalar(sim_dict)
+        # sim_dict = util.read_scalar(self.pars)
+        # if(sim_dict):
+        #     if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run' or sys.argv[1] == 'test'):
+        #         sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
+        # self.print_scalar(sim_dict)
 
 
     def print_scalar(self, sim_dict):

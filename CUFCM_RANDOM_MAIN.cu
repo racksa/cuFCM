@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
 	int repeat = values[8];
 	int prompt = values[9];
 	int packrep = values[12];
+	Real boxsize = values[13];
 
 	int num_thread_blocks_N;
     curandState *dev_random;
@@ -48,7 +49,7 @@ int main(int argc, char** argv) {
 	init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, rh, N, dev_random);
 
 	{
-		random_packer *packer = new random_packer(Y_host, Y_device, N);
+		random_packer *packer = new random_packer(Y_host, Y_device, N, boxsize);
 		for(int t = 0; t < packrep; t++){
 			if(prompt > 5){
 				std::cout << "\rGenerating random spheres iteration: " << t+1 << "/" << packrep;

@@ -471,7 +471,7 @@ void FCM_solver::fft_solve(){
     ///////////////////////////////////////////////////////////////////////////////
     cufcm_flow_solve<<<num_thread_blocks_GRID, THREADS_PER_BLOCK>>>(fk_x_device, fk_y_device, fk_z_device,
                                                             uk_x_device, uk_y_device, uk_z_device,
-                                                            nx, ny, nz);
+                                                            nx, ny, nz, boxsize);
     ///////////////////////////////////////////////////////////////////////////////
     // IFFT
     ///////////////////////////////////////////////////////////////////////////////
@@ -581,7 +581,7 @@ void FCM_solver::correction(){
         
         #elif CORRECTION_TYPE == 1
 
-            cufcm_pair_correction_spatial_hashing_tpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N,
+            cufcm_pair_correction_spatial_hashing_tpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
                                 particle_cellhash_device, cell_start_device, cell_end_device,
                                 map_device,
                                 ncell, Rcsq,
@@ -592,7 +592,7 @@ void FCM_solver::correction(){
 
         #endif
 
-        cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
+        cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N, boxsize,
                                 StokesMob, ModStokesMob,
                                 PDStokesMob, BiLapMob,
                                 WT1Mob, WT2Mob);

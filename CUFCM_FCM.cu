@@ -471,7 +471,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
 __global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
                       myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
-                      int nx, int ny, int nz){
+                      int nx, int ny, int nz, Real boxsize){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -492,9 +492,9 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         // Real norm = (Real)1.0/(qq);
 
         int nptsh = nx/2;
-        Real q1 = (indi < nptsh || indi == nptsh)? Real(indi) : Real(indi - nx);
-        Real q2 = (indj < nptsh || indj == nptsh)? Real(indj) : Real(indj - ny);
-        Real q3 = (indk < nptsh || indk == nptsh)? Real(indk) : Real(indk - nz);
+        Real q1 = ( (indi < nptsh || indi == nptsh)? Real(indi) : Real(indi - nx) ) * (PI2/boxsize);
+        Real q2 = ( (indj < nptsh || indj == nptsh)? Real(indj) : Real(indj - ny) ) * (PI2/boxsize);
+        Real q3 = ( (indk < nptsh || indk == nptsh)? Real(indk) : Real(indk - nz) ) * (PI2/boxsize);
         Real qq = q1*q1 + q2*q2 + q3*q3;
         Real norm = (Real)1.0/(qq);
 
