@@ -34,6 +34,8 @@ int main(int argc, char** argv) {
 	Real Fref = values[11];
 	int packrep = values[12];
 	Real boxsize = values[13];
+	Real Ffac = values[14];
+	Real Tfac = values[15];
 
 	int num_thread_blocks_N;
     curandState *dev_random;
@@ -68,8 +70,8 @@ int main(int argc, char** argv) {
 
 		for(int i = 0; i<3*N; i++){
 			Y_host[i] = Y_host[i] * boxsize/PI2;
-			F_host[i] = F_host[i] * Fref;
-			T_host[i] = T_host[i] * Fref;
+			F_host[i] = F_host[i] * Ffac;
+			T_host[i] = T_host[i] * Tfac;
 		}
 
 		copy_to_device<Real>(Y_host, Y_device, 3*N);

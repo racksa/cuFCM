@@ -173,10 +173,12 @@ class SIM:
         self.pars['nx']=         npts
         self.pars['ny']=         npts
         self.pars['nz']=         npts
-        self.pars['Fref']=       fac**2
+        self.pars['Fref']=       1.0
         self.pars['repeat']=     1
         self.pars['prompt']=     5
         self.pars['boxsize']=    np.pi*2*fac
+        self.pars['Ffac']=       fac**2
+        self.pars['Tfac']=       fac**3
 
         # self.get_reference()
         save_info_name, save_scalar_name, save_data_name = util.execute(self.pars, 3)
