@@ -4,7 +4,7 @@
 #include <fstream>
 
 #include "config.hpp"
-#include "CUFCM_data.cuh"
+#include "CUFCM_DATA.cuh"
 #include "CUFCM_RANDOMPACKER.cuh"
 #include "CUFCM_CELLLIST.cuh"
 

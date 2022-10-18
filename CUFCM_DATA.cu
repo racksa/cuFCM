@@ -1,4 +1,4 @@
-#include "CUFCM_data.cuh"
+#include "CUFCM_DATA.cuh"
 #include <cstdio>
 #include <iostream>
 #include <fstream>

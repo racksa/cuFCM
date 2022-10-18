@@ -12,7 +12,7 @@
 
 #include "config.hpp"
 
-#include "CUFCM_data.cuh"
+#include "CUFCM_DATA.cuh"
 #include "CUFCM_RANDOMPACKER.cuh"
 
 #include "util/cuda_util.hpp"

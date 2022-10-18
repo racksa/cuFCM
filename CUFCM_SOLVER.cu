@@ -16,14 +16,13 @@
 #include "config.hpp"
 #include "CUFCM_FCM.cuh"
 #include "CUFCM_CORRECTION.cuh"
-#include "CUFCM_data.cuh"
+#include "CUFCM_DATA.cuh"
 #include "CUFCM_SOLVER.cuh"
 #include "CUFCM_RANDOMPACKER.cuh"
 #include "CUFCM_CELLLIST.cuh"
 
 #include "util/cuda_util.hpp"
 #include "util/CUFCM_linklist.hpp"
-#include "util/CUFCM_hashing.hpp"
 #include "util/maths_util.hpp"
 
 __host__
@@ -384,17 +383,7 @@ void FCM_solver::spread(){
 
     #if SOLVER_MODE == 1
 
-        #if SPREAD_TYPE == 0
-
-            cufcm_mono_dipole_distribution_tpp_register<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, N,
-                                                T_device, F_device, pdmag, sigmaGRIDsq,
-                                                gaussx_device, gaussy_device, gaussz_device,
-                                                grad_gaussx_dip_device, grad_gaussy_dip_device, grad_gaussz_dip_device,
-                                                xdis_device, ydis_device, zdis_device,
-                                                indx_device, indy_device, indz_device,
-                                                ngd, nx, ny, nz);
-
-        #elif SPREAD_TYPE == 1
+        #if SPREAD_TYPE == 1
 
             cufcm_mono_dipole_distribution_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
                                                 Y_device, T_device, F_device,

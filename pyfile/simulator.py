@@ -23,6 +23,9 @@ class SIM:
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
         pardict['packrep']=    50
+        pardict['boxsize']=    np.pi*2
+        pardict['Ffac']=       1.0
+        pardict['Tfac']=       1.0
 
         self.pars = pardict.copy()
         self.reference_pars = pardict.copy()
@@ -163,13 +166,13 @@ class SIM:
 
 
     def run_test(self):
-        fac = 2.0
+        fac = 1.0
         npts = 270
-        self.pars['N']=          500000.0
+        self.pars['N']=          500000
         self.pars['rh']=         0.02609300415934458*fac
-        self.pars['alpha']=      0.9352
-        self.pars['beta']=       9.706
-        self.pars['eta']=        5.573
+        self.pars['alpha']=      0.97
+        self.pars['beta']=       8.9
+        self.pars['eta']=        4.94
         self.pars['nx']=         npts
         self.pars['ny']=         npts
         self.pars['nz']=         npts

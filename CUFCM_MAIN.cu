@@ -15,7 +15,7 @@
 
 #include "config.hpp"
 
-#include "CUFCM_data.cuh"
+#include "CUFCM_DATA.cuh"
 #include "CUFCM_SOLVER.cuh"
 #include "CUFCM_RANDOMPACKER.cuh"
 
@@ -31,7 +31,6 @@ int main(int argc, char** argv) {
 	int N = values[0];
 	int repeat = values[8];
 	int prompt = values[9];
-	Real Fref = values[11];
 	int packrep = values[12];
 	Real boxsize = values[13];
 	Real Ffac = values[14];
@@ -60,14 +59,6 @@ int main(int argc, char** argv) {
 		read_init_data(F_host, N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
 		read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
 
-		// read_init_data(Y_host, N, "./data/init_data/N500000/pos-N500000-rh02609300-2-artificial.dat");
-		// read_init_data(F_host, N, "./data/init_data/N500000/force-N500000-rh02609300-artificial.dat");
-		// read_init_data(T_host, N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
-
-		// read_init_data(Y_host, N, "./data/init_data/N16777216/pos-N16777216-rh008089855.dat");
-		// read_init_data(F_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855.dat");
-		// read_init_data(T_host, N, "./data/init_data/N16777216/force-N16777216-rh008089855-2.dat");
-
 		for(int i = 0; i<3*N; i++){
 			Y_host[i] = Y_host[i] * boxsize/PI2;
 			F_host[i] = F_host[i] * Ffac;
@@ -91,7 +82,7 @@ int main(int argc, char** argv) {
 			pfile = fopen("data/simulation/spherepacking.dat", "w");
 			fclose(pfile);
 			
-			random_packer *packer = new random_packer(Y_host, Y_device, N);
+			random_packer *packer = new random_packer(Y_host, Y_device, N, boxsize);
 			for(int t = 0; t < packrep; t++){
 				std::cout << "\rGenerating random spheres iteration: " << t+1 << "/" << packrep;
 				packer->update();

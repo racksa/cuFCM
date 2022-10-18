@@ -40,24 +40,6 @@ public:
 
     Real cellL;
 
-    #if	GATHER_TYPE == 0
-
-		Real    *gaussx_host, *gaussx_device,
-                *gaussy_host, *gaussy_device,
-                *gaussz_host, *gaussz_device,
-		        *grad_gaussx_dip_host, *grad_gaussx_dip_device,
-                *grad_gaussy_dip_host, *grad_gaussy_dip_device, 
-                *grad_gaussz_dip_host, *grad_gaussz_dip_device,
-                *gaussgrid_host, *gaussgrid_device,
-                *xdis_host, *xdis_device, 
-                *ydis_host, *ydis_device,
-                *zdis_host, *zdis_device,
-                *indx_host, *indx_device,
-                *indy_host, *indy_device,
-                *indz_host, *indz_device;
-
-	#endif
-
 	#if CORRECTION_TYPE == 0
 
 		int *head_host, *head_device, *list_host, *list_device;

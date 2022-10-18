@@ -20,40 +20,32 @@
 // 0 = FCM
 // 1 = Fast FCM
 
-#define TOL 0
-// 0 = 10^-3
-// 1 = 10^-4
-// 2 = 10^-5
-// 3 = 10^-6
-
 #define ENABLE_REPEAT 1
 // 0 = Dont repeat
 // 1 = Reapeat measurement
 
 #define THREADS_PER_BLOCK 32
 
-#define HASH_ENCODE_FUNC linear_encode
-
 #define INIT_FROM_FILE 1
 // 0 = Generate random packing
 // 1 = Read initial data from file
 
 #define SPREAD_TYPE 4
-// 0 = Thread per particle (TPP) register
+// 0 = Thread per particle (TPP) register   **deprecated
 // 1 = Thread per particle (TPP) recompute
-// 2 = Block per particle (BPP) shared  **default
+// 2 = Block per particle (BPP) shared
 // 3 = Block per particle (BPP) recompute
-// 4 = Block per particle (BPP) shared dynamic
+// 4 = Block per particle (BPP) shared dynamic  **default
 
 #define GATHER_TYPE 4
 // 0 = Thread per particle (TPP) register   **deprecated
 // 1 = Thread per particle (TPP) recompute
-// 2 = Block per particle (BPP) shared  **default
+// 2 = Block per particle (BPP) shared
 // 3 = Block per particle (BPP) recompute
-// 4 = Block per particle (BPP) shared dynamic
+// 4 = Block per particle (BPP) shared dynamic  **default
 
 #define CORRECTION_TYPE 1
-// 0 = Linklist
+// 0 = Linklist     **deprecated
 // 1 = Spatial hashing (TPP)   **default
 
 #define SORT_BACK 1
@@ -65,9 +57,8 @@
 // 1 = Write to file    **default
 
 #define CHECK_ERROR 1
-// 0 = Dont check error
-// 1 = Check error from file  **default
-// 2 = Check error from random sample
+// 0 = Dont check error     **default
+// 1 = Check error from file
 
 #define USE_DOUBLE_PRECISION false
 
