@@ -4,6 +4,8 @@
 class FCM_solver{
 
 public:
+    Pars pars;
+
     int N, nx, ny, nz, repeat, prompt, warmup;
     Real rh, alpha, beta, eta;
     Real boxsize;
@@ -77,6 +79,12 @@ public:
 
     __host__
     FCM_solver();
+
+    __host__
+    FCM_solver(Pars);
+
+    __host__
+    void init();
 
     __host__
     void prompt_info();

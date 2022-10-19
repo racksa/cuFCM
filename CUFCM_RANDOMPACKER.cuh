@@ -26,6 +26,9 @@ void move_forward(Real *Y, Real *V, Real dt, int N);
 class random_packer{
 
 public:
+    
+    Random_Pars pars;
+
     int N;
     Real rh;
     Real boxsize;
@@ -53,7 +56,7 @@ public:
 
 
     __host__
-    random_packer(Real *Y_host_input, Real *Y_device_input, int N_input, Real box_size);
+    random_packer(Real *Y_host_input, Real *Y_device_input, Random_Pars pars_input);
 
     __host__
     void init_cuda();

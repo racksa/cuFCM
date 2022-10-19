@@ -211,6 +211,15 @@ void append(Real x, Real y, Real z, Real *Y, int np){
     Y[3*np + 2] = z;
 }
 
+void init_random_force(Real *F, Real rad, int N){
+
+    int num_thread_blocks_N;
+    curandState *dev_random;
+	num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	cudaMalloc((void**)&dev_random, num_thread_blocks_N*THREADS_PER_BLOCK*sizeof(curandState));
+
+    init_force_kernel<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F, rad, N, dev_random);
+}
 
 __global__
 void init_force_kernel(Real *F, Real rad, int N, curandState *states){

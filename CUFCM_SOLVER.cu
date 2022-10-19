@@ -26,19 +26,21 @@
 #include "util/maths_util.hpp"
 
 __host__
-FCM_solver::FCM_solver(){
+FCM_solver::FCM_solver(Pars pars_input){
+    
+    pars = pars_input;
 
-        init_config();
+    init_config();
 
-        init_fcm_var();
+    init_fcm_var();
 
-        init_time_array();
+    init_time_array();
 
-        prompt_info();
+    prompt_info();
 
-        init_fcm_var();
+    init_fcm_var();
 
-        init_cuda();
+    init_cuda();
 
 }
 
@@ -79,18 +81,18 @@ void FCM_solver::prompt_info() {
 
 __host__
 void FCM_solver::init_config(){
-        read_config(values, "simulation_info_long");
-        N = values[0];
-        rh = values[1];
-        alpha = values[2];
-        beta = values[3];
-        eta = values[4];
-        nx = values[5];
-        ny = values[6];
-        nz = values[7];
-        repeat = values[8];
-        prompt = values[9];
-        boxsize = values[13];
+        N = pars.N;
+        rh = pars.rh;
+        alpha = pars.alpha;
+        beta = pars.beta;
+        eta = pars.eta;
+        nx = pars.nx;
+        ny = pars.ny;
+        nz = pars.nz;
+        repeat = pars.repeat;
+        prompt = pars.prompt;
+        boxsize = pars.boxsize;
+
 
     /* Deduced FCM parameters */
         grid_size = nx*ny*nz;

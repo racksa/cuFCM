@@ -83,4 +83,18 @@
 
 #define NGD_UAMMD 9
 #define NGD 9
+
+struct Pars
+    {
+        int N, nx, ny, nz, repeat, prompt;
+        Real rh, alpha, beta, eta, boxsize;
+    };
+
+struct Random_Pars
+    {
+        int N, nx, ny, nz, repeat, prompt;
+        Real rh, alpha, beta, eta, boxsize;
+        Real dt, Fref;
+    };
+    
 #endif

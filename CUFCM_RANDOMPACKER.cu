@@ -257,13 +257,11 @@ void move_forward(Real *Y, Real *V, Real dt, int N){
 
 
 __host__
-random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, int N_input, Real box_size){
+random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, Random_Pars pars_input){
 
     Y_host = Y_host_input;
     Y_device = Y_device_input;
-
-    N = N_input;
-    boxsize = box_size;
+    pars = pars_input;
 
     init_cuda();
 
@@ -280,11 +278,11 @@ random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, int N_inp
 
 __host__
 void random_packer::init_cuda(){
-    read_config(values, "simulation_info_long");
-    N = values[0];
-    rh = values[1];
-    dt = values[10];
-    Fref = values[11];
+    N = pars.N;
+    rh = pars.rh;
+    dt = pars.dt;
+    Fref = pars.Fref;
+    boxsize = pars.boxsize;
 
     /* Neighbour list */
     Rc = 4*rh;
@@ -363,6 +361,7 @@ void random_packer::update(){
 
     box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
 
+    write();
 }
 
 __host__
