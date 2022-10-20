@@ -167,7 +167,7 @@ class SIM:
 
     def run_test(self):
         fac = 1.0
-        npts = 270
+        npts = 500
         self.pars['N']=          500000
         self.pars['rh']=         0.02609300415934458*fac
         self.pars['alpha']=      0.97

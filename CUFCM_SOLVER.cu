@@ -38,45 +38,8 @@ FCM_solver::FCM_solver(Pars pars_input){
 
     prompt_info();
 
-    init_fcm_var();
-
     init_cuda();
 
-}
-
-__host__
-void FCM_solver::prompt_info() {
-    if(prompt > -1){
-		std::cout << "-------\nSimulation\n-------\n";
-		std::cout << "Particle number:\t" << N << "\n";
-		std::cout << "Particle radius:\t" << rh << "\n";
-		#if SOLVER_MODE == 1
-			std::cout << "Solver:\t\t\t" << "<Fast FCM>" << "\n";
-		#elif SOLVER_MODE == 0
-			std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
-		#endif
-		std::cout << "Grid points:\t\t" << nx << "\n";
-		std::cout << "Grid support:\t\t" << ngd << "\n";
-		#if SOLVER_MODE == 1
-			std::cout << "Sigma/sigma:\t\t" << sigma_fac << "\n";
-			std::cout << "Alpha:\t\t\t" << alpha << "\n";
-			std::cout << "Beta:\t\t\t" << beta << "\n";
-			std::cout << "Eta:\t\t\t" << eta << "\n";
-		#endif
-		#if SOLVER_MODE == 1
-			std::cout << "Sigma:\t\t\t" << sigmaGRID << "\n";
-		#elif SOLVER_MODE == 0
-			std::cout << "sigma:\t\t\t" << sigmaFCM << "\n";
-		#endif
-		std::cout << "dx:\t\t\t" << dx<< "\n";
-		std::cout << "Cell number:\t\t" << M << "\n";
-		#if ENABLE_REPEAT == 1
-			std::cout << "Repeat number:\t\t" << repeat << "\n";
-		#endif
-		std::cout << "Volume fraction:\t" << Volume_frac << "\n";
-		
-		std::cout << std::endl;
-	}
 }
 
 __host__
@@ -117,6 +80,7 @@ void FCM_solver::init_config(){
         /* Repeat number */
         warmup = 0.2*repeat;
 }
+
 
 __host__
 void FCM_solver::init_fcm_var(){
@@ -201,6 +165,41 @@ void FCM_solver::init_time_array(){
 }
 
 __host__
+void FCM_solver::prompt_info() {
+    if(prompt > -1){
+		std::cout << "-------\nSimulation\n-------\n";
+		std::cout << "Particle number:\t" << N << "\n";
+		std::cout << "Particle radius:\t" << rh << "\n";
+		#if SOLVER_MODE == 1
+			std::cout << "Solver:\t\t\t" << "<Fast FCM>" << "\n";
+		#elif SOLVER_MODE == 0
+			std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
+		#endif
+		std::cout << "Grid points:\t\t" << nx << "\n";
+		std::cout << "Grid support:\t\t" << ngd << "\n";
+		#if SOLVER_MODE == 1
+			std::cout << "Sigma/sigma:\t\t" << sigma_fac << "\n";
+			std::cout << "Alpha:\t\t\t" << alpha << "\n";
+			std::cout << "Beta:\t\t\t" << beta << "\n";
+			std::cout << "Eta:\t\t\t" << eta << "\n";
+		#endif
+		#if SOLVER_MODE == 1
+			std::cout << "Sigma:\t\t\t" << sigmaGRID << "\n";
+		#elif SOLVER_MODE == 0
+			std::cout << "sigma:\t\t\t" << sigmaFCM << "\n";
+		#endif
+		std::cout << "dx:\t\t\t" << dx<< "\n";
+		std::cout << "Cell number:\t\t" << M << "\n";
+		#if ENABLE_REPEAT == 1
+			std::cout << "Repeat number:\t\t" << repeat << "\n";
+		#endif
+		std::cout << "Volume fraction:\t" << Volume_frac << "\n";
+		
+		std::cout << std::endl;
+	}
+}
+
+__host__
 void FCM_solver::init_cuda(){
     ///////////////////////////////////////////////////////////////////////////////
 	// CUDA initialisation
@@ -280,45 +279,17 @@ void FCM_solver::hydrodynamic_solver(Real *Y_host_input, Real *F_host_input, Rea
 
     reset_grid();
 
-    if(prompt> 6){
-        printf("Finished reseting grid\n");
-    }
-
     spatial_hashing();
-
-    if(prompt> 6){
-        printf("Finished spatial hasing\n");
-    }
 
     spread();
 
-    if(prompt> 6){
-        printf("Finished spreading\n");
-    }
-
     fft_solve();
-
-    if(prompt> 6){
-        printf("Finished fft\n");
-    }
 
     gather();
 
-    if(prompt> 6){
-        printf("Finished gathering\n");
-    }
-
     correction();
 
-    if(prompt> 6){
-        printf("Finished correction\n");
-    }
-
     sortback();
-
-    if(prompt> 6){
-        printf("Finished sorting back\n");
-    }
 
     rept += 1;
 
@@ -375,6 +346,14 @@ void FCM_solver::spatial_hashing(){
 
     cudaDeviceSynchronize();	time_linklist_array[rept] = get_time() - time_start;
 }
+
+
+__host__
+void FCM_solver::sort_particle(){
+    
+}
+
+
 
 __host__
 void FCM_solver::spread(){

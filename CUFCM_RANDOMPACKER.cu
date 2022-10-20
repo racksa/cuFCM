@@ -360,8 +360,6 @@ void random_packer::update(){
     move_forward<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, dt, N);
 
     box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
-
-    write();
 }
 
 __host__

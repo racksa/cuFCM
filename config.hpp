@@ -16,7 +16,7 @@
 #define BOXSIZE (PI2)
 #define BOXSIZE_H (BOXSIZE/2)
 
-#define SOLVER_MODE 1
+#define SOLVER_MODE 0
 // 0 = FCM
 // 1 = Fast FCM
 

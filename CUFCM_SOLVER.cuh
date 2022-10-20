@@ -112,6 +112,9 @@ public:
     void spatial_hashing();
 
     __host__
+    void sort_particle();
+
+    __host__
     void spread();
 
      __host__
