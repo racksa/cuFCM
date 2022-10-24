@@ -37,11 +37,19 @@ void init_pos_random_overlapping(Real *Y, int N, Real boxsize, curandState *stat
 __global__
 void init_pos_lattice(Real *Y, int N, Real boxsize);
 
+__global__
+void interleaved2separate(Real *F_device_interleave,
+                          Real *F_device, Real *T_device, int N);
+
+__global__
+void separate2interleaved(Real *F_device_interleave,
+                          Real *F_device, Real *T_device, int N);
+
 void init_random_force(Real *F, Real rad, int N);
 
 __global__
 void init_force_kernel(Real *F, Real rad, int N, curandState *states);
 
 __global__
-void append(Real x, Real y, Real z, Real *Y, int np);
+void box(Real *Y, int N, Real box_size);
 

@@ -7,8 +7,7 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
                     int *map,
                     int ncell, Real Rrefsq);
 
-__global__
-void box(Real *Y, int N, Real box_size);
+
 
 __global__
 void apply_drag(Real *Y, Real *F, Real rad, int N, Real Fref, curandState *states);

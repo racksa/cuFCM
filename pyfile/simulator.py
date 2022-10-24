@@ -167,7 +167,7 @@ class SIM:
 
     def run_test(self):
         fac = 1.0
-        npts = 500
+        npts = 300
         self.pars['N']=          500000
         self.pars['rh']=         0.02609300415934458*fac
         self.pars['alpha']=      0.97
@@ -178,7 +178,7 @@ class SIM:
         self.pars['nz']=         npts
         self.pars['Fref']=       1.0
         self.pars['repeat']=     1
-        self.pars['prompt']=     5
+        self.pars['prompt']=     11
         self.pars['boxsize']=    np.pi*2*fac
         self.pars['Ffac']=       fac**2
         self.pars['Tfac']=       fac**3

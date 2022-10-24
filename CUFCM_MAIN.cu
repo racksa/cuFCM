@@ -35,6 +35,8 @@ int main(int argc, char** argv) {
 	Real* Y_host = malloc_host<Real>(3*pars.N);						Real* Y_device = malloc_device<Real>(3*pars.N);
 	Real* F_host = malloc_host<Real>(3*pars.N);						Real* F_device = malloc_device<Real>(3*pars.N);
 	Real* T_host = malloc_host<Real>(3*pars.N);						Real* T_device = malloc_device<Real>(3*pars.N);
+	Real* V_host = malloc_host<Real>(3*pars.N);						Real* V_device = malloc_device<Real>(3*pars.N);
+	Real* W_host = malloc_host<Real>(3*pars.N);						Real* W_device = malloc_device<Real>(3*pars.N);
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
@@ -126,8 +128,7 @@ int main(int argc, char** argv) {
 		if(pars.prompt > 5){
 			std::cout << "\r====Computing repeat " << t+1 << "/" << pars.repeat;
 		}
-		solver->hydrodynamic_solver(Y_host, F_host, T_host,
-								    Y_device, F_device, T_device);
+		solver->hydrodynamic_solver(Y_device, F_device, T_device, V_device, W_device);
 	}
 	if(pars.prompt > 5){
 		printf("\nFinished loop:)\n");

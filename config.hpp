@@ -24,7 +24,7 @@
 // 0 = Dont repeat
 // 1 = Reapeat measurement
 
-#define THREADS_PER_BLOCK 32
+#define THREADS_PER_BLOCK 64
 
 #define INIT_FROM_FILE 1
 // 0 = Generate random packing
@@ -60,7 +60,7 @@
 // 0 = Dont check error     **default
 // 1 = Check error from file
 
-#define USE_DOUBLE_PRECISION false
+#define USE_DOUBLE_PRECISION true
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;

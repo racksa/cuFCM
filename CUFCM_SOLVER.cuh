@@ -78,9 +78,6 @@ public:
     #endif
 
     __host__
-    FCM_solver();
-
-    __host__
     FCM_solver(Pars);
 
     __host__
@@ -102,8 +99,37 @@ public:
     void init_cuda();
 
     __host__
-    void hydrodynamic_solver(Real *Y_host_input, Real *F_host_input, Real *T_host_input,
-                             Real *Y_device_input, Real * F_device_input, Real *T_device_input);
+    void hydrodynamic_solver(Real *Y_device_input, Real * F_device_input, Real *T_device_input,
+                             Real * V_device_input, Real *W_device_input);
+
+    __host__
+    void box_particle();
+
+    /* Filament code start*/
+    __host__
+    void init_aux_for_filament();
+
+    __host__
+    void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
+                     Real *x_blob, Real *f_blob, Real *v_blob,
+                     int num_seg, int num_blob);
+                
+    void reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
+                     Real *x_blob, Real *f_blob, Real *v_blob,
+                     int num_seg, int num_blob);
+
+    __host__
+    void Mss();
+            
+    __host__
+    void Msb();
+
+    __host__
+    void Mbs();
+
+    __host__
+    void Mbb();
+    /* Filament code end*/
 
     __host__
     void reset_grid();

@@ -209,8 +209,11 @@ void FCM_solver::init_cuda(){
 
 	aux_host = malloc_host<Real>(3*N);					    aux_device = malloc_device<Real>(3*N);
 
-    V_host = malloc_host<Real>(3*N);						V_device = malloc_device<Real>(3*N);
-    W_host = malloc_host<Real>(3*N);						W_device = malloc_device<Real>(3*N);
+    Y_host = malloc_host<Real>(3*N);
+	F_host = malloc_host<Real>(3*N);
+	T_host = malloc_host<Real>(3*N);
+	V_host = malloc_host<Real>(3*N);
+	W_host = malloc_host<Real>(3*N);
 
 	hx_host = malloc_host<myCufftReal>(grid_size);
 	hy_host = malloc_host<myCufftReal>(grid_size);
@@ -265,21 +268,46 @@ void FCM_solver::init_cuda(){
 	time_cuda_initialisation += get_time() - time_start;
 }
 
-__host__ 
-void FCM_solver::hydrodynamic_solver(Real *Y_host_input, Real *F_host_input, Real *T_host_input,
-                                     Real *Y_device_input, Real * F_device_input, Real *T_device_input){
+__host__
+void FCM_solver::init_aux_for_filament(){
 
-    Y_host = Y_host_input;
-    F_host = F_host_input;
-    T_host = T_host_input;
+    Y_device = malloc_device<Real>(3*N);
+	F_device = malloc_device<Real>(3*N);
+	T_device = malloc_device<Real>(3*N);
+    V_device = malloc_device<Real>(3*N);
+	W_device = malloc_device<Real>(3*N);
 
-    Y_device = Y_device_input;
-    F_device = F_device_input;
-    T_device = T_device_input;
+}
+
+__host__
+void FCM_solver::reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
+                             Real *x_blob, Real *f_blob, Real *v_blob,
+                             int num_seg, int num_blob){
+    
+    int num_thread_blocks_Nseg = (num_seg + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+    int num_thread_blocks_Nblob = (num_blob + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+
+    copy_device<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(x_seg, Y_device, 3*num_seg);
+    interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg,  F_device, T_device, num_seg);
+    interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg,  V_device, W_device, num_seg);
+    copy_device<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(x_blob, &Y_device[3*num_seg], 3*num_blob);
+    interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
+    interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
+
+    return;
+}
+
+__host__
+void FCM_solver::box_particle(){
+    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+}
+
+__host__
+void FCM_solver::Mss(){
+
+    box_particle();
 
     reset_grid();
-
-    spatial_hashing();
 
     spread();
 
@@ -287,13 +315,65 @@ void FCM_solver::hydrodynamic_solver(Real *Y_host_input, Real *F_host_input, Rea
 
     gather();
 
-    correction();
+}
 
-    sortback();
+__host__
+void FCM_solver::reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
+                             Real *x_blob, Real *f_blob, Real *v_blob,
+                             int num_seg, int num_blob){
+
+    int num_thread_blocks_Nseg = (num_seg + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+    int num_thread_blocks_Nblob = (num_blob + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+
+    copy_device<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(Y_device, x_seg, 3*num_seg);
+    separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg,  F_device, T_device, num_seg);
+    separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg,  V_device, W_device, num_seg);
+    copy_device<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&Y_device[3*num_seg], x_blob, 3*num_blob);
+    separate2interleaved<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
+    separate2interleaved<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
+
+    return;
+}
+
+__host__ 
+void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real * F_device_input, Real *T_device_input, Real * V_device_input, Real *W_device_input){
+
+    Y_device = Y_device_input;
+    F_device = F_device_input;
+    T_device = T_device_input;
+    V_device = V_device_input;
+    W_device = W_device_input;
+
+    if(prompt>10){printf("pass1\n");}
+    
+    reset_grid();
+
+    if(prompt>10){printf("pass2\n");}
+
+    // spatial_hashing();
+
+    if(prompt>10){printf("pass3\n");}
+
+    spread();
+
+    if(prompt>10){printf("pass4\n");}
+
+    fft_solve();
+
+    if(prompt>10){printf("pass5\n");}
+
+    gather();
+
+    if(prompt>10){printf("pass6\n");}
+
+    // correction();
+
+    // sortback();
 
     rept += 1;
 
 }
+
 
 __host__ 
 void FCM_solver::reset_grid(){
@@ -346,13 +426,6 @@ void FCM_solver::spatial_hashing(){
 
     cudaDeviceSynchronize();	time_linklist_array[rept] = get_time() - time_start;
 }
-
-
-__host__
-void FCM_solver::sort_particle(){
-    
-}
-
 
 
 __host__
@@ -601,11 +674,17 @@ void FCM_solver::sortback(){
 __host__
 void FCM_solver::finish(){
    
+    if(prompt>10){printf("pass10\n");}
 	copy_to_host<Real>(Y_device, Y_host, 3*N);
+    if(prompt>10){printf("pass11\n");}
 	copy_to_host<Real>(F_device, F_host, 3*N);
+    if(prompt>10){printf("pass12\n");}
 	copy_to_host<Real>(T_device, T_host, 3*N);
+    if(prompt>10){printf("pass13\n");}
 	copy_to_host<Real>(V_device, V_host, 3*N);
+    if(prompt>10){printf("pass14\n");}
 	copy_to_host<Real>(W_device, W_host, 3*N);
+    if(prompt>10){printf("pass15\n");}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Time

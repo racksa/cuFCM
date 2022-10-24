@@ -413,12 +413,6 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         const int indj = (i - indk*(ny*fft_nx))/fft_nx;
         const int indi = i - indk*(ny*fft_nx) - indj*fft_nx;
 
-        // Real q1 = q[indi];
-        // Real q2 = q[indj];
-        // Real q3 = q[indk];
-        // Real qq = qsq[indi] + qsq[indj] + qsq[indk];
-        // Real norm = (Real)1.0/(qq);
-
         int nptsh = nx/2;
         Real q1 = ( (indi < nptsh || indi == nptsh)? Real(indi) : Real(indi - nx) ) * (PI2/boxsize);
         Real q2 = ( (indj < nptsh || indj == nptsh)? Real(indj) : Real(indj - ny) ) * (PI2/boxsize);

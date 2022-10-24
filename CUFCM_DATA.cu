@@ -205,11 +205,43 @@ void init_pos_lattice(Real *Y, int N, Real boxsize){
 }
 
 __global__
-void append(Real x, Real y, Real z, Real *Y, int np){
-    Y[3*np + 0] = x;
-    Y[3*np + 1] = y;
-    Y[3*np + 2] = z;
+void interleaved2separate(Real *F_device_interleave,
+                          Real *F_device, Real *T_device, int N){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    for(int i = index; i < N; i += stride){
+        F_device[3*i + 0] = F_device_interleave[6*i + 0];
+        F_device[3*i + 1] = F_device_interleave[6*i + 1];
+        F_device[3*i + 2] = F_device_interleave[6*i + 2];
+
+        T_device[3*i + 0] = F_device_interleave[6*i + 3];
+        T_device[3*i + 1] = F_device_interleave[6*i + 4];
+        T_device[3*i + 2] = F_device_interleave[6*i + 5];
+    }
+
 }
+
+__global__
+void separate2interleaved(Real *F_device_interleave,
+                          Real *F_device, Real *T_device, int N){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    for(int i = index; i < N; i += stride){
+        F_device_interleave[6*i + 0] = F_device[3*i + 0];
+        F_device_interleave[6*i + 1] = F_device[3*i + 1];
+        F_device_interleave[6*i + 2] = F_device[3*i + 2];
+
+        F_device_interleave[6*i + 3] = T_device[3*i + 0];
+        F_device_interleave[6*i + 4] = T_device[3*i + 1];
+        F_device_interleave[6*i + 5] = T_device[3*i + 2];
+    }
+
+}
+
+
+
 
 void init_random_force(Real *F, Real rad, int N){
 
@@ -242,3 +274,32 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states){
     return;
 }
 
+__global__
+void box(Real *Y, int N, Real box_size){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    for(int i = index; i < N; i += stride){
+        if(Y[3*i + 0]>box_size){
+            Y[3*i + 0] -= box_size;
+        }
+        if(Y[3*i + 0]<0){
+            Y[3*i + 0] += box_size;
+        }
+
+        if(Y[3*i + 1]>box_size){
+            Y[3*i + 1] -= box_size;
+        }
+        if(Y[3*i + 1]<0){
+            Y[3*i + 1] += box_size;
+        }
+
+        if(Y[3*i + 2]>box_size){
+            Y[3*i + 2] -= box_size;
+        }
+        if(Y[3*i + 2]<0){
+            Y[3*i + 2] += box_size;
+        }
+    }
+
+}

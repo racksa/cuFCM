@@ -48,7 +48,8 @@ void cufcm_pair_correction_spatial_hashing_tpp(Real* Y, Real* V, Real* W, Real* 
                     Real sigmaFCMdip, Real sigmaFCMdipsq);
 
 __global__
-void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate, Real boxsize,
+void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,
+                    Real boxsize,
                     Real sigmaFCM, 
                     Real sigmaFCMdip,
                     Real StokesMob,
