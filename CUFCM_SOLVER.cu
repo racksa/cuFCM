@@ -354,7 +354,7 @@ void FCM_solver::reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
 }
 
 __host__ 
-void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real * F_device_input, Real *T_device_input, Real * V_device_input, Real *W_device_input){
+void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input, Real *T_device_input, Real *V_device_input, Real *W_device_input){
 
     Y_device = Y_device_input;
     F_device = F_device_input;
@@ -373,6 +373,13 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real * F_device_input
     if(prompt>10){printf("pass3\n");}
 
     spread();
+
+    cudaMemcpy(hx_host, hx_device, grid_size*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hy_host, hy_device, grid_size*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hz_host, hz_device, grid_size*sizeof(Real), cudaMemcpyDeviceToHost);
+    for(int i=0; i<10; i++){
+        printf("%d hx(%.4f %.4f %.4f)\n", i, hx_host[i], hy_host[i], hz_host[i]);
+    }
 
     if(prompt>10){printf("pass4\n");}
 
@@ -439,7 +446,6 @@ void FCM_solver::spatial_hashing(){
 
     cudaDeviceSynchronize();	time_linklist_array[rept] = get_time() - time_start;
 }
-
 
 __host__
 void FCM_solver::spread(){
@@ -700,17 +706,25 @@ void FCM_solver::assign_host_array_pointers(Real *Y_host_o,
 __host__
 void FCM_solver::finish(){
     
-    if(prompt>10){printf("pass10\n");}
-	copy_to_host<Real>(Y_device, Y_host, 3*N);
-    if(prompt>10){printf("pass11\n");}
-	copy_to_host<Real>(F_device, F_host, 3*N);
-    if(prompt>10){printf("pass12\n");}
-	copy_to_host<Real>(T_device, T_host, 3*N);
-    if(prompt>10){printf("pass13\n");}
-	copy_to_host<Real>(V_device, V_host, 3*N);
-    if(prompt>10){printf("pass14\n");}
-	copy_to_host<Real>(W_device, W_host, 3*N);
-    if(prompt>10){printf("pass15\n");}
+    cudaMemcpy(Y_host, Y_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(F_host, F_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(T_host, T_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(V_host, V_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(W_host, W_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    for(int i=0; i<10; i++){
+        printf("%d V(%.4f %.4f %.4f)\n", i, V_host[3*i], V_host[3*i+1], V_host[3*i+2]);
+    }
+    // if(prompt>10){printf("pass10\n");}
+	// copy_to_host<Real>(Y_device, Y_host, 3*N);
+    // if(prompt>10){printf("pass11\n");}
+	// copy_to_host<Real>(F_device, F_host, 3*N);
+    // if(prompt>10){printf("pass12\n");}
+	// copy_to_host<Real>(T_device, T_host, 3*N);
+    // if(prompt>10){printf("pass13\n");}
+	// copy_to_host<Real>(V_device, V_host, 3*N);
+    // if(prompt>10){printf("pass14\n");}
+	// copy_to_host<Real>(W_device, W_host, 3*N);
+    // if(prompt>10){printf("pass15\n");}
    
 
 	///////////////////////////////////////////////////////////////////////////////

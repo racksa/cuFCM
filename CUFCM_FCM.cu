@@ -1,7 +1,6 @@
-
+#include <cmath>
 #include <iostream>
 // Include CUDA runtime and CUFFT
-#include <cuda_runtime.h>
 #include <cufft.h>
 
 #include "config.hpp"
@@ -293,7 +292,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
               Real pdmag, Real sigmasq, Real sigmadipsq,
               Real anorm, Real anorm2,
               Real dx, double nx, double ny, double nz){
-
+    
     // TODO: GPU is more comfortable computing FP2 (double) than integer
     int ngdh = ngd/2;
 
@@ -313,6 +312,12 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
     Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
     Real *F_shared = (Real*)&Y_shared[3];
     Real *g_shared = (Real*)&F_shared[3];
+
+    
+
+    if(blockIdx.x<10 && threadIdx.x == 1){
+        printf("\nparticle: %d\n\n", blockIdx.x);
+    }
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
 
@@ -338,9 +343,9 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = rintf(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = rintf(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = rintf(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -353,9 +358,9 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             }
             /* gauss */
             if(i>=ngd && i<2*ngd){
-                gaussx_shared[i-ngd] = anorm*expf(-xx*xx/anorm2);
-                gaussy_shared[i-ngd] = anorm*expf(-yy*yy/anorm2);
-                gaussz_shared[i-ngd] = anorm*expf(-zz*zz/anorm2);
+                gaussx_shared[i-ngd] = anorm*my_exp(-xx*xx/anorm2);
+                gaussy_shared[i-ngd] = anorm*my_exp(-yy*yy/anorm2);
+                gaussz_shared[i-ngd] = anorm*my_exp(-zz*zz/anorm2);
             }
             /* grad_gauss */
             if(i>=2*ngd && i<3*ngd){
@@ -365,9 +370,9 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             }
             /* ind */
             if(i>=3*ngd){
-                indx_shared[i-3*ngd] = xg - nx * floorf( xg / nx );
-                indy_shared[i-3*ngd] = yg - ny * floorf( yg / ny );
-                indz_shared[i-3*ngd] = zg - nz * floorf( zg / nz );
+                indx_shared[i-3*ngd] = xg - nx * my_floor( xg / nx );
+                indy_shared[i-3*ngd] = yg - ny * my_floor( yg / ny );
+                indz_shared[i-3*ngd] = zg - nz * my_floor( zg / nz );
             }
         }
         __syncthreads();
@@ -392,6 +397,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             atomicAdd(&fx[ind], F_shared[0]*temp5 + (g_shared[0]*gradx + g_shared[3]*grady + g_shared[5]*gradz)*temp);
             atomicAdd(&fy[ind], F_shared[1]*temp5 + (g_shared[4]*gradx + g_shared[1]*grady + g_shared[7]*gradz)*temp);
             atomicAdd(&fz[ind], F_shared[2]*temp5 + (g_shared[6]*gradx + g_shared[8]*grady + g_shared[2]*gradz)*temp);
+
         }
     }
 }

@@ -123,6 +123,7 @@ int main(int argc, char** argv) {
 	/* Create FCM solver */
 	cudaDeviceSynchronize();
 	FCM_solver *solver = new FCM_solver(pars);
+	solver->assign_host_array_pointers(Y_host, F_host, T_host, V_host, W_host);
 
 	for(int t = 0; t < pars.repeat; t++){
 		if(pars.prompt > 5){
@@ -133,7 +134,6 @@ int main(int argc, char** argv) {
 	if(pars.prompt > 5){
 		printf("\nFinished loop:)\n");
 	}
-	solver->assign_host_array_pointers(Y_host, F_host, T_host, V_host, W_host);
 	solver->finish();
 
 	return 0;

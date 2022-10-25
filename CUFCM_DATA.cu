@@ -11,7 +11,7 @@ void read_init_data(Real *Y, int N, const char *file_name){
     FILE *ifile;
     ifile = fopen(file_name, "r");
     for(int np = 0; np < N; np++){
-        #if USE_DOUBLE_PRECISION == true
+        #if USE_DOUBLE_PRECISION
             if(fscanf(ifile, "%lf %lf %lf", &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2]) == 0){
                 printf("fscanf error: Unable to read data");
             }

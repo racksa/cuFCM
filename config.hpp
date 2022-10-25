@@ -1,4 +1,5 @@
 #include <cufft.h>
+#include <cuda.h>
 
 #ifndef CONFIG_H
 #define CONFIG_H
@@ -70,6 +71,9 @@
     #define cufftReal2Complex CUFFT_D2Z
     #define cufftExecReal2Complex cufftExecD2Z
     #define cufftExecComplex2Real cufftExecZ2D
+    #define my_rint rint
+    #define my_exp exp
+    #define my_floor floor
 #else
     typedef float Real;
     typedef cufftReal myCufftReal;
@@ -78,6 +82,9 @@
     #define cufftReal2Complex CUFFT_R2C
     #define cufftExecReal2Complex cufftExecR2C
     #define cufftExecComplex2Real cufftExecC2R
+    #define my_rint rintf
+    #define my_exp expf
+    #define my_floor floorf
     
 #endif
 
