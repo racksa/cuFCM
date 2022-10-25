@@ -23,7 +23,7 @@ public:
     /* source */
     Real *aux_host, *aux_device, *Y_host, *Y_device, *F_host, *F_device,
 	     *T_host, *T_device, *V_host, *V_device, *W_host, *W_device;
-
+        
     /* grid */
     myCufftReal *hx_host, *hy_host, *hz_host, *hx_device, *hy_device, *hz_device;
     myCufftComplex *fk_x_host, *fk_x_device, *fk_y_host, *fk_y_device,
@@ -34,6 +34,7 @@ public:
     int *particle_cellhash_host, *particle_cellhash_device,
         *particle_index_host, *particle_index_device,
         *sortback_index_host, *sortback_index_device;
+    int *key_buf, *index_buf;
 
     int M, ncell, mapsize;
     
@@ -157,5 +158,10 @@ public:
 
     __host__
     void finish();
+
+    __host__
+    void assign_host_array_pointers(Real *Y_host_o, 
+                                    Real *F_host_o, Real *T_host_o, 
+                                    Real *V_host_o, Real *W_host_o);
 
 };

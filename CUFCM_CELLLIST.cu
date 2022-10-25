@@ -55,16 +55,17 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 }
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-	int xc, yc, zc;
-
 	for(int np = index; np < N; np += stride){
-		xc = (int) (Y[3*np + 0]/dx);
-		yc = (int) (Y[3*np + 1]/dx);
-		zc = (int) (Y[3*np + 2]/dx);
+		if(Y[3*np + 0]<0 || Y[3*np + 1]<0 || Y[3*np + 2]<0){
+			printf("\nERROR position\n\n");
+		}
+		int xc = (int) (Y[3*np + 0]/dx);
+		int yc = (int) (Y[3*np + 1]/dx);
+		int zc = (int) (Y[3*np + 2]/dx);
 
 		hash[np] = xc + (yc + zc*M)*M;
 	}
@@ -113,12 +114,15 @@ void particle_index_range(int *particle_index, int N){
 // }
 
 
-void sort_index_by_key(int *key, int *index, int N){
+void sort_index_by_key(int *key, int *index, int *key_buf, int *index_buf, int N){
+	printf("sort pass1\n");
 	void     *d_temp_storage = NULL;
 	size_t   temp_storage_bytes = 0;
-
-    int *key_buf = malloc_device<int>(N);
-    int *index_buf = malloc_device<int>(N);
+	printf("sort pass2\n");
+    // int *key_buf = malloc_device<int>(N);
+	printf("sort pass3\n");
+    // int *index_buf = malloc_device<int>(N);
+	printf("sort pass4\n");
 
     cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, key, key_buf, index, index_buf, N);
 	cudaMalloc(&d_temp_storage, temp_storage_bytes);
@@ -129,8 +133,8 @@ void sort_index_by_key(int *key, int *index, int N){
     copy_device<int><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(index_buf, index, N);
 
     cudaFree(d_temp_storage);
-    cudaFree(key_buf);
-    cudaFree(index_buf);
+    // cudaFree(key_buf);
+    // cudaFree(index_buf);
 }
 
 __global__

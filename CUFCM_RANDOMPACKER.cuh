@@ -39,6 +39,8 @@ public:
          *F_host, *F_device,
          *init_F_host, *init_F_device,
 	     *V_host, *V_device;
+    
+    int *key_buf, *index_buf;
 
     int M, ncell, mapsize;
     int *map_host, *map_device;

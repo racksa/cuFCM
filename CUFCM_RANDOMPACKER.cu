@@ -270,6 +270,9 @@ void random_packer::init_cuda(){
     init_F_host = malloc_host<Real>(3*N);					init_F_device = malloc_device<Real>(3*N);
     V_host = malloc_host<Real>(3*N);						V_device = malloc_device<Real>(3*N);
 
+    key_buf = malloc_device<int>(N);
+    index_buf = malloc_device<int>(N);
+
     particle_cellhash_host = malloc_host<int>(N);					 particle_cellhash_device = malloc_device<int>(N);
     particle_index_host = malloc_host<int>(N);						 particle_index_device = malloc_device<int>(N);
     sortback_index_host = malloc_host<int>(N);						 sortback_index_device = malloc_device<int>(N);
@@ -297,11 +300,11 @@ void random_packer::spatial_hashing(){
     ///////////////////////////////////////////////////////////////////////////////
 
     // Create Hash (i, j, k) -> Hash
-    create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, linear_encode);
+    create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M);
 
     // Sort particle index by hash
     particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
-    sort_index_by_key(particle_cellhash_device, particle_index_device, N);
+    sort_index_by_key(particle_cellhash_device, particle_index_device, key_buf, index_buf, N);
 
     // Sort pos/force/torque by particle index
     copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);

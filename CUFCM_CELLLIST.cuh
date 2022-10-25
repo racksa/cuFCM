@@ -11,7 +11,7 @@ __device__ __host__
 void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int));
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int));
+void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M);
 
 __global__
 void particle_index_range(int *particle_index, int N);
@@ -45,7 +45,8 @@ void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
     return;
 }
 
-void sort_index_by_key(int *key, int *index, int N);
+// void sort_index_by_key(int *key, int *index, int *key_buf, int *index_buf, int N);
+void sort_index_by_key(int *key, int *index, int *key_buf, int *index_buf, int N);
 
 __global__
 void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_end, int N);

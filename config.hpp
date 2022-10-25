@@ -16,7 +16,7 @@
 #define BOXSIZE (PI2)
 #define BOXSIZE_H (BOXSIZE/2)
 
-#define SOLVER_MODE 0
+#define SOLVER_MODE 1
 // 0 = FCM
 // 1 = Fast FCM
 
@@ -24,7 +24,7 @@
 // 0 = Dont repeat
 // 1 = Reapeat measurement
 
-#define THREADS_PER_BLOCK 64
+#define THREADS_PER_BLOCK 32
 
 #define INIT_FROM_FILE 1
 // 0 = Generate random packing
