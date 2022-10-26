@@ -115,14 +115,10 @@ void particle_index_range(int *particle_index, int N){
 
 
 void sort_index_by_key(int *key, int *index, int *key_buf, int *index_buf, int N){
-	printf("sort pass1\n");
 	void     *d_temp_storage = NULL;
 	size_t   temp_storage_bytes = 0;
-	printf("sort pass2\n");
     // int *key_buf = malloc_device<int>(N);
-	printf("sort pass3\n");
     // int *index_buf = malloc_device<int>(N);
-	printf("sort pass4\n");
 
     cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, key, key_buf, index, index_buf, N);
 	cudaMalloc(&d_temp_storage, temp_storage_bytes);

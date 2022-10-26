@@ -303,28 +303,28 @@ __host__
 void FCM_solver::Mss(){
 
     box_particle();
-    // if(prompt>10){printf("pass1\n");}
+    if(prompt>10){printf("pass1\n");}
     
     reset_grid();
-    // if(prompt>10){printf("pass2\n");}
+    if(prompt>10){printf("pass2\n");}
 
-    // spatial_hashing();
-    // if(prompt>10){printf("pass3\n");}
+    spatial_hashing();
+    if(prompt>10){printf("pass3\n");}
 
     spread();
-    // if(prompt>10){printf("pass4\n");}
+    if(prompt>10){printf("pass4\n");}
 
     fft_solve();
-    // if(prompt>10){printf("pass5\n");}
+    if(prompt>10){printf("pass5\n");}
 
     gather();
-    // if(prompt>10){printf("pass6\n");}
+    if(prompt>10){printf("pass6\n");}
 
     correction();
-    // if(prompt>10){printf("pass7\n");}
+    if(prompt>10){printf("pass7\n");}
 
-    // sortback();
-    // if(prompt>10){printf("pass8\n");}
+    sortback();
+    if(prompt>10){printf("pass8\n");}
 
 
     // cufcm_compute_formula<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>
@@ -395,11 +395,11 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
 
 __host__ 
 void FCM_solver::reset_grid(){
-    reset_device(V_device, 3*N);
-    reset_device(W_device, 3*N);
-    reset_device(hx_device, grid_size);
-    reset_device(hy_device, grid_size);
-    reset_device(hz_device, grid_size);
+    reset_device<Real> (V_device, 3*N);
+    reset_device<Real> (W_device, 3*N);
+    reset_device<Real> (hx_device, grid_size);
+    reset_device<Real> (hy_device, grid_size);
+    reset_device<Real> (hz_device, grid_size);
 }
 
 __host__
@@ -587,7 +587,7 @@ void FCM_solver::gather(){
 
         #elif GATHER_TYPE == 4
 
-            cufcm_particle_velocities_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+3)*sizeof(Real)>>>
+            cufcm_particle_velocities_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
                                         (hx_device, hy_device, hz_device,
                                         Y_device,
                                         V_device, W_device,
@@ -600,7 +600,7 @@ void FCM_solver::gather(){
 
     #elif SOLVER_MODE == 0
 
-        cufcm_particle_velocities_regular_fcm<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+3)*sizeof(Real)>>>
+        cufcm_particle_velocities_regular_fcm<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
                                         (hx_device, hy_device, hz_device,
                                         Y_device,
                                         V_device, W_device,
@@ -697,14 +697,14 @@ void FCM_solver::assign_host_array_pointers(Real *Y_host_o,
 __host__
 void FCM_solver::finish(){
     
-    // cudaMemcpy(Y_host, Y_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(F_host, F_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(T_host, T_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(V_host, V_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(W_host, W_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // for(int i=0; i<10; i++){
-    //     printf("%d V(%.4f %.4f %.4f)\n", i, V_host[3*i], V_host[3*i+1], V_host[3*i+2]);
-    // }
+    cudaMemcpy(Y_host, Y_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(F_host, F_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(T_host, T_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(V_host, V_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(W_host, W_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    for(int i=0; i<10; i++){
+        printf("%d V(%.4f %.4f %.4f)\n", i, V_host[3*i], V_host[3*i+1], V_host[3*i+2]);
+    }
     if(prompt>10){printf("pass10\n");}
 	copy_to_host<Real>(Y_device, Y_host, 3*N);
     if(prompt>10){printf("pass11\n");}
