@@ -65,6 +65,7 @@
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;
+    typedef long Integer;
     typedef cufftDoubleReal myCufftReal;
     typedef cufftDoubleComplex myCufftComplex;
     #define cufftComplex2Real CUFFT_Z2D
@@ -76,6 +77,7 @@
     #define my_floor floor
 #else
     typedef float Real;
+    typedef int Integer;
     typedef cufftReal myCufftReal;
     typedef cufftComplex myCufftComplex;
     #define cufftComplex2Real CUFFT_C2R
