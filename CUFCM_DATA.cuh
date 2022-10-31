@@ -9,7 +9,7 @@ void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *f
 
 void write_pos(Real *Y, Real rh, int N, const char *file_name);
 
-void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name);
+void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name, const char *mode);
 
 void write_init_data(Real *Y, Real *F, Real *T, int N);
 

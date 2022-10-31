@@ -55,9 +55,9 @@ void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *f
     return;
 }
 
-void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name){
+void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name, const char *mode){
     FILE *pfile;
-    pfile = fopen(file_name, "w");
+    pfile = fopen(file_name, mode);
     for(int i = 0; i < N; i++){
         fprintf(pfile, "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
         Y[3*i + 0], Y[3*i + 1], Y[3*i + 2], 
@@ -65,7 +65,7 @@ void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name
         V[3*i + 0], V[3*i + 1], V[3*i + 2], 
         W[3*i + 0], W[3*i + 1], W[3*i + 2]);
         }
-    fprintf(pfile, "\n");
+    fprintf(pfile, "\n#");
     fclose(pfile);
 }
 

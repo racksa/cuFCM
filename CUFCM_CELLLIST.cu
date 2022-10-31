@@ -114,11 +114,11 @@ void particle_index_range(int *particle_index, int N){
 // }
 
 
-void sort_index_by_key(int *key, int *index, int *key_buf, int *index_buf, int N){
+void sort_index_by_key(int *key, int *index, int *key_buf_, int *index_buf_, int N){
 	void     *d_temp_storage = NULL;
 	size_t   temp_storage_bytes = 0;
-    // int *key_buf = malloc_device<int>(N);
-    // int *index_buf = malloc_device<int>(N);
+    int *key_buf = malloc_device<int>(N);
+    int *index_buf = malloc_device<int>(N);
 
     cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, key, key_buf, index, index_buf, N);
 	cudaMalloc(&d_temp_storage, temp_storage_bytes);
@@ -129,8 +129,8 @@ void sort_index_by_key(int *key, int *index, int *key_buf, int *index_buf, int N
     copy_device<int><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(index_buf, index, N);
 
     cudaFree(d_temp_storage);
-    // cudaFree(key_buf);
-    // cudaFree(index_buf);
+    cudaFree(key_buf);
+    cudaFree(index_buf);
 }
 
 __global__
@@ -151,7 +151,7 @@ void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_
             }
         }
         if(np == N - 1){
-            cell_end[c2] = np;
+            cell_end[c2] = N;
         }
     }
     

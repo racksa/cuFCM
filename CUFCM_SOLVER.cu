@@ -71,7 +71,7 @@ void FCM_solver::init_config(){
         if(M < 3){
             M = 3;
         }
-        cellL = boxsize / (Real)M;
+        cellL = boxsize / Real(M);
         ncell = M*M*M;
         mapsize = 13*ncell;
 
@@ -267,11 +267,11 @@ void FCM_solver::init_cuda(){
 __host__
 void FCM_solver::init_aux_for_filament(){
 
-    Y_device = malloc_device<Real>(3*N);
-	F_device = malloc_device<Real>(3*N);
-	T_device = malloc_device<Real>(3*N);
-    V_device = malloc_device<Real>(3*N);
-	W_device = malloc_device<Real>(3*N);
+    Y_host = malloc_host<Real>(3*pars.N);						Y_device = malloc_device<Real>(3*pars.N);
+	F_host = malloc_host<Real>(3*pars.N);						F_device = malloc_device<Real>(3*pars.N);
+	T_host = malloc_host<Real>(3*pars.N);						T_device = malloc_device<Real>(3*pars.N);
+	V_host = malloc_host<Real>(3*pars.N);						V_device = malloc_device<Real>(3*pars.N);
+	W_host = malloc_host<Real>(3*pars.N);						W_device = malloc_device<Real>(3*pars.N);
 
 }
 
@@ -309,6 +309,31 @@ void FCM_solver::Mss(){
     if(prompt>10){printf("pass2\n");}
 
     spatial_hashing();
+
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+    // copy_to_host<Real>(F_device, F_host, 3*N);
+    // copy_to_host<Real>(T_device, T_host, 3*N);
+    // copy_to_host<Real>(V_device, V_host, 3*N);
+    // copy_to_host<Real>(W_device, W_host, 3*N);
+
+    // write_data(Y_host, F_host, V_host, W_host, N, "../CUFCM/data/simulation/simulation_data.dat", "w");
+
+    // copy_to_host<int>(cell_start_device, cell_start_host, ncell);
+    // copy_to_host<int>(cell_end_device, cell_end_host, ncell);
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // FILE *pfile;
+    // pfile = fopen("cell_list.dat", "w");
+    // for(int i = 0; i < ncell; i++){
+    //     fprintf(pfile, "%d (%d %d)\n", 
+    //     i, cell_start_host[i], cell_end_host[i]);
+    //     }
+    // fprintf(pfile, "\n#");
+    // for(int i = 0; i < N; i++){
+    //     fprintf(pfile, "%d (%.4f %.4f %.4f) in cell %d\n", 
+    //     i, Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2], particle_cellhash_host[i]);
+    //     }
+    // fclose(pfile);
+    
     if(prompt>10){printf("pass3\n");}
 
     spread();
@@ -326,12 +351,10 @@ void FCM_solver::Mss(){
     sortback();
     if(prompt>10){printf("pass8\n");}
 
-
     // cufcm_compute_formula<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>
 	// 						(Y_device, V_device, W_device,
 	// 						 F_device, T_device, N, N,
 	// 						 sigmaFCM, sigmaFCMdip, StokesMob, WT1Mob);
-
 
 }
 
@@ -425,7 +448,10 @@ void FCM_solver::spatial_hashing(){
     sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, T_device, aux_device, N);
 
     // Find cell starting/ending points
+    reset_device<int>(cell_start_device, ncell);
+    reset_device<int>(cell_end_device, ncell);
     create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
+
 
     cudaDeviceSynchronize();	time_hashing_array[rept] = get_time() - time_start;
     ///////////////////////////////////////////////////////////////////////////////
@@ -478,7 +504,7 @@ void FCM_solver::spread(){
                                             
         #elif SPREAD_TYPE == 4
 
-            cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(int)+(9*ngd+15)*sizeof(Real)>>>
+            cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
                                                     (hx_device, hy_device, hz_device, 
                                                     Y_device, T_device, F_device,
                                                     N, ngd,
@@ -697,14 +723,14 @@ void FCM_solver::assign_host_array_pointers(Real *Y_host_o,
 __host__
 void FCM_solver::finish(){
     
-    cudaMemcpy(Y_host, Y_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    cudaMemcpy(F_host, F_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    cudaMemcpy(T_host, T_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    cudaMemcpy(V_host, V_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    cudaMemcpy(W_host, W_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    for(int i=0; i<10; i++){
-        printf("%d V(%.4f %.4f %.4f)\n", i, V_host[3*i], V_host[3*i+1], V_host[3*i+2]);
-    }
+    // cudaMemcpy(Y_host, Y_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(F_host, F_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(T_host, T_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(V_host, V_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(W_host, W_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
+    // for(int i=0; i<10; i++){
+    //     printf("%d V(%.4f %.4f %.4f)\n", i, V_host[3*i], V_host[3*i+1], V_host[3*i+2]);
+    // }
     if(prompt>10){printf("pass10\n");}
 	copy_to_host<Real>(Y_device, Y_host, 3*N);
     if(prompt>10){printf("pass11\n");}
@@ -823,7 +849,7 @@ void FCM_solver::finish(){
 	// Write to file
 	///////////////////////////////////////////////////////////////////////////////
 	#if OUTPUT_TO_FILE == 1
-		write_data(Y_host, F_host, V_host, W_host, N, "./data/simulation/simulation_data.dat");
+		write_data(Y_host, F_host, V_host, W_host, N, "./data/simulation/simulation_data.dat", "w");
 		
 		write_time(time_cuda_initialisation, 
 				time_readfile,
