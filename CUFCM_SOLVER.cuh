@@ -157,6 +157,9 @@ public:
     void sortback();
 
     __host__
+    void prompt_time();
+
+    __host__
     void finish();
 
     __host__

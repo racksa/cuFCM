@@ -266,7 +266,7 @@ class SIM:
 
 
         print("Min compute time for error=" + str(tol) + " is " + str(min_time))
-        print("Corresponding (alpha beta eta):" + str(optimal_alpha) + ' '\
+        print("Corresponding (alpha beta eta npts):" + str(optimal_alpha) + ' '\
                                                 + str(optimal_beta) + ' '\
                                                 + str(optimal_eta) + ' '\
                                                 + str(optimal_npts) + ' ')
