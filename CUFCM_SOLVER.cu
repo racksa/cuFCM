@@ -191,9 +191,7 @@ void FCM_solver::prompt_info() {
 		std::cout << "dx:\t\t\t" << dx<< "\n";
         std::cout << "boxsize:\t\t" << boxsize<< "\n";
 		std::cout << "Cell number:\t\t" << M << "\n";
-		#if ENABLE_REPEAT == 1
-			std::cout << "Repeat number:\t\t" << repeat << "\n";
-		#endif
+		std::cout << "Repeat number:\t\t" << repeat << "\n";
 		std::cout << "Volume fraction:\t" << Volume_frac << "\n";
 		
 		std::cout << std::endl;

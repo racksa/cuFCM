@@ -20,9 +20,10 @@ if(sys.argv[1] == 'run' or sys.argv[1] == 'read'):
 if(sys.argv[1] == 'test'):
     sim.run_test()
 
-if(sys.argv[1] == 'read_np'):
+if(sys.argv[1] == 'read_npy'):
     sim.analyse()
-    sim.plot_optimal()
+    sim.plot_ptps()
+    sim.plot_sigfac()
 
 
 # def run():

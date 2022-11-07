@@ -14,18 +14,11 @@
 #define PI2sqrt_inv 0.3989422804014327
 #define SQRT2 1.4142135623730951
 
-#define BOXSIZE (PI2)
-#define BOXSIZE_H (BOXSIZE/2)
+#define THREADS_PER_BLOCK 32
 
 #define SOLVER_MODE 1
 // 0 = FCM
 // 1 = Fast FCM
-
-#define ENABLE_REPEAT 1
-// 0 = Dont repeat
-// 1 = Reapeat measurement
-
-#define THREADS_PER_BLOCK 32
 
 #define INIT_FROM_FILE 1
 // 0 = Generate random packing
@@ -57,11 +50,11 @@
 // 0 = Dont write to file
 // 1 = Write to file    **default
 
-#define CHECK_ERROR 1
+#define CHECK_ERROR 0
 // 0 = Dont check error     **default
 // 1 = Check error from file
 
-#define USE_DOUBLE_PRECISION true
+#define USE_DOUBLE_PRECISION false
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;

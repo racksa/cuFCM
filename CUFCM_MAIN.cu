@@ -47,13 +47,13 @@ int main(int argc, char** argv) {
 		Real Ffac = values[14];
 		Real Tfac = values[15];
 
-		// read_init_data(Y_host, N, "./data/init_data/new/pos_data.dat");
-		// read_init_data(F_host, N, "./data/init_data/new/force_data.dat");
-		// read_init_data(T_host, N, "./data/init_data/new/torque_data.dat");
+		read_init_data(Y_host, pars.N, "./data/init_data/new/pos_data.dat");
+		read_init_data(F_host, pars.N, "./data/init_data/new/force_data.dat");
+		read_init_data(T_host, pars.N, "./data/init_data/new/torque_data.dat");
 
-		read_init_data(Y_host, pars.N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
-		read_init_data(F_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
-		read_init_data(T_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
+		// read_init_data(Y_host, pars.N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
+		// read_init_data(F_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
+		// read_init_data(T_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
 
 		for(int i = 0; i<3*pars.N; i++){
 			Y_host[i] = Y_host[i] * pars.boxsize/PI2;
@@ -97,17 +97,22 @@ int main(int argc, char** argv) {
 			
 			random_packer *packer = new random_packer(Y_host, Y_device, rpars);
 			for(int t = 0; t < packrep; t++){
-				std::cout << "\rGenerating random spheres iteration: " << t+1 << "/" << packrep;
+				if(pars.prompt > 5){
+					std::cout << "\rGenerating random spheres iteration: " << t+1 << "/" << packrep;
+				}
 				packer->update();
 				if(t>packrep-11){
 					packer->write();
 				}
 			}
 			packer->finish();
-			printf("\nFinished packing");
+			if(pars.prompt > 5){
+				printf("\nFinished packing");
+			}
 		}
-
-		printf("\nCopying to host...\n");
+		if(pars.prompt > 5){
+			printf("\nCopying to host...\n");
+		}
 		copy_to_host<Real>(Y_device, Y_host, 3*pars.N);
 		copy_to_host<Real>(F_device, F_host, 3*pars.N);
 		copy_to_host<Real>(T_device, T_host, 3*pars.N);
