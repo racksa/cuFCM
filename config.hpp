@@ -50,7 +50,7 @@
 // 0 = Dont write to file
 // 1 = Write to file    **default
 
-#define CHECK_ERROR 0
+#define CHECK_ERROR 1
 // 0 = Dont check error     **default
 // 1 = Check error from file
 

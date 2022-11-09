@@ -47,13 +47,13 @@ int main(int argc, char** argv) {
 		Real Ffac = values[14];
 		Real Tfac = values[15];
 
-		read_init_data(Y_host, pars.N, "./data/init_data/new/pos_data.dat");
-		read_init_data(F_host, pars.N, "./data/init_data/new/force_data.dat");
-		read_init_data(T_host, pars.N, "./data/init_data/new/torque_data.dat");
+		// read_init_data(Y_host, pars.N, "./data/init_data/new/pos_data.dat");
+		// read_init_data(F_host, pars.N, "./data/init_data/new/force_data.dat");
+		// read_init_data(T_host, pars.N, "./data/init_data/new/torque_data.dat");
 
-		// read_init_data(Y_host, pars.N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
-		// read_init_data(F_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
-		// read_init_data(T_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
+		read_init_data(Y_host, pars.N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
+		read_init_data(F_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
+		read_init_data(T_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
 
 		for(int i = 0; i<3*pars.N; i++){
 			Y_host[i] = Y_host[i] * pars.boxsize/PI2;

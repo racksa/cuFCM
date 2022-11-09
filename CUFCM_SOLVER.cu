@@ -511,6 +511,7 @@ void FCM_solver::spread(){
                                                     pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
                                                     anormGRID, anormGRID2,
                                                     dx, nx, ny, nz);
+                                                    
 
         #endif
     
@@ -662,14 +663,22 @@ void FCM_solver::correction(){
         
         #elif CORRECTION_TYPE == 1
 
-            cufcm_pair_correction_spatial_hashing_tpp<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
+            // cufcm_pair_correction_old<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
+            //                     particle_cellhash_device, cell_start_device, cell_end_device,
+            //                     map_device,
+            //                     ncell, Rcsq,
+            //                     pdmag,
+            //                     sigmaGRID, sigmaGRIDsq,
+            //                     sigmaFCM, sigmaFCMsq,
+            //                     sigmaFCMdip, sigmaFCMdipsq);
+
+            cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
                                 particle_cellhash_device, cell_start_device, cell_end_device,
                                 map_device,
                                 ncell, Rcsq,
-                                pdmag,
-                                sigmaGRID, sigmaGRIDsq,
-                                sigmaFCM, sigmaFCMsq,
-                                sigmaFCMdip, sigmaFCMdipsq);
+                                sigmaGRID,
+                                sigmaFCM,
+                                sigmaFCMdip);
 
         #endif
 
