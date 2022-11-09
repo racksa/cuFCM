@@ -324,6 +324,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             F_shared[1] = F[3*np + 1];
             F_shared[2] = F[3*np + 2];
 
+            // anti-symmetric G_lk = 0.5*epsilon_lkp*T_p
             g_shared[0] = + Real(0.0);
             g_shared[1] = + Real(0.0);
             g_shared[2] = + Real(0.0);

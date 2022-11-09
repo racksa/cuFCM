@@ -13,13 +13,19 @@ Real f_old(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
 __device__ __host__
 Real dfdr_old(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
 
+__device__ __host__
+Real dAdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
+
+__device__ __host__
+Real dBdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
+
 
 
 __device__ __host__
-Real A(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
+Real S_I(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
-Real B(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
+Real S_xx(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
 Real f(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
@@ -28,28 +34,25 @@ __device__ __host__
 Real dfdr(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
-Real dAdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
+Real Q_I(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
-Real dBdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS);
+Real Q_xx(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
-Real C(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
+Real P_I(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
-Real D(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
+Real P_xx(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
 
 __device__ __host__
-Real R(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
+Real T_I(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
 
 __device__ __host__
-Real E(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam, Real erfS);
+Real T_xx(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
 
 __device__ __host__
-Real P(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
-
-__device__ __host__
-Real Q(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
+Real K(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
 
 
 __global__
