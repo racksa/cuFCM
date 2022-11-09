@@ -257,13 +257,14 @@ class SIM:
         
         for i, n in enumerate(self.n_array):
             ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
-            ax.plot(self.n_array[i], ptps_array, marker='o', c=util.color_codex[i], label=r'$r$=' + str(round(self.rh_array[i][0],4)))
+            ax.plot(self.n_array[i], ptps_array, marker='o', c=util.color_codex[i], label=r'$a$=' + str(round(self.rh_array[i][0],4)))
         ax.legend()
         
         # adding title and labels
         ax.set_title("PTPS vs. N")
         ax.set_xlabel('N')
         ax.set_ylabel('PTPS')
+        ax.set_xscale('log')
         plt.savefig('img/ptps_optimal.eps', format='eps')
         plt.show()
 
@@ -274,13 +275,14 @@ class SIM:
         
         for i, n in enumerate(self.n_array):
             print(self.sigfac_array[i])
-            ax.plot(self.n_array[i], self.sigfac_array[i], marker='o', c=util.color_codex[i], label=r'$r$=' + str(round(self.rh_array[i][0],4)))
+            ax.plot(self.n_array[i], self.sigfac_array[i], marker='o', c=util.color_codex[i], label=r'$a$=' + str(round(self.rh_array[i][0],4)))
         ax.legend()
         
         # adding title and labels
         ax.set_title(r"$\Sigma/\sigma$ vs. N")
         ax.set_xlabel('N')
         ax.set_ylabel(r'$\Sigma/\sigma$')
+        ax.set_xscale('log')
         plt.savefig('img/sigfac_optimal.eps', format='eps')
         plt.show()
 
