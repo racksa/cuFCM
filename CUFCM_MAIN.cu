@@ -55,6 +55,10 @@ int main(int argc, char** argv) {
 		read_init_data(F_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
 		read_init_data(T_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
 
+		// read_init_data(Y_host, pars.N, "./data/init_data/artificial/artificial_pos.dat");
+		// read_init_data(F_host, pars.N, "./data/init_data/artificial/artificial_force.dat");
+		// read_init_data(T_host, pars.N, "./data/init_data/artificial/artificial_torque.dat");
+
 		for(int i = 0; i<3*pars.N; i++){
 			Y_host[i] = Y_host[i] * pars.boxsize/PI2;
 			F_host[i] = F_host[i] * Ffac;

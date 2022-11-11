@@ -198,13 +198,13 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
                                  - P_xx(rij, rijsq, gamma, gammasq, gaussgam, erfS);
 
                     // Summation
-                    wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT + xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
-                    wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT + yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
-                    wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT + zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
-
                     vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
                     vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
                     vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+
+                    wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT + xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                    wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT + yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                    wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT + zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
 
                 }
             }
@@ -279,21 +279,21 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
                                  - P_xx(rij, rijsq, gamma, gammasq, gaussgam, erfS);
 
                     // Summation
-                    wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT + xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
-                    wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT + yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
-                    wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT + zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
-
-                    atomicAdd(&W[3*j + 0], (Real)0.5*( T[3*i + 0]*temp1WT + xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
-                    atomicAdd(&W[3*j + 1], (Real)0.5*( T[3*i + 1]*temp1WT + yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
-                    atomicAdd(&W[3*j + 2], (Real)0.5*( T[3*i + 2]*temp1WT + zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
-
                     vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
                     vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
                     vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+
+                    wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT + xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                    wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT + yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                    wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT + zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
                     
                     atomicAdd(&V[3*j + 0], temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ));
                     atomicAdd(&V[3*j + 1], temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ));
                     atomicAdd(&V[3*j + 2], temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
+
+                    atomicAdd(&W[3*j + 0], (Real)0.5*( T[3*i + 0]*temp1WT + xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
+                    atomicAdd(&W[3*j + 1], (Real)0.5*( T[3*i + 1]*temp1WT + yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
+                    atomicAdd(&W[3*j + 2], (Real)0.5*( T[3*i + 2]*temp1WT + zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
 
                 }      
             }
