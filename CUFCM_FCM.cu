@@ -215,17 +215,20 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
 __global__
 void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
               Real *T, Real *F, int N, int ngd, 
-              Real pdmag, Real sigmasq, Real sigmadipsq,
-              Real anorm, Real anorm2,
+              Real sigma, Real Sigma,
               Real dx, Real nx, Real ny, Real nz){
-
-    
     
     int ngdh = ngd/2;
 
     Real Yx, Yy, Yz;
     Real Fx, Fy, Fz;
     Real g11, g22, g33, g12, g21, g13, g31, g23, g32;
+
+    Real Sigmasq = Sigma*Sigma;
+    Real Sigmadipsq = Sigmasq;
+    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real width2 = (Real(2.0)*Sigmasq);
+    Real pdmag = sigma*sigma - Sigmasq;
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
         Yx = Y[3*np + 0];
@@ -236,15 +239,15 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
         Fy = F[3*np + 1];
         Fz = F[3*np + 2];
 
-        g11 = + 0.0;
-        g22 = + 0.0;
-        g33 = + 0.0;
-        g12 = + 0.5*T[3*np + 2];
-        g21 = - 0.5*T[3*np + 2];
-        g13 = + (-0.5*T[3*np + 1]);
-        g31 = - (-0.5*T[3*np + 1]);
-        g23 = + 0.5*T[3*np + 0];
-        g32 = - 0.5*T[3*np + 0];
+        g11 = + Real(0.0);
+        g22 = + Real(0.0);
+        g33 = + Real(0.0);
+        g12 = + Real(0.5)*T[3*np + 2];
+        g21 = - Real(0.5)*T[3*np + 2];
+        g13 = + Real(-0.5)*T[3*np + 1];
+        g31 = - Real(-0.5)*T[3*np + 1];
+        g23 = + Real(0.5)*T[3*np + 0];
+        g32 = - Real(0.5)*T[3*np + 0];
         
         for(int t = threadIdx.x; t < ngd*ngd*ngd; t += blockDim.x){
             const int k = t/(ngd*ngd);
@@ -259,25 +262,25 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
             Real yy = yg*dx - Yy;
             Real zz = zg*dx - Yz;
 
-            Real gx = anorm*my_exp(-xx*xx/anorm2);
-            Real gy = anorm*my_exp(-yy*yy/anorm2);
-            Real gz = anorm*my_exp(-zz*zz/anorm2);
+            Real gx = Anorm*my_exp(-xx*xx/width2);
+            Real gy = Anorm*my_exp(-yy*yy/width2);
+            Real gz = Anorm*my_exp(-zz*zz/width2);
 
-            Real gradx = - xx / sigmadipsq;
-            Real grady = - yy / sigmadipsq;
-            Real gradz = - zz / sigmadipsq;
+            Real gradx = - xx / Sigmadipsq;
+            Real grady = - yy / Sigmadipsq;
+            Real gradz = - zz / Sigmadipsq;
 
             int ii = xg - nx * floor( xg / nx);
             int jj = yg - ny * floor( yg / ny);
             int kk = zg - nz * floor( zg / nz);
 
-            int ind = ii + jj*nx + kk*nx*ny;
+            int ind = ii + jj*int(nx) + kk*int(nx)*int(ny);
             Real r2 = xx*xx + yy*yy + zz*zz;
             Real temp = gx*gy*gz;
-            Real temp2 = (Real)0.5 * pdmag / sigmasq;
-            Real temp3 = temp2 /sigmasq;
-            Real temp4 = (Real)3.0*temp2;
-            Real temp5 = temp*( (Real)1.0 + temp3*r2 - temp4);
+            Real temp2 = Real(0.5) * pdmag / Sigmasq;
+            Real temp3 = temp2 / Sigmasq;
+            Real temp4 = Real(3.0)*temp2;
+            Real temp5 = temp*( Real(1.0) + temp3*r2 - temp4);
 
             atomicAdd(&fx[ind], Fx*temp5 + (g11*gradx + g12*grady + g13*gradz)*temp);
             atomicAdd(&fy[ind], Fy*temp5 + (g21*gradx + g22*grady + g23*gradz)*temp);
@@ -289,8 +292,7 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
 __global__
 void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
               Real *T, Real *F, int N, int ngd, 
-              Real pdmag, Real sigmasq, Real sigmadipsq,
-              Real anorm, Real anorm2,
+              Real sigma, Real Sigma,
               Real dx, double nx, double ny, double nz){
     
     // TODO: GPU is more comfortable computing FP2 (double) than integer
@@ -312,6 +314,12 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
     Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
     Real *F_shared = (Real*)&Y_shared[3];
     Real *g_shared = (Real*)&F_shared[3];
+
+    Real Sigmasq = Sigma*Sigma;
+    Real Sigmadipsq = Sigmasq;
+    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real width2 = (Real(2.0)*Sigmasq);
+    Real pdmag = sigma*sigma - Sigmasq;
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
 
@@ -353,15 +361,15 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             }
             /* gauss */
             if(i>=ngd && i<2*ngd){
-                gaussx_shared[i-ngd] = anorm*my_exp(-xx*xx/anorm2);
-                gaussy_shared[i-ngd] = anorm*my_exp(-yy*yy/anorm2);
-                gaussz_shared[i-ngd] = anorm*my_exp(-zz*zz/anorm2);
+                gaussx_shared[i-ngd] = Anorm*my_exp(-xx*xx/width2);
+                gaussy_shared[i-ngd] = Anorm*my_exp(-yy*yy/width2);
+                gaussz_shared[i-ngd] = Anorm*my_exp(-zz*zz/width2);
             }
             /* grad_gauss */
             if(i>=2*ngd && i<3*ngd){
-                grad_gaussx_dip_shared[i-2*ngd] = - xx / sigmadipsq;
-                grad_gaussy_dip_shared[i-2*ngd] = - yy / sigmadipsq;
-                grad_gaussz_dip_shared[i-2*ngd] = - zz / sigmadipsq;
+                grad_gaussx_dip_shared[i-2*ngd] = - xx / Sigmadipsq;
+                grad_gaussy_dip_shared[i-2*ngd] = - yy / Sigmadipsq;
+                grad_gaussz_dip_shared[i-2*ngd] = - zz / Sigmadipsq;
             }
             /* ind */
             if(i>=3*ngd){
@@ -384,8 +392,8 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             int ind = indx_shared[i] + indy_shared[j]*nx + indz_shared[k]*nx*ny;
             Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
             Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
-            Real temp2 = Real(0.5) * pdmag / sigmasq;
-            Real temp3 = temp2 /sigmasq;
+            Real temp2 = Real(0.5) * pdmag / Sigmasq;
+            Real temp3 = temp2 / Sigmasq;
             Real temp4 = Real(3.0)*temp2;
             Real temp5 = temp*( Real(1.0) + temp3*r2 - temp4);
 
@@ -668,31 +676,22 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
 
 __global__
 void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
-                                Real *Y,
-                                Real *VTEMP, Real *WTEMP,
+                                Real *Y, Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
-                                Real pdmag, Real sigmasq, Real sigmadipsq,
-                                Real anorm, Real anorm2,
+                                Real sigma, Real Sigma,
                                 Real dx, Real nx, Real ny, Real nz){
 
-    int xc, yc, zc;
-    int xg, yg, zg;
-    Real xx, yy, zz, r2;
-    Real gradx, grady, gradz;
-    Real gx, gy, gz;
-    Real norm, temp;
-    Real ux_temp, uy_temp, uz_temp;
-    Real temp2 = (Real)0.5 * pdmag / sigmasq;
-    Real temp3 = temp2 / sigmasq;
-    Real temp4 = (Real)3.0*temp2;
-    Real temp5;
-    int ind;
     int ngdh = ngd/2;
-    int ngd3 = ngd*ngd*ngd;
 
-    norm = dx*dx*dx;
-
+    Real norm = dx*dx*dx;
     Real Vx = (Real) 0.0, Vy = (Real) 0.0, Vz = (Real) 0.0, Wx = (Real) 0.0, Wy = (Real) 0.0, Wz = (Real) 0.0;
+    Real Yx, Yy, Yz;
+
+    Real Sigmasq = Sigma*Sigma;
+    Real Sigmadipsq = Sigmasq;
+    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real width2 = (Real(2.0)*Sigmasq);
+    Real pdmag = sigma*sigma - Sigmasq;
 
     // Specialize BlockReduce
     typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
@@ -700,50 +699,53 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
     __shared__ typename BlockReduce::TempStorage temp_storage;
 
     for(int np = blockIdx.x; np < N; np += gridDim.x){
-        xc = my_rint(Y[3*np + 0]/dx); // the index of the nearest grid point to the particle
-        yc = my_rint(Y[3*np + 1]/dx);
-        zc = my_rint(Y[3*np + 2]/dx);
+        Yx = Y[3*np + 0];
+        Yy = Y[3*np + 1];
+        Yz = Y[3*np + 2];
 
-        for(int t = threadIdx.x; t < ngd3; t += blockDim.x){
+        for(int t = threadIdx.x; t < ngd*ngd*ngd; t += blockDim.x){
             const int k = t/(ngd*ngd);
             const int j = (t - k*ngd*ngd)/ngd;
             const int i = t - k*ngd*ngd - j*ngd;
             
-            xg = xc - ngdh + (i);
-            yg = yc - ngdh + (j);
-            zg = zc - ngdh + (k);
+            Real xg = my_rint(Yx/dx) - ngdh + (i);
+            Real yg = my_rint(Yy/dx) - ngdh + (j);
+            Real zg = my_rint(Yz/dx) - ngdh + (k);
 
-            int ii = xg - nx * ((int) floor( ((Real) xg) / ((Real) nx)));
-            int jj = yg - ny * ((int) floor( ((Real) yg) / ((Real) ny)));
-            int kk = zg - nz * ((int) floor( ((Real) zg) / ((Real) nz)));
+            Real xx = xg*dx - Yx;
+            Real yy = yg*dx - Yy;
+            Real zz = zg*dx - Yz;
 
-            xx = ((Real) xg)*dx - Y[3*np + 0];
-            yy = ((Real) yg)*dx - Y[3*np + 1];
-            zz = ((Real) zg)*dx - Y[3*np + 2];
+            Real gx = Anorm*my_exp(-xx*xx/width2);
+            Real gy = Anorm*my_exp(-yy*yy/width2);
+            Real gz = Anorm*my_exp(-zz*zz/width2);
 
-            gx = anorm*my_exp(-xx*xx/anorm2);
-            gy = anorm*my_exp(-yy*yy/anorm2);
-            gz = anorm*my_exp(-zz*zz/anorm2);
+            Real gradx = - xx / Sigmadipsq;
+            Real grady = - yy / Sigmadipsq;
+            Real gradz = - zz / Sigmadipsq;
 
-            gradx = - xx / sigmadipsq;
-            grady = - yy / sigmadipsq;
-            gradz = - zz / sigmadipsq;
+            int ii = xg - nx * floor( xg / nx);
+            int jj = yg - ny * floor( yg / ny);
+            int kk = zg - nz * floor( zg / nz);
             
-            ind = ii + jj*nx + kk*nx*ny;
-            r2 = xx*xx + yy*yy + zz*zz;
-            temp = gx*gy*gz*norm;
-            temp5 = (1 + temp3*r2 - temp4);
+            int ind = ii + jj*int(nx) + kk*int(nx)*int(ny);
+            Real r2 = xx*xx + yy*yy + zz*zz;
+            Real temp = gx*gy*gz*norm;
+            Real temp2 = Real(0.5) * pdmag / Sigmasq;
+            Real temp3 = temp2 / Sigmasq;
+            Real temp4 = Real(3.0)*temp2;
+            Real temp5 = ( Real(1.0) + temp3*r2 - temp4);
 
-            ux_temp = ux[ind]*temp;
-            uy_temp = uy[ind]*temp;
-            uz_temp = uz[ind]*temp;
+            Real ux_temp = ux[ind]*temp;
+            Real uy_temp = uy[ind]*temp;
+            Real uz_temp = uz[ind]*temp;
 
             Vx += ux_temp*temp5;
             Vy += uy_temp*temp5;
             Vz += uz_temp*temp5;
-            Wx += -0.5*(uz_temp*grady - uy_temp*gradz);
-            Wy += -0.5*(ux_temp*gradz - uz_temp*gradx);
-            Wz += -0.5*(uy_temp*gradx - ux_temp*grady);
+            Wx += Real(-0.5)*(uz_temp*grady - uy_temp*gradz);
+            Wy += Real(-0.5)*(ux_temp*gradz - uz_temp*gradx);
+            Wz += Real(-0.5)*(uy_temp*gradx - ux_temp*grady);
 
             // atomicAdd(&VTEMP[3*np + 0], ux_temp*temp5);
             // atomicAdd(&VTEMP[3*np + 1], uy_temp*temp5);
@@ -775,11 +777,9 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
 
 __global__
 void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
-                                Real *Y,
-                                Real *VTEMP, Real *WTEMP,
+                                Real *Y, Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
-                                Real pdmag, Real sigmasq, Real sigmadipsq,
-                                Real anorm, Real anorm2,
+                                Real sigma, Real Sigma,
                                 Real dx, Real nx, Real ny, Real nz){
     
     int ngdh = ngd/2;
@@ -800,6 +800,12 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
     Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
     Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
     Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+
+    Real Sigmasq = Sigma*Sigma;
+    Real Sigmadipsq = Sigmasq;
+    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real width2 = (Real(2.0)*Sigmasq);
+    Real pdmag = sigma*sigma - Sigmasq;
 
     // Specialize BlockReduce
     typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
@@ -831,15 +837,15 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
             }
             /* gauss */
             if(i>=ngd && i<2*ngd){
-                gaussx_shared[i-ngd] = anorm*my_exp(-xx*xx/anorm2);
-                gaussy_shared[i-ngd] = anorm*my_exp(-yy*yy/anorm2);
-                gaussz_shared[i-ngd] = anorm*my_exp(-zz*zz/anorm2);
+                gaussx_shared[i-ngd] = Anorm*my_exp(-xx*xx/width2);
+                gaussy_shared[i-ngd] = Anorm*my_exp(-yy*yy/width2);
+                gaussz_shared[i-ngd] = Anorm*my_exp(-zz*zz/width2);
             }
             /* grad_gauss */
             if(i>=2*ngd && i<3*ngd){
-                grad_gaussx_dip_shared[i-2*ngd] = - xx / sigmadipsq;
-                grad_gaussy_dip_shared[i-2*ngd] = - yy / sigmadipsq;
-                grad_gaussz_dip_shared[i-2*ngd] = - zz / sigmadipsq;
+                grad_gaussx_dip_shared[i-2*ngd] = - xx / Sigmadipsq;
+                grad_gaussy_dip_shared[i-2*ngd] = - yy / Sigmadipsq;
+                grad_gaussz_dip_shared[i-2*ngd] = - zz / Sigmadipsq;
             }
             /* ind */
             if(i>=3*ngd){
@@ -862,8 +868,8 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
             int ind = indx_shared[i] + indy_shared[j]*int(nx) + indz_shared[k]*int(nx)*int(ny);
             Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
             Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k]*norm;
-            Real temp2 = Real(0.5) * pdmag / sigmasq;
-            Real temp3 = temp2 /sigmasq;
+            Real temp2 = Real(0.5) * pdmag / Sigmasq;
+            Real temp3 = temp2 /Sigmasq;
             Real temp4 = Real(3.0)*temp2;
             Real temp5 = ( Real(1.0) + temp3*r2 - temp4);
 
@@ -903,10 +909,8 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
 ///////////////////////////////////////////////////////////////////////////////
 __global__
 void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *T, Real *F, int N, int ngd, 
-              Real sigmasq, Real sigmadipsq,
-              Real anorm, Real anorm2,
-              Real anormdip, Real anormdip2,
+              Real *T, Real *F, int N, int ngd,
+              Real sigma, Real sigmadip,
               Real dx, Real nx, Real ny, Real nz){
 
     int ngdh = ngd/2;
@@ -928,12 +932,10 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
     Real *F_shared = (Real*)&Y_shared[3];
     Real *g_shared = (Real*)&F_shared[3];
 
-    // if(blockIdx.x<1 && threadIdx.x == 0){
-    //     printf("\nbefore loop particle: %d\n", blockIdx.x);
-    //     // for(int i = 0; i < 3*ngd+9*ngd+15; i++){
-    //     //     printf("\n%d indx %ld shared %ld",i, indx_shared[i], ls[i]);
-    //     // }
-    // }
+    Real sigmasq = sigma*sigma;
+    Real sigmadipsq = sigmadip*sigmadip;
+    Real anorm = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmasq);
+    Real anormdip = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmadipsq);
     
     for(int np = blockIdx.x; np < N; np += gridDim.x){
 
@@ -970,15 +972,15 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
             
             // gauss
             if(i<ngd){ 
-                gaussx_shared[i] = anorm*my_exp(-xx*xx/anorm2);
-                gaussy_shared[i] = anorm*my_exp(-yy*yy/anorm2);
-                gaussz_shared[i] = anorm*my_exp(-zz*zz/anorm2);
+                gaussx_shared[i] = anorm*my_exp(-xx*xx/(Real(2.0)*sigmasq));
+                gaussy_shared[i] = anorm*my_exp(-yy*yy/(Real(2.0)*sigmasq));
+                gaussz_shared[i] = anorm*my_exp(-zz*zz/(Real(2.0)*sigmasq));
             }
             // gauss dip
             if(i>=ngd && i<2*ngd){
-                gaussx_dip_shared[i-ngd] = anormdip*my_exp(-xx*xx/anormdip2);
-                gaussy_dip_shared[i-ngd] = anormdip*my_exp(-yy*yy/anormdip2);
-                gaussz_dip_shared[i-ngd] = anormdip*my_exp(-zz*zz/anormdip2);
+                gaussx_dip_shared[i-ngd] = anormdip*my_exp(-xx*xx/(Real(2.0)*sigmadipsq));
+                gaussy_dip_shared[i-ngd] = anormdip*my_exp(-yy*yy/(Real(2.0)*sigmadipsq));
+                gaussz_dip_shared[i-ngd] = anormdip*my_exp(-zz*zz/(Real(2.0)*sigmadipsq));
             }
             // grad_gauss
             if(i>=2*ngd && i<3*ngd){
@@ -994,13 +996,6 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
             }
         }
         __syncthreads();
-
-        // if(np < 1 && threadIdx.x == 0){            
-        //     printf("%d gauss_x(%.4f %.4f %.4f) Y(%.4f %.4f %.4f) F(%.4f %.4f %.4f)\n",
-        //        np, Y_shared[0], Y_shared[1], Y_shared[2],
-        //            F_shared[0], F_shared[1], F_shared[2],
-        //            gaussx_shared[0], gaussx_shared[1], gaussx_shared[2]);
-        // }
         
         for(int t = threadIdx.x; t < ngd*ngd*ngd; t += blockDim.x){
             const int k = t/(ngd*ngd);
@@ -1027,9 +1022,7 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
                                 Real *Y,
                                 Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
-                                Real sigmasq, Real sigmadipsq,
-                                Real anorm, Real anorm2,
-                                Real anormdip, Real anormdip2,
+                                Real sigma, Real sigmadip,
                                 Real dx, Real nx, Real ny, Real nz){
     int ngdh = ngd/2;
     Real norm = dx*dx*dx;
@@ -1049,6 +1042,11 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
     Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
     Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
     Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+
+    Real sigmasq = sigma*sigma;
+    Real sigmadipsq = sigmadip*sigmadip;
+    Real anorm = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmasq);
+    Real anormdip = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmadipsq);
 
     // Specialize BlockReduce
     typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
@@ -1074,15 +1072,15 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
             
             // gauss
             if(i<ngd){ 
-                gaussx_shared[i] = anorm*my_exp(-xx*xx/anorm2);
-                gaussy_shared[i] = anorm*my_exp(-yy*yy/anorm2);
-                gaussz_shared[i] = anorm*my_exp(-zz*zz/anorm2);
+                gaussx_shared[i] = anorm*my_exp(-xx*xx/(Real(2.0)*sigmasq));
+                gaussy_shared[i] = anorm*my_exp(-yy*yy/(Real(2.0)*sigmasq));
+                gaussz_shared[i] = anorm*my_exp(-zz*zz/(Real(2.0)*sigmasq));
             }
             // gauss dip
             if(i>=ngd && i<2*ngd){
-                gaussx_dip_shared[i-ngd] = anormdip*my_exp(-xx*xx/anormdip2);
-                gaussy_dip_shared[i-ngd] = anormdip*my_exp(-yy*yy/anormdip2);
-                gaussz_dip_shared[i-ngd] = anormdip*my_exp(-zz*zz/anormdip2);
+                gaussx_dip_shared[i-ngd] = anormdip*my_exp(-xx*xx/(Real(2.0)*sigmadipsq));
+                gaussy_dip_shared[i-ngd] = anormdip*my_exp(-yy*yy/(Real(2.0)*sigmadipsq));
+                gaussz_dip_shared[i-ngd] = anormdip*my_exp(-zz*zz/(Real(2.0)*sigmadipsq));
             }
             // grad_gauss
             if(i>=2*ngd && i<3*ngd){

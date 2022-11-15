@@ -192,7 +192,7 @@ class SIM:
         self.pars['ny']=         npts
         self.pars['nz']=         npts
         self.pars['Fref']=       1.0
-        self.pars['repeat']=     1
+        self.pars['repeat']=     50
         self.pars['prompt']=     10
         self.pars['boxsize']=    np.pi*2*fac
         self.pars['Ffac']=       fac**2

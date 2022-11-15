@@ -26,15 +26,15 @@
 
 #define SPREAD_TYPE 4
 // 0 = Thread per particle (TPP) register   **deprecated
-// 1 = Thread per particle (TPP) recompute
-// 2 = Block per particle (BPP) shared
+// 1 = Thread per particle (TPP) recompute  **deprecated
+// 2 = Block per particle (BPP) shared      **deprecated
 // 3 = Block per particle (BPP) recompute
 // 4 = Block per particle (BPP) shared dynamic  **default
 
 #define GATHER_TYPE 4
 // 0 = Thread per particle (TPP) register   **deprecated
-// 1 = Thread per particle (TPP) recompute
-// 2 = Block per particle (BPP) shared
+// 1 = Thread per particle (TPP) recompute  **deprecated
+// 2 = Block per particle (BPP) shared      **deprecated
 // 3 = Block per particle (BPP) recompute
 // 4 = Block per particle (BPP) shared dynamic  **default
 

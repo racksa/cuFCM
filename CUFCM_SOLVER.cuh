@@ -65,17 +65,13 @@ public:
 	curandState *dev_random;
 
     #if SOLVER_MODE == 1
-        Real sigmaFCM, sigmaFCMsq, anormFCM, anormFCM2,
-            sigmaGRID, sigmaGRIDsq, anormGRID, anormGRID2,
-            sigma_fac, gammaGRID, pdmag,
-            sigmaFCMdip, sigmaFCMdipsq, anormFCMdip, anormFCMdip2,
-            sigma_dip_fac,
-            sigmaGRIDdip, sigmaGRIDdipsq, anormGRIDdip, anormGRIDdip2,
+        Real sigmaFCM, SigmaGRID, 
+            gammaGRID, pdmag,
+            sigmaFCMdip, sigmaGRIDdip,
             StokesMob, ModStokesMob, PDStokesMob, BiLapMob, WT1Mob, WT2Mob;
     #elif SOLVER_MODE == 0
-        Real sigmaFCM, sigmaFCMsq, anormFCM, anormFCM2,
-            sigmaFCMdip, sigmaFCMdipsq, anormFCMdip, anormFCMdip2,
-            StokesMob, WT1Mob;
+        Real sigmaFCM,
+            sigmaFCMdip;
     #endif
 
     __host__

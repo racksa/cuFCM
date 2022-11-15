@@ -88,62 +88,33 @@ void FCM_solver::init_fcm_var(){
 
         /* Monopole */
         sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
-        sigmaFCMsq = sigmaFCM*sigmaFCM;
-        anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
-        anormFCM2 = 2.0*sigmaFCMsq;
+        SigmaGRID = dx * alpha;
 
-        sigmaGRID = dx * alpha;
-        sigmaGRIDsq = sigmaGRID * sigmaGRID;
-        anormGRID = 1.0/sqrt(2.0*PI*sigmaGRIDsq);
-        anormGRID2 = 2.0*sigmaGRIDsq;
-
-        sigma_fac = sigmaGRID/sigmaFCM;
-
-        gammaGRID = sqrt(2.0)*sigmaGRID;
-        pdmag = sigmaFCMsq - sigmaGRIDsq;
         /* Dipole */
         sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
-        sigmaFCMdipsq = sigmaFCMdip*sigmaFCMdip;
-        anormFCMdip = 1.0/sqrt(2.0*PI*sigmaFCMdipsq);
-        anormFCMdip2 = 2.0*sigmaFCMdipsq;
-
-        sigma_dip_fac = sigmaGRID/sigmaFCMdip;
-
-        sigmaGRIDdip = sigmaFCMdip * sigma_dip_fac;
-        sigmaGRIDdipsq = sigmaGRIDdip * sigmaGRIDdip;
-        anormGRIDdip = 1.0/sqrt(2.0*PI*sigmaGRIDdipsq);
-        anormGRIDdip2 = 2.0*sigmaGRIDdipsq;
+        sigmaGRIDdip = SigmaGRID;
 
         /* Self corrections */
+        gammaGRID = sqrt(2.0)*SigmaGRID;
+        pdmag = sigmaFCM*sigmaFCM - SigmaGRID*SigmaGRID;
+
         StokesMob = 1.0/(6.0*PI*rh);
-        ModStokesMob = 1.0/(6.0*PI*sigmaGRID*sqrt(PI));
+        ModStokesMob = 1.0/(6.0*PI*SigmaGRID*sqrt(PI));
 
         PDStokesMob = 2.0/pow(2.0*PI, 1.5);
         PDStokesMob = PDStokesMob/pow(gammaGRID, 3.0);
         PDStokesMob = PDStokesMob*pdmag/3.0;
 
-        BiLapMob = 1.0/pow(4.0*PI*sigmaGRIDsq, 1.5);
-        BiLapMob = BiLapMob/(4.0*sigmaGRIDsq)*pdmag*pdmag;
+        BiLapMob = 1.0/pow(4.0*PI*SigmaGRID*SigmaGRID, 1.5);
+        BiLapMob = BiLapMob/(4.0*SigmaGRID*SigmaGRID)*pdmag*pdmag;
 
         WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
         WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
 
     #elif SOLVER_MODE == 0
 
-        /* Monopole */
-        sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
-        sigmaFCMsq = sigmaFCM*sigmaFCM;
-        anormFCM = 1.0/sqrt(2.0*PI*sigmaFCMsq);
-        anormFCM2 = 2.0*sigmaFCMsq;
-
-        /* Dipole */
+        sigmaFCM = rh/sqrt(PI);
         sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
-        sigmaFCMdipsq = sigmaFCMdip*sigmaFCMdip;
-        anormFCMdip = 1.0/sqrt(2.0*PI*sigmaFCMdipsq);
-        anormFCMdip2 = 2.0*sigmaFCMdipsq;
-
-        StokesMob = 1.0/(6.0*PI*rh);
-        WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
 
     #endif
 }
@@ -178,13 +149,13 @@ void FCM_solver::prompt_info() {
 		std::cout << "Grid points:\t\t" << nx << "\n";
 		std::cout << "Grid support:\t\t" << ngd << "\n";
 		#if SOLVER_MODE == 1
-			std::cout << "Sigma/sigma:\t\t" << sigma_fac << "\n";
+			std::cout << "Sigma/sigma:\t\t" << SigmaGRID/sigmaFCM << "\n";
 			std::cout << "Alpha:\t\t\t" << alpha << "\n";
 			std::cout << "Beta:\t\t\t" << beta << "\n";
 			std::cout << "Eta:\t\t\t" << eta << "\n";
 		#endif
 		#if SOLVER_MODE == 1
-			std::cout << "Sigma:\t\t\t" << sigmaGRID << "\n";
+			std::cout << "Sigma:\t\t\t" << SigmaGRID << "\n";
 		#elif SOLVER_MODE == 0
 			std::cout << "sigma:\t\t\t" << sigmaFCM << "\n";
 		#endif
@@ -272,7 +243,6 @@ void FCM_solver::init_aux_for_filament(){
 	W_host = malloc_host<Real>(3*pars.N);						W_device = malloc_device<Real>(3*pars.N);
 
 }
-
 
 __host__
 void FCM_solver::box_particle(){
@@ -498,8 +468,7 @@ void FCM_solver::spread(){
             cufcm_mono_dipole_distribution_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device, 
                                                 Y_device, T_device, F_device,
                                                 N, ngd,
-                                                pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-                                                anormGRID, anormGRID2,
+                                                sigmaFCM, SigmaGRID,
                                                 dx, nx, ny, nz);
                                             
         #elif SPREAD_TYPE == 4
@@ -508,8 +477,7 @@ void FCM_solver::spread(){
                                                     (hx_device, hy_device, hz_device, 
                                                     Y_device, T_device, F_device,
                                                     N, ngd,
-                                                    pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-                                                    anormGRID, anormGRID2,
+                                                    sigmaFCM, SigmaGRID,
                                                     dx, nx, ny, nz);
                                                     
 
@@ -521,9 +489,7 @@ void FCM_solver::spread(){
                                                 (hx_device, hy_device, hz_device, 
                                                 Y_device, T_device, F_device,
                                                 N, ngd,
-                                                sigmaFCMsq, sigmaFCMdipsq,
-                                                anormFCM, anormFCM2,
-                                                anormFCMdip, anormFCMdip2,
+                                                sigmaFCM, sigmaFCMdip,
                                                 dx, nx, ny, nz);
 
     #endif
@@ -585,8 +551,7 @@ void FCM_solver::gather(){
         #if GATHER_TYPE == 1
 
             cufcm_particle_velocities_tpp_recompute<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
-                                        Y_device,
-                                        V_device, W_device,
+                                        Y_device, V_device, W_device,
                                         N, ngd,
                                         pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
                                         anormGRID, anormGRID2,
@@ -595,8 +560,7 @@ void FCM_solver::gather(){
         #elif GATHER_TYPE == 2
 
             cufcm_particle_velocities_bpp_shared<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
-                                        Y_device,
-                                        V_device, W_device,
+                                        Y_device, V_device, W_device,
                                         N, ngd,
                                         pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
                                         anormGRID, anormGRID2,
@@ -604,23 +568,20 @@ void FCM_solver::gather(){
 
         #elif GATHER_TYPE == 3
 
-            cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>(hx_device, hy_device, hz_device,
-                                        Y_device,
-                                        V_device, W_device,
+            cufcm_particle_velocities_bpp_recompute<<<N, THREADS_PER_BLOCK>>>
+                                        (hx_device, hy_device, hz_device,
+                                        Y_device, V_device, W_device,
                                         N, ngd,
-                                        pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-                                        anormGRID, anormGRID2,
+                                        sigmaFCM, SigmaGRID,
                                         dx, nx, ny, nz);
 
         #elif GATHER_TYPE == 4
 
             cufcm_particle_velocities_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
                                         (hx_device, hy_device, hz_device,
-                                        Y_device,
-                                        V_device, W_device,
+                                        Y_device, V_device, W_device,
                                         N, ngd,
-                                        pdmag, sigmaGRIDsq, sigmaGRIDdipsq,
-                                        anormGRID, anormGRID2,
+                                        sigmaFCM, SigmaGRID,
                                         dx, nx, ny, nz);
 
         #endif
@@ -629,12 +590,9 @@ void FCM_solver::gather(){
 
         cufcm_particle_velocities_regular_fcm<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
                                         (hx_device, hy_device, hz_device,
-                                        Y_device,
-                                        V_device, W_device,
+                                        Y_device, V_device, W_device,
                                         N, ngd,
-                                        sigmaFCMsq, sigmaFCMdipsq,
-                                        anormFCM, anormFCM2,
-                                        anormFCMdip, anormFCMdip2,
+                                        sigmaFCM, sigmaFCMdip,
                                         dx, nx, ny, nz);
 
     #endif
@@ -657,26 +615,17 @@ void FCM_solver::correction(){
                                 map_device, head_device, list_device,
                                 ncell, Rcsq,
                                 pdmag,
-                                sigmaGRID, sigmaGRIDsq,
+                                SigmaGRID, sigmaGRIDsq,
                                 sigmaFCM, sigmaFCMsq,
                                 sigmaFCMdip, sigmaFCMdipsq);
         
         #elif CORRECTION_TYPE == 1
 
-            // cufcm_pair_correction_old<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
-            //                     particle_cellhash_device, cell_start_device, cell_end_device,
-            //                     map_device,
-            //                     ncell, Rcsq,
-            //                     pdmag,
-            //                     sigmaGRID, sigmaGRIDsq,
-            //                     sigmaFCM, sigmaFCMsq,
-            //                     sigmaFCMdip, sigmaFCMdipsq);
-
             cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
                                 particle_cellhash_device, cell_start_device, cell_end_device,
                                 map_device,
                                 ncell, Rcsq,
-                                sigmaGRID,
+                                SigmaGRID,
                                 sigmaFCM,
                                 sigmaFCMdip);
 
