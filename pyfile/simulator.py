@@ -30,10 +30,10 @@ class SIM:
         self.pars = pardict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 41) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 8) # alpha, beta, eta, npts
 
-        self.nphi = 4
-        self.nn = 9
+        self.nphi = 1
+        self.nn = 1
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -53,7 +53,7 @@ class SIM:
     def start_loop(self):
         for i in range(self.nphi):
             for j in range(self.nn):
-                self.pars['N']=             int(5000. * 2**j)
+                self.pars['N']=             int(10000. * 2**j)
                 # self.pars['rh']=            0.04176245997623781 * 2**i
                 self.pars['rh']=            0.004 * 2**i
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'])
@@ -127,10 +127,10 @@ class SIM:
                     for k in range(self.search_grid_shape[2]):
                         self.pars['alpha']=      1.0 + 0.02*i
                         self.pars['beta']=       (9. + j ) / self.pars['alpha']
-                        self.pars['eta']=        round(5. + .1*k, 1)
+                        self.pars['eta']=        round(5.0 + .1*k, 1)
                         # npts =                   int(0.026/self.pars['rh'] * 60 + 30*l)/2 * 2
                         # npts =                   int(150 + 14*self.pars['N']/100000 + 6*l)/2 * 2
-                        npts                   = 100 + 8*l
+                        npts                   = 60 + 8*l
                         self.pars['nx']=         npts
                         self.pars['ny']=         npts
                         self.pars['nz']=         npts
@@ -182,12 +182,18 @@ class SIM:
 
     def run_test(self):
         fac = 1.0
-        npts = 270
-        self.pars['N']=          500000
+        self.pars['N']=          50000
         self.pars['rh']=         0.02609300415934458*fac
         self.pars['alpha']=      0.97
         self.pars['beta']=       8.9
         self.pars['eta']=        4.94
+        npts = 270
+
+        self.pars['alpha']=      1.0
+        self.pars['beta']=       9.0
+        self.pars['eta']=        4.8
+        npts = 320
+
         self.pars['nx']=         npts
         self.pars['ny']=         npts
         self.pars['nz']=         npts
@@ -201,7 +207,8 @@ class SIM:
         # self.get_reference()
         save_info_name, save_scalar_name, save_data_name = util.execute(self.pars, 3)
 
-        # sim_dict = util.read_scalar(self.pars)
+        self.plot_pie_chart_of_time()
+
         # if(sim_dict):
         #     if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run' or sys.argv[1] == 'test'):
         #         sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
@@ -284,6 +291,24 @@ class SIM:
         ax.set_ylabel(r'$\Sigma/\sigma$')
         ax.set_xscale('log')
         plt.savefig('img/sigfac_optimal.eps', format='eps')
+        plt.show()
+
+    def plot_pie_chart_of_time(self):
+        sim_dict = util.read_scalar(self.pars)
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        # Pie chart, where the slices will be ordered and plotted counter-clockwise:
+        keys = ['time_hashing', 'time_spreading', 'time_FFT', 'time_gathering', 'time_correction']
+        labels = ['Hashing', 'Spreading', 'FFT + flow solving', 'Gathering', 'Correction']
+        time_compute = sim_dict['time_compute']
+        sizes = [sim_dict[key]/time_compute for key in keys]
+        explode = (0, 0, 0, 0, 0.1)  # only "explode" the 2nd slice (i.e. 'Hogs')
+
+        ax.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%',
+                shadow=False, startangle=90)
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+        plt.savefig('img/pie_chart_of_time.eps', format='eps')
         plt.show()
 
     def save_optimal_arrays(self):

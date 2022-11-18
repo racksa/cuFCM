@@ -106,9 +106,7 @@ void write_init_data(Real *Y, Real *F, Real *T, int N){
 
 void write_time(Real time_cuda_initialisation, 
                 Real time_readfile,
-                Real time_hashing, 
-                Real time_linklist,
-                Real time_precompute_gauss,
+                Real time_hashing,
                 Real time_spreading,
                 Real time_FFT,
                 Real time_gathering,
@@ -120,8 +118,6 @@ void write_time(Real time_cuda_initialisation,
     fprintf(pfile, "time_cuda_initialisation=%.8f\n", time_cuda_initialisation);
     fprintf(pfile, "time_readfile=%.8f\n", time_readfile);
     fprintf(pfile, "time_hashing=%.8f\n", time_hashing);
-    fprintf(pfile, "time_linklist=%.8f\n", time_linklist);
-    fprintf(pfile, "time_precompute_gauss=%.8f\n", time_precompute_gauss);
     fprintf(pfile, "time_spreading=%.8f\n", time_spreading);
     fprintf(pfile, "time_FFT=%.8f\n", time_FFT);
     fprintf(pfile, "time_gathering=%.8f\n", time_gathering);

@@ -15,9 +15,7 @@ void write_init_data(Real *Y, Real *F, Real *T, int N);
 
 void write_time(Real time_cuda_initialisation, 
                     Real time_readfile,
-                    Real time_hashing, 
-                    Real time_linklist,
-                    Real time_precompute_gauss,
+                    Real time_hashing,
                     Real time_spreading,
                     Real time_FFT,
                     Real time_gathering,

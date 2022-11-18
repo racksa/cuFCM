@@ -25,6 +25,10 @@ if(sys.argv[1] == 'read_npy'):
     sim.plot_ptps()
     sim.plot_sigfac()
 
+if(sys.argv[1] == 'plot_piechart'):
+    sim.analyse()
+    sim.plot_pie_chart_of_time()
+
 
 # def run():
 

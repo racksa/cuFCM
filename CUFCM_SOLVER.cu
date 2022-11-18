@@ -127,8 +127,6 @@ void FCM_solver::init_time_array(){
     time_readfile = (Real)0.0;
 
     time_hashing_array = malloc_host<Real>(repeat);
-    time_linklist_array = malloc_host<Real>(repeat);
-    time_precompute_array = malloc_host<Real>(repeat);
     time_spreading_array = malloc_host<Real>(repeat);
     time_FFT_array = malloc_host<Real>(repeat);
     time_gathering_array = malloc_host<Real>(repeat);
@@ -424,16 +422,6 @@ void FCM_solver::spatial_hashing(){
 
 
     cudaDeviceSynchronize();	time_hashing_array[rept] = get_time() - time_start;
-    ///////////////////////////////////////////////////////////////////////////////
-    // Link
-    ///////////////////////////////////////////////////////////////////////////////
-    cudaDeviceSynchronize();	time_start = get_time();
-
-    #if CORRECTION_TYPE == 0
-
-    #endif
-
-    cudaDeviceSynchronize();	time_linklist_array[rept] = get_time() - time_start;
 }
 
 __host__
@@ -681,22 +669,18 @@ void FCM_solver::assign_host_array_pointers(Real *Y_host_o,
 __host__
 void FCM_solver::prompt_time(){
     auto time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
-	auto time_linklist = mean(&time_linklist_array[warmup], repeat-warmup);
-	auto time_precompute = mean(&time_precompute_array[warmup], repeat-warmup);
 	auto time_spreading = mean(&time_spreading_array[warmup], repeat-warmup);
 	auto time_FFT = mean(&time_FFT_array[warmup], repeat-warmup);
 	auto time_gathering = mean(&time_gathering_array[warmup], repeat-warmup);
 	auto time_correction = mean(&time_correction_array[warmup], repeat-warmup);
 
 	auto time_hashing_stdv = stdv(&time_hashing_array[warmup], repeat-warmup);
-	auto time_linklist_stdv = stdv(&time_linklist_array[warmup], repeat-warmup);
-	auto time_precompute_stdv = stdv(&time_precompute_array[warmup], repeat-warmup);
 	auto time_spreading_stdv = stdv(&time_spreading_array[warmup], repeat-warmup);
 	auto time_FFT_stdv = stdv(&time_FFT_array[warmup], repeat-warmup);
 	auto time_gathering_stdv = stdv(&time_gathering_array[warmup], repeat-warmup);
 	auto time_correction_stdv = stdv(&time_correction_array[warmup], repeat-warmup);
 
-	auto time_compute = time_linklist + time_precompute + time_spreading + time_FFT + time_gathering + time_correction;
+	auto time_compute = time_spreading + time_FFT + time_gathering + time_correction;
 	auto PTPS = N/time_compute;
 
 	if(prompt > 1){
@@ -706,9 +690,7 @@ void FCM_solver::prompt_time(){
 		std::cout << "Init CUDA:\t" << time_cuda_initialisation << "s\n";
 		std::cout << "Readfile:\t" << time_readfile << " s\n";
 		std::cout << "Hashing:\t" << time_hashing << " \t+/-\t " << time_hashing_stdv << " s\n";
-		std::cout << "Linklist:\t" << time_linklist << " \t+/-\t " << time_linklist_stdv <<" s\n";
-		std::cout << "Precomputing:\t" << time_precompute << " \t+/-\t " << time_precompute_stdv <<" s\n";
-		std::cout << "Spreading:\t" << time_spreading << " \t+/-\t " << time_spreading_stdv <<" s\n";
+        std::cout << "Spreading:\t" << time_spreading << " \t+/-\t " << time_spreading_stdv <<" s\n";
 		std::cout << "FFT+flow:\t" << time_FFT << " \t+/-\t " << time_FFT_stdv <<" s\n";
 		std::cout << "Gathering:\t" << time_gathering << " \t+/-\t " << time_gathering_stdv <<" s\n";
 		std::cout << "Correction:\t" << time_correction << " \t+/-\t " << time_correction_stdv <<" s\n";
@@ -746,22 +728,18 @@ void FCM_solver::finish(){
 	// Time
 	///////////////////////////////////////////////////////////////////////////////
 	auto time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
-	auto time_linklist = mean(&time_linklist_array[warmup], repeat-warmup);
-	auto time_precompute = mean(&time_precompute_array[warmup], repeat-warmup);
 	auto time_spreading = mean(&time_spreading_array[warmup], repeat-warmup);
 	auto time_FFT = mean(&time_FFT_array[warmup], repeat-warmup);
 	auto time_gathering = mean(&time_gathering_array[warmup], repeat-warmup);
 	auto time_correction = mean(&time_correction_array[warmup], repeat-warmup);
 
 	auto time_hashing_stdv = stdv(&time_hashing_array[warmup], repeat-warmup);
-	auto time_linklist_stdv = stdv(&time_linklist_array[warmup], repeat-warmup);
-	auto time_precompute_stdv = stdv(&time_precompute_array[warmup], repeat-warmup);
 	auto time_spreading_stdv = stdv(&time_spreading_array[warmup], repeat-warmup);
 	auto time_FFT_stdv = stdv(&time_FFT_array[warmup], repeat-warmup);
 	auto time_gathering_stdv = stdv(&time_gathering_array[warmup], repeat-warmup);
 	auto time_correction_stdv = stdv(&time_correction_array[warmup], repeat-warmup);
 
-	auto time_compute = time_linklist + time_precompute + time_spreading + time_FFT + time_gathering + time_correction;
+	auto time_compute = time_spreading + time_FFT + time_gathering + time_correction;
 	auto PTPS = N/time_compute;
 
 	if(prompt > 1){
@@ -771,9 +749,7 @@ void FCM_solver::finish(){
 		std::cout << "Init CUDA:\t" << time_cuda_initialisation << "s\n";
 		std::cout << "Readfile:\t" << time_readfile << " s\n";
 		std::cout << "Hashing:\t" << time_hashing << " \t+/-\t " << time_hashing_stdv << " s\n";
-		std::cout << "Linklist:\t" << time_linklist << " \t+/-\t " << time_linklist_stdv <<" s\n";
-		std::cout << "Precomputing:\t" << time_precompute << " \t+/-\t " << time_precompute_stdv <<" s\n";
-		std::cout << "Spreading:\t" << time_spreading << " \t+/-\t " << time_spreading_stdv <<" s\n";
+        std::cout << "Spreading:\t" << time_spreading << " \t+/-\t " << time_spreading_stdv <<" s\n";
 		std::cout << "FFT+flow:\t" << time_FFT << " \t+/-\t " << time_FFT_stdv <<" s\n";
 		std::cout << "Gathering:\t" << time_gathering << " \t+/-\t " << time_gathering_stdv <<" s\n";
 		std::cout << "Correction:\t" << time_correction << " \t+/-\t " << time_correction_stdv <<" s\n";
@@ -853,9 +829,7 @@ void FCM_solver::finish(){
 		
 		write_time(time_cuda_initialisation, 
 				time_readfile,
-				time_hashing, 
-				time_linklist,
-				time_precompute,
+				time_hashing,
 				time_spreading,
 				time_FFT,
 				time_gathering,
