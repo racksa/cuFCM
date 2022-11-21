@@ -55,6 +55,7 @@ void FCM_solver::init_config(){
         repeat = pars.repeat;
         prompt = pars.prompt;
         boxsize = pars.boxsize;
+        checkerror = pars.checkerror;
 
 
     /* Deduced FCM parameters */
@@ -762,9 +763,12 @@ void FCM_solver::finish(){
 	///////////////////////////////////////////////////////////////////////////////
 	// Check error
 	///////////////////////////////////////////////////////////////////////////////
-	#if CHECK_ERROR == 1 and INIT_FROM_FILE == 1
+    Real Yerror = -1;
+    Real Verror = -1;
+    Real Werror = -1;
 
-		Real* Y_validation = malloc_host<Real>(3*N);
+	if (checkerror == 1){
+        Real* Y_validation = malloc_host<Real>(3*N);
 		Real* F_validation = malloc_host<Real>(3*N);
 		Real* V_validation = malloc_host<Real>(3*N);
 		Real* W_validation = malloc_host<Real>(3*N);
@@ -774,9 +778,9 @@ void FCM_solver::finish(){
 						   V_validation,
 						   W_validation, N, "./data/refdata/ref_data_N500000");
 
-		Real Yerror = percentage_error_magnitude(Y_host, Y_validation, N);
-		Real Verror = percentage_error_magnitude(V_host, V_validation, N);
-		Real Werror = percentage_error_magnitude(W_host, W_validation, N);
+		Yerror = percentage_error_magnitude(Y_host, Y_validation, N);
+		Verror = percentage_error_magnitude(V_host, V_validation, N);
+		Werror = percentage_error_magnitude(W_host, W_validation, N);
 
 		if(prompt > 1){
 			std::cout << "-------\nError\n-------\n";
@@ -784,42 +788,42 @@ void FCM_solver::finish(){
 			std::cout << "%V error:\t" << Verror << "\n";
 			std::cout << "%W error:\t" << Werror << "\n";
 		}
-
-	#elif CHECK_ERROR == 2
-		int N_truncate;
-		if(N>1000){
-			N_truncate = int(N*0.001);
-		}
-		else{
-			N_truncate = int(N);
-		}
+    }
+    
+	// else if (checkerror == 2){
+    //     int N_truncate;
+	// 	if(N>1000){
+	// 		N_truncate = int(N*0.001);
+	// 	}
+	// 	else{
+	// 		N_truncate = int(N);
+	// 	}
 		
-		Real* V_validation = malloc_host<Real>(3*N);
-		Real* W_validation = malloc_host<Real>(3*N);
-		Real* V_validation_device = malloc_device<Real>(3*N_truncate);
-		Real* W_validation_device = malloc_device<Real>(3*N_truncate);
+	// 	Real* V_validation = malloc_host<Real>(3*N);
+	// 	Real* W_validation = malloc_host<Real>(3*N);
+	// 	Real* V_validation_device = malloc_device<Real>(3*N_truncate);
+	// 	Real* W_validation_device = malloc_device<Real>(3*N_truncate);
 
-		Real hasimoto = Real(1.0) - Real(1.7601)*pow(Volume_frac, 1.0/3.0) - Real(1.5593)*pow(Volume_frac, 2.0);
+	// 	Real hasimoto = Real(1.0) - Real(1.7601)*pow(Volume_frac, 1.0/3.0) - Real(1.5593)*pow(Volume_frac, 2.0);
 
-		const int num_thread_blocks_N_trunc = (N_truncate + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
-		cufcm_compute_formula<<<num_thread_blocks_N_trunc, THREADS_PER_BLOCK>>>
-							(Y_device, V_validation_device, W_validation_device,
-							F_device, T_device, N, N_truncate,
-							sigmaFCM, sigmaFCMdip, StokesMob, WT1Mob, hasimoto);
+	// 	const int num_thread_blocks_N_trunc = (N_truncate + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	// 	cufcm_compute_formula<<<num_thread_blocks_N_trunc, THREADS_PER_BLOCK>>>
+	// 						(Y_device, V_validation_device, W_validation_device,
+	// 						F_device, T_device, N, N_truncate,
+	// 						sigmaFCM, sigmaFCMdip, StokesMob, WT1Mob, hasimoto);
 
-		copy_to_host<Real>(V_validation_device, V_validation, 3*N_truncate);
-		copy_to_host<Real>(W_validation_device, W_validation, 3*N_truncate);
-		Real Verror = percentage_error_magnitude(V_host, V_validation, N_truncate);
-		Real Werror = percentage_error_magnitude(W_host, W_validation, N_truncate);
+	// 	copy_to_host<Real>(V_validation_device, V_validation, 3*N_truncate);
+	// 	copy_to_host<Real>(W_validation_device, W_validation, 3*N_truncate);
+	// 	Real Verror = percentage_error_magnitude(V_host, V_validation, N_truncate);
+	// 	Real Werror = percentage_error_magnitude(W_host, W_validation, N_truncate);
 		
-		if(prompt > 1){
-			std::cout << "-------\nError\n-------\n";
-			std::cout << "%Y error:\t" << 0 << "\n";
-			std::cout << "%V error:\t" << Verror << "\n";
-			std::cout << "%W error:\t" << Werror << "\n";
-		}
-		
-	#endif
+	// 	if(prompt > 1){
+	// 		std::cout << "-------\nError\n-------\n";
+	// 		std::cout << "%Y error:\t" << 0 << "\n";
+	// 		std::cout << "%V error:\t" << Verror << "\n";
+	// 		std::cout << "%W error:\t" << Werror << "\n";
+	// 	}
+    // }
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Write to file
@@ -837,21 +841,10 @@ void FCM_solver::finish(){
 				time_compute,
 				"./data/simulation/simulation_scalar.dat");
 
-		#if CHECK_ERROR > 0 and INIT_FROM_FILE == 1
+        write_error(
+            Verror,
+            Werror,
+            "./data/simulation/simulation_scalar.dat");
 
-			write_error(
-				Verror,
-				Werror,
-				"./data/simulation/simulation_scalar.dat");
-
-		#else
-
-			write_error(
-				-1,
-				-1,
-				"./data/simulation/simulation_scalar.dat");
-
-		#endif
-		
 	#endif
 }

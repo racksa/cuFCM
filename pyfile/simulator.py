@@ -16,7 +16,7 @@ import util
 class SIM:
 
     def __init__(self):
-        pardict = util.read_info(info_file_name)
+        pardict, filedict = util.read_info(info_file_name)
         # Initialise parameters
         pardict['repeat']=     40
         pardict['prompt']=     -1
@@ -28,9 +28,12 @@ class SIM:
         pardict['Tfac']=       1.0
 
         self.pars = pardict.copy()
+        self.datafiles = filedict.copy()
+
+        print(self.datafiles)
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 8) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 16) # alpha, beta, eta, npts
 
         self.nphi = 1
         self.nn = 1
@@ -51,11 +54,15 @@ class SIM:
 
 
     def start_loop(self):
+        self.datafiles['$posfile'] = './data/init_data/new/pos_data.dat'
+        self.datafiles['$forcefile'] = './data/init_data/new/force_data.dat'
+        self.datafiles['$torquefile'] = './data/init_data/new/torque_data.dat'
+        self.pars['checkerror'] = 0
+
         for i in range(self.nphi):
             for j in range(self.nn):
-                self.pars['N']=             int(10000. * 2**j)
-                # self.pars['rh']=            0.04176245997623781 * 2**i
-                self.pars['rh']=            0.004 * 2**i
+                self.pars['N']=             int(1000. * 2**j)
+                self.pars['rh']=            0.04176245997623781 * 2**i
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'])
                 self.pars['Fref']=          self.pars['rh']
                 self.print_siminfo(i, j)
@@ -106,9 +113,9 @@ class SIM:
         self.reference_pars['prompt']=      -1
 
         if(sys.argv[1] == 'run' or sys.argv[1] == 'test'):
-            save_info_name, save_scalar_name, save_data_name = util.execute(self.reference_pars, 3)
+            save_info_name, save_scalar_name, save_data_name = util.execute([self.reference_pars, self.datafiles], 3)
 
-        print("\nFinished generating reference")
+        print("Finished generating reference")
 
 
     def find_optimal(self, tol):
@@ -130,13 +137,13 @@ class SIM:
                         self.pars['eta']=        round(5.0 + .1*k, 1)
                         # npts =                   int(0.026/self.pars['rh'] * 60 + 30*l)/2 * 2
                         # npts =                   int(150 + 14*self.pars['N']/100000 + 6*l)/2 * 2
-                        npts                   = 60 + 8*l
+                        npts                   = 20 + 4*l
                         self.pars['nx']=         npts
                         self.pars['ny']=         npts
                         self.pars['nz']=         npts
 
                         if(sys.argv[1] == 'run'):
-                            save_info_name, save_scalar_name, save_data_name = util.execute(self.pars, 2)
+                            save_info_name, save_scalar_name, save_data_name = util.execute([self.pars, self.datafiles], 2)
 
                         sim_dict = util.read_scalar(self.pars)
                         if(sim_dict):
@@ -179,10 +186,14 @@ class SIM:
         return optimal_alpha, optimal_beta, optimal_eta, optimal_npts, optimal_Verror, optimal_Werror, min_time
 
 
-
     def run_test(self):
+        self.datafiles['$posfile'] = './data/init_data/N500000/pos-N500000-rh02609300-2.dat'
+        self.datafiles['$forcefile'] = './data/init_data/N500000/force-N500000-rh02609300.dat'
+        self.datafiles['$torquefile'] = './data/init_data/N500000/force-N500000-rh02609300-2.dat'
+        self.pars['checkerror'] = 1
+
         fac = 1.0
-        self.pars['N']=          50000
+        self.pars['N']=          500000
         self.pars['rh']=         0.02609300415934458*fac
         self.pars['alpha']=      0.97
         self.pars['beta']=       8.9
@@ -204,15 +215,9 @@ class SIM:
         self.pars['Ffac']=       fac**2
         self.pars['Tfac']=       fac**3
 
-        # self.get_reference()
-        save_info_name, save_scalar_name, save_data_name = util.execute(self.pars, 3)
+        save_info_name, save_scalar_name, save_data_name = util.execute([self.pars, self.datafiles], 3)
 
         self.plot_pie_chart_of_time()
-
-        # if(sim_dict):
-        #     if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run' or sys.argv[1] == 'test'):
-        #         sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
-        # self.print_scalar(sim_dict)
 
 
     def print_scalar(self, sim_dict):
@@ -250,8 +255,10 @@ class SIM:
         optimal_parameters = [[i, j, self.optimal_alpha_array[i, j], self.optimal_beta_array[i, j],\
                 self.optimal_eta_array[i, j], self.optimal_npts_array[i, j]] \
                 for i in range(self.nphi) for j in range(self.nn)]
+        optimal_times = [self.optimal_time_compute_array[i, j] \
+                for i in range(self.nphi) for j in range(self.nn)]
         for i, pars in enumerate(optimal_parameters):
-            print(pars, pars[2]*pars[4]/pars[5])
+            print(pars, 'PTPS=', self.pars['N']/optimal_times[i])
             if ((i+1)%self.nn == 0):
                 print('--------------------')
 
@@ -304,6 +311,7 @@ class SIM:
         sizes = [sim_dict[key]/time_compute for key in keys]
         explode = (0, 0, 0, 0, 0.1)  # only "explode" the 2nd slice (i.e. 'Hogs')
 
+        ax.set_title("Time  of Fast FCM")
         ax.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%',
                 shadow=False, startangle=90)
         ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.

@@ -6,7 +6,7 @@ class FCM_solver{
 public:
     Pars pars;
 
-    int N, nx, ny, nz, repeat, prompt, warmup;
+    int N, nx, ny, nz, repeat, prompt, warmup, checkerror;
     Real rh, alpha, beta, eta;
     Real boxsize;
     Real values[100];

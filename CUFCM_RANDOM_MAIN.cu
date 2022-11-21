@@ -17,7 +17,8 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	Random_Pars pars;
 	Real values[100];
-	read_config(values, "simulation_info_long");
+	std::vector<std::string> datafile_names{3};
+	read_config(values, datafile_names, "simulation_info_long");
 	pars.N = values[0];
 	pars.rh = values[1];
 	pars.alpha = values[2];

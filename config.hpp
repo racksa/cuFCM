@@ -20,7 +20,7 @@
 // 0 = FCM
 // 1 = Fast FCM
 
-#define INIT_FROM_FILE 1
+// #define INIT_FROM_FILE 1         **deprecated used random generator instread
 // 0 = Generate random packing
 // 1 = Read initial data from file
 
@@ -50,7 +50,7 @@
 // 0 = Dont write to file
 // 1 = Write to file    **default
 
-#define CHECK_ERROR 0
+// #define CHECK_ERROR 1
 // 0 = Dont check error     **default
 // 1 = Check error from file
 
@@ -89,13 +89,13 @@
 struct Pars
     {
         int N, nx, ny, nz, repeat, prompt;
-        Real rh, alpha, beta, eta, boxsize;
+        Real rh, alpha, beta, eta, boxsize, checkerror;
     };
 
 struct Random_Pars
     {
         int N, nx, ny, nz, repeat, prompt;
-        Real rh, alpha, beta, eta, boxsize;
+        Real rh, alpha, beta, eta, boxsize, checkerror;
         Real dt, Fref;
     };
     

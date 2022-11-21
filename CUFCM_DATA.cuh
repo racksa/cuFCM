@@ -2,6 +2,8 @@
 #include "config.hpp"
 #include <curand_kernel.h>
 #include <curand.h>
+#include <string>
+#include <vector>
 
 void read_init_data(Real *Y, int N, const char *initpos_file_name);
 
@@ -27,7 +29,7 @@ void write_error(Real Verror,
                  Real Werror,
                  const char *file_name);
 
-void read_config(Real *values, const char *file_name);
+void read_config(Real *values, std::vector<std::string>& datafile_names, const char *file_name);
 
 __global__
 void init_pos_random_overlapping(Real *Y, int N, Real boxsize, curandState *states);

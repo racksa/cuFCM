@@ -48,14 +48,19 @@ def replace(key, value, fileName):
 def read_info(fileName, symbol='='):
     """Read info and create dict
     """
-    ret = {}
+    ret_pardict = {}
+    ret_filedict = {}
     infoFile = open(fileName, 'r')
     lines = infoFile.readlines()
     for row in range(len(lines)):
-        sep = find_pos(lines[row], symbol)
-        ret[lines[row][:sep-1]] = float(lines[row][sep:])
+        if not lines[row][0] == '$' or lines[row][0] == ' ':
+            sep = find_pos(lines[row], symbol)
+            ret_pardict[lines[row][:sep-1]] = float(lines[row][sep:])
+        elif lines[row][0] == '$':
+            sep = find_pos(lines[row], symbol)
+            ret_filedict[lines[row][:sep-1]] = lines[row][sep:].replace("\n", "")
     infoFile.close()
-    return ret
+    return ret_pardict, ret_filedict
 
 
 def read_scalar(idict, symbol='='):
@@ -81,18 +86,6 @@ def write_scalar(idict, sim_dict):
     fileName = save_directory + "simulation_scalar" + parser(idict) + ".dat"
     for key in sim_dict:
         replace(key, str(sim_dict[key]), fileName)
-
-# def read_scalar(fileName, symbol='='):
-#     """Read scalar and create dict
-#     """
-#     ret = {}
-#     infoFile = open(fileName, 'r')
-#     lines = infoFile.readlines()
-#     for row in range(len(lines)):
-#         sep = find_pos(lines[row], symbol)
-#         ret[lines[row][:sep-1]] = float(lines[row][sep:])
-#     infoFile.close()
-#     return ret
 
 
 def read_data(filePath, t, N):
@@ -380,9 +373,11 @@ def fcm_par_given_error(tol, rh):
 def par_reference(rad):
     return 1.3, 11., 8., compute_fastfcm_npts(rad)
 
-def execute(pars, mode=2):
-        for key in pars:
-            replace(key, str(pars[key]), info_file_name)
+def execute(dicts, mode=2):
+        for dic in dicts:
+            for key in dic:
+                replace(key, str(dic[key]), info_file_name)
+        pars = dicts[0] #first dictionary should always be the parameter dictionary!!
         if(solver == 0):
             subprocess.call(cufcm_dir + "bin/FCM", shell=True)
             return savefile(pars, save_directory, mode)

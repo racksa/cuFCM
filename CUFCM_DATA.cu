@@ -136,21 +136,29 @@ void write_error(Real Verror,
     fclose(pfile);
 }
 
-void read_config(Real *values, const char *file_name){
+void read_config(Real *values, std::vector<std::string>& datafile_names, const char *file_name){
     std::ifstream cFile (file_name);
     if (cFile.is_open()){
         std::string line;
         int line_count = 0;
+        int file_count = 0;
         while(getline(cFile, line)){
             line.erase(std::remove_if(line.begin(), line.end(), isspace),
                                 line.end());
             if( line.empty() || line[0] == '#' ){
                 continue;
             }
-            auto delimiterPos = line.find("=");
-            // TODO: implement isFLoat() to take file name as input
-            Real value = (Real) std::stod(line.substr(delimiterPos + 1));
-            values[line_count] = value;
+            else if (line[0] == '$') {
+                auto delimiterPos = line.find("=");
+                datafile_names[file_count] = line.substr(delimiterPos + 1);
+                file_count += 1;
+            }
+            else{
+                auto delimiterPos = line.find("=");
+                Real value = (Real) std::stod(line.substr(delimiterPos + 1));
+                values[line_count] = value;
+            }
+
             line_count += 1;
         }
     }

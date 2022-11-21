@@ -413,21 +413,21 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
     const int stride = blockDim.x*gridDim.x;
 
     int fft_nx = nx/2 + 1;
-    int grid_size = nx*ny*nz;
+    Real grid_size = nx*ny*nz;
     int fft_grid_size = fft_nx*ny*nz;
 
     // Stay in the loop as long as any thread in the block still needs to compute velocities.
     for(int i = index; i < fft_grid_size; i += stride){
         const int indk = (i)/(ny*fft_nx);
         const int indj = (i - indk*(ny*fft_nx))/fft_nx;
-        const int indi = i - indk*(ny*fft_nx) - indj*fft_nx;
+        const int indi = i - (indk*ny + indj)*fft_nx;
 
         int nptsh = nx/2;
-        Real q1 = ( (indi < nptsh || indi == nptsh)? Real(indi) : Real(indi - nx) ) * (PI2/boxsize);
-        Real q2 = ( (indj < nptsh || indj == nptsh)? Real(indj) : Real(indj - ny) ) * (PI2/boxsize);
-        Real q3 = ( (indk < nptsh || indk == nptsh)? Real(indk) : Real(indk - nz) ) * (PI2/boxsize);
+        Real q1 = ( (indi < nptsh || indi == nptsh)? Real(indi) : Real(indi - nx) ) * (Real(PI2)/boxsize);
+        Real q2 = ( (indj < nptsh || indj == nptsh)? Real(indj) : Real(indj - ny) ) * (Real(PI2)/boxsize);
+        Real q3 = ( (indk < nptsh || indk == nptsh)? Real(indk) : Real(indk - nz) ) * (Real(PI2)/boxsize);
         Real qq = q1*q1 + q2*q2 + q3*q3;
-        Real norm = (Real)1.0/(qq);
+        Real qq_inv = (Real)1.0/(qq);
 
 
         Real f1_re = fk_x[i].x;
@@ -446,15 +446,16 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
             f3_im = (Real)0.0;
         }
 
-        Real kdotf_re = (q1*f1_re+q2*f2_re+q3*f3_re)*norm;
-        Real kdotf_im = (q1*f1_im+q2*f2_im+q3*f3_im)*norm;
+        Real kdotf_re = (q1*f1_re+q2*f2_re+q3*f3_re)*qq_inv;
+        Real kdotf_im = (q1*f1_im+q2*f2_im+q3*f3_im)*qq_inv;
+        Real norm = qq_inv / grid_size;
 
-        uk_x[i].x = norm*(f1_re-q1*(kdotf_re))/((Real)grid_size);
-        uk_x[i].y = norm*(f1_im-q1*(kdotf_im))/((Real)grid_size);
-        uk_y[i].x = norm*(f2_re-q2*(kdotf_re))/((Real)grid_size);
-        uk_y[i].y = norm*(f2_im-q2*(kdotf_im))/((Real)grid_size);
-        uk_z[i].x = norm*(f3_re-q3*(kdotf_re))/((Real)grid_size);
-        uk_z[i].y = norm*(f3_im-q3*(kdotf_im))/((Real)grid_size);
+        uk_x[i].x = norm*(f1_re-q1*(kdotf_re));
+        uk_x[i].y = norm*(f1_im-q1*(kdotf_im));
+        uk_y[i].x = norm*(f2_re-q2*(kdotf_re));
+        uk_y[i].y = norm*(f2_im-q2*(kdotf_im));
+        uk_z[i].x = norm*(f3_re-q3*(kdotf_re));
+        uk_z[i].y = norm*(f3_im-q3*(kdotf_im));
 
         if(i==0){
             uk_x[0].x = (Real)0.0;
@@ -465,7 +466,6 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
             uk_z[0].y = (Real)0.0;
         }
     }// End of striding loop over filament segment velocities.
-    __syncthreads();
     return;
 }
 
