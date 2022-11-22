@@ -172,7 +172,7 @@ void init_pos_random_overlapping(Real *Y, int N, Real boxsize, curandState *stat
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    int seed = index; // different seed per thread
+    int seed = index + clock64(); // different seed per thread
     curand_init(seed, index, 0, &states[index]);
     Real rnd1, rnd2, rnd3;
 
@@ -245,8 +245,6 @@ void separate2interleaved(Real *F_device_interleave,
 }
 
 
-
-
 void init_random_force(Real *F, Real rad, int N){
 
     int num_thread_blocks_N;
@@ -262,7 +260,7 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    int seed = index; // different seed per thread
+    int seed = index + clock64(); // different seed per thread
     curand_init(seed, index, 0, &states[index]);
 
     Real rnd1, rnd2, rnd3;
@@ -271,6 +269,7 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states){
         rnd1 = curand_uniform (&states[index]);
         rnd2 = curand_uniform (&states[index]);
         rnd3 = curand_uniform (&states[index]);
+
         F[3*j + 0] = 12.0*PI*rad*(rnd1 - 0.5);
         F[3*j + 1] = 12.0*PI*rad*(rnd2 - 0.5);
         F[3*j + 2] = 12.0*PI*rad*(rnd3 - 0.5);

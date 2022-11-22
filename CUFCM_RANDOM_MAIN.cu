@@ -31,9 +31,9 @@ int main(int argc, char** argv) {
 	pars.prompt = values[9];
 	pars.dt = values[10];
 	pars.Fref = values[11];
+	Real packrep = values[12];
 	pars.boxsize = values[13];
 
-	Real packrep = values[12];
 
 	Real* Y_host = malloc_host<Real>(3*pars.N);						Real* Y_device = malloc_device<Real>(3*pars.N);
 	Real* F_host = malloc_host<Real>(3*pars.N);						Real* F_device = malloc_device<Real>(3*pars.N);
@@ -68,9 +68,9 @@ int main(int argc, char** argv) {
 		printf("\nCopying to host...\n");
 	}
 
-	copy_to_host<Real>(Y_device, Y_host, 3);
-	copy_to_host<Real>(F_device, F_host, 3);
-	copy_to_host<Real>(T_device, T_host, 3);
+	copy_to_host<Real>(Y_device, Y_host, 3*pars.N);
+	copy_to_host<Real>(F_device, F_host, 3*pars.N);
+	copy_to_host<Real>(T_device, T_host, 3*pars.N);
 
 	if(pars.prompt > 5){
 		printf("\nFinished copying...\n");

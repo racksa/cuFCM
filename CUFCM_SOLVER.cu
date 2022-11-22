@@ -703,15 +703,7 @@ void FCM_solver::prompt_time(){
 
 __host__
 void FCM_solver::finish(){
-    
-    // cudaMemcpy(Y_host, Y_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(F_host, F_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(T_host, T_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(V_host, V_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(W_host, W_device, 3*N*sizeof(Real), cudaMemcpyDeviceToHost);
-    // for(int i=0; i<10; i++){
-    //     printf("%d V(%.4f %.4f %.4f)\n", i, V_host[3*i], V_host[3*i+1], V_host[3*i+2]);
-    // }
+
     if(prompt>10){printf("pass10\n");}
 	copy_to_host<Real>(Y_device, Y_host, 3*N);
     if(prompt>10){printf("pass11\n");}
@@ -723,7 +715,6 @@ void FCM_solver::finish(){
     if(prompt>10){printf("pass14\n");}
 	copy_to_host<Real>(W_device, W_host, 3*N);
     if(prompt>10){printf("pass15\n");}
-   
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
@@ -829,7 +820,8 @@ void FCM_solver::finish(){
 	// Write to file
 	///////////////////////////////////////////////////////////////////////////////
 	#if OUTPUT_TO_FILE == 1
-		write_data(Y_host, F_host, V_host, W_host, N, "./data/simulation/simulation_data.dat", "w");
+		write_data(Y_host, F_host, V_host, W_host, N, 
+                   "./data/simulation/simulation_data.dat", "w");
 		
 		write_time(time_cuda_initialisation, 
 				time_readfile,

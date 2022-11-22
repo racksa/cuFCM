@@ -29,14 +29,12 @@ class SIM:
 
         self.pars = pardict.copy()
         self.datafiles = filedict.copy()
-
-        print(self.datafiles)
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 16) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 41) # alpha, beta, eta, npts
 
         self.nphi = 1
-        self.nn = 1
+        self.nn = 10
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -61,8 +59,8 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                self.pars['N']=             int(1000. * 2**j)
-                self.pars['rh']=            0.04176245997623781 * 2**i
+                self.pars['N']=             int((10+10*j) **3)
+                self.pars['rh']=            0.03 * 2**i
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'])
                 self.pars['Fref']=          self.pars['rh']
                 self.print_siminfo(i, j)
@@ -105,7 +103,6 @@ class SIM:
         self.reference_pars['beta']         = 15.0 / self.reference_pars['alpha']
         self.reference_pars['eta']          = round(8.0, 1)
         npts                                = min( int(0.026/self.reference_pars['rh'] * 270)/2 * 2, 460)
-        # npts                                = 400
         self.reference_pars['nx']=          npts
         self.reference_pars['ny']=          npts
         self.reference_pars['nz']=          npts
@@ -113,7 +110,7 @@ class SIM:
         self.reference_pars['prompt']=      -1
 
         if(sys.argv[1] == 'run' or sys.argv[1] == 'test'):
-            save_info_name, save_scalar_name, save_data_name = util.execute([self.reference_pars, self.datafiles], 3)
+            util.execute([self.reference_pars, self.datafiles], solver=1, mode=3)
 
         print("Finished generating reference")
 
@@ -135,15 +132,21 @@ class SIM:
                         self.pars['alpha']=      1.0 + 0.02*i
                         self.pars['beta']=       (9. + j ) / self.pars['alpha']
                         self.pars['eta']=        round(5.0 + .1*k, 1)
-                        # npts =                   int(0.026/self.pars['rh'] * 60 + 30*l)/2 * 2
-                        # npts =                   int(150 + 14*self.pars['N']/100000 + 6*l)/2 * 2
-                        npts                   = 20 + 4*l
+                        if(HIsolver==1):
+                            npts = min(100 + 8*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi))))
+                        if(HIsolver==0):
+                            npts = 100 + 8*l
                         self.pars['nx']=         npts
                         self.pars['ny']=         npts
                         self.pars['nz']=         npts
 
+                        if HIsolver == 0:
+                            dx = self.pars['boxsize']/npts
+                            self.pars['alpha']= (self.pars['rh']/np.sqrt(np.pi))/dx
+                            self.pars['eta']= self.pars['eta']/self.pars['alpha']
+
                         if(sys.argv[1] == 'run'):
-                            save_info_name, save_scalar_name, save_data_name = util.execute([self.pars, self.datafiles], 2)
+                            util.execute([self.pars, self.datafiles], solver=HIsolver, mode=2)
 
                         sim_dict = util.read_scalar(self.pars)
                         if(sim_dict):
@@ -195,15 +198,11 @@ class SIM:
         fac = 1.0
         self.pars['N']=          500000
         self.pars['rh']=         0.02609300415934458*fac
-        self.pars['alpha']=      0.97
-        self.pars['beta']=       8.9
-        self.pars['eta']=        4.94
-        npts = 270
-
         self.pars['alpha']=      1.0
-        self.pars['beta']=       9.0
+        self.pars['beta']=       10.0
         self.pars['eta']=        4.8
-        npts = 320
+        npts = 320  # Fast FCM
+        npts = 480  # Regular FCM
 
         self.pars['nx']=         npts
         self.pars['ny']=         npts
@@ -215,7 +214,12 @@ class SIM:
         self.pars['Ffac']=       fac**2
         self.pars['Tfac']=       fac**3
 
-        save_info_name, save_scalar_name, save_data_name = util.execute([self.pars, self.datafiles], 3)
+        if HIsolver == 0:
+            dx = self.pars['boxsize']/npts
+            self.pars['alpha']= (self.pars['rh']/np.sqrt(np.pi))/dx
+            self.pars['eta']= self.pars['eta']/self.pars['alpha']
+
+        util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
 
         self.plot_pie_chart_of_time()
 
@@ -271,7 +275,7 @@ class SIM:
         
         for i, n in enumerate(self.n_array):
             ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
-            ax.plot(self.n_array[i], ptps_array, marker='o', c=util.color_codex[i], label=r'$a$=' + str(round(self.rh_array[i][0],4)))
+            ax.plot(self.n_array[i], ptps_array, marker='o', c=util.color_codex[i], label=r'$a$=' + str(round(self.rh_array[i][0], 4)))
         ax.legend()
         
         # adding title and labels
@@ -311,7 +315,7 @@ class SIM:
         sizes = [sim_dict[key]/time_compute for key in keys]
         explode = (0, 0, 0, 0, 0.1)  # only "explode" the 2nd slice (i.e. 'Hogs')
 
-        ax.set_title("Time  of Fast FCM")
+        ax.set_title("Time of Fast FCM")
         ax.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%',
                 shadow=False, startangle=90)
         ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.

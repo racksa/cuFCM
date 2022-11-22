@@ -16,11 +16,11 @@
 
 #define THREADS_PER_BLOCK 32
 
-#define SOLVER_MODE 1
+#define SOLVER_MODE 0
 // 0 = FCM
 // 1 = Fast FCM
 
-// #define INIT_FROM_FILE 1         **deprecated used random generator instread
+// #define INIT_FROM_FILE 1         **deprecated!! use random generator instread
 // 0 = Generate random packing
 // 1 = Read initial data from file
 
@@ -50,7 +50,7 @@
 // 0 = Dont write to file
 // 1 = Write to file    **default
 
-// #define CHECK_ERROR 1
+// #define CHECK_ERROR 1        ** moved to run time check
 // 0 = Dont check error     **default
 // 1 = Check error from file
 

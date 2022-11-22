@@ -4,11 +4,12 @@ import os
 
 cufcm_dir = '/data/hs2216/CUFCM/'
 info_file_name = "simulation_info_long"
-fcm_directory = cufcm_dir + "data/simulation/20221118_fcm/"
-fastfcm_directory = cufcm_dir + "data/simulation/20221118_fastfcm/"
+date = "20221121"
+fcm_directory = cufcm_dir + "data/simulation/" + date + "_fcm/"
+fastfcm_directory = cufcm_dir + "data/simulation/" + date + "_fastfcm/"
 
-solver = 1
-if(solver == 0):
+HIsolver = 1
+if (HIsolver==0):
     save_directory = fcm_directory
-if(solver == 1):
+if (HIsolver==1):
     save_directory = fastfcm_directory

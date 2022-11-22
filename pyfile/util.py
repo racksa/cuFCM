@@ -373,7 +373,7 @@ def fcm_par_given_error(tol, rh):
 def par_reference(rad):
     return 1.3, 11., 8., compute_fastfcm_npts(rad)
 
-def execute(dicts, mode=2):
+def execute(dicts, solver=1, mode=2):
         for dic in dicts:
             for key in dic:
                 replace(key, str(dic[key]), info_file_name)
