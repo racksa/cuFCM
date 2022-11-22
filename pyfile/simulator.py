@@ -31,7 +31,7 @@ class SIM:
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 41) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 31) # alpha, beta, eta, npts
 
         self.nphi = 1
         self.nn = 10
@@ -60,7 +60,7 @@ class SIM:
         for i in range(self.nphi):
             for j in range(self.nn):
                 self.pars['N']=             int((10+10*j) **3)
-                self.pars['rh']=            0.03 * 2**i
+                self.pars['rh']=            0.04 * 2**i
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'])
                 self.pars['Fref']=          self.pars['rh']
                 self.print_siminfo(i, j)
@@ -131,7 +131,8 @@ class SIM:
                     for k in range(self.search_grid_shape[2]):
                         self.pars['alpha']=      1.0 + 0.02*i
                         self.pars['beta']=       (9. + j ) / self.pars['alpha']
-                        self.pars['eta']=        round(5.0 + .1*k, 1)
+                        # self.pars['eta']=        round(5.5 + .1*k, 1)
+                        self.pars['eta']=        5.0
                         if(HIsolver==1):
                             npts = min(100 + 8*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi))))
                         if(HIsolver==0):
@@ -199,16 +200,16 @@ class SIM:
         self.pars['N']=          500000
         self.pars['rh']=         0.02609300415934458*fac
         self.pars['alpha']=      1.0
-        self.pars['beta']=       10.0
+        self.pars['beta']=       9.0
         self.pars['eta']=        4.8
         npts = 320  # Fast FCM
-        npts = 480  # Regular FCM
+        # npts = 480  # Regular FCM
 
         self.pars['nx']=         npts
         self.pars['ny']=         npts
         self.pars['nz']=         npts
         self.pars['Fref']=       1.0
-        self.pars['repeat']=     50
+        self.pars['repeat']=     1
         self.pars['prompt']=     10
         self.pars['boxsize']=    np.pi*2*fac
         self.pars['Ffac']=       fac**2

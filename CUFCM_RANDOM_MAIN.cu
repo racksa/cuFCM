@@ -44,7 +44,6 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////	
 
 	/* Create random genertaor solver */
-
 	{
 
 		init_random_force(F_device, pars.rh, pars.N);

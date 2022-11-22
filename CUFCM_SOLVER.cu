@@ -58,30 +58,16 @@ void FCM_solver::init_config(){
         checkerror = pars.checkerror;
 
 
-    /* Deduced FCM parameters */
+        /* Deduced FCM parameters */
         grid_size = nx*ny*nz;
         fft_grid_size = (nx/2+1)*ny*nz;
         dx = boxsize/nx;
         ngd = round(alpha*beta);
-        Rc_fac = Real(eta*alpha);
-
-        /* Neighbour list */
-        Rc = Rc_fac*dx;
-        Rcsq = Rc*Rc;
-        M = (int) (boxsize/Rc);
-        if(M < 3){
-            M = 3;
-        }
-        cellL = boxsize / Real(M);
-        ncell = M*M*M;
-        mapsize = 13*ncell;
-
-        Volume_frac = (N*4.0/3.0*PI*rh*rh*rh) / (boxsize*boxsize*boxsize);
+        
 
         /* Repeat number */
         warmup = 0.2*repeat;
 }
-
 
 __host__
 void FCM_solver::init_fcm_var(){
@@ -112,12 +98,29 @@ void FCM_solver::init_fcm_var(){
         WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
         WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
 
+        // Rc = Real(-eta*pdmag);
+
     #elif SOLVER_MODE == 0
 
         sigmaFCM = rh/sqrt(PI);
         sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
 
     #endif
+
+    /* Neighbour list */
+    Rc_fac = Real(eta*alpha);
+    Rc = Rc_fac*dx;
+    
+    Rcsq = Rc*Rc;
+    M = (int) (boxsize/Rc);
+    if(M < 3){
+        M = 3;
+    }
+    cellL = boxsize / Real(M);
+    ncell = M*M*M;
+    mapsize = 13*ncell;
+
+    Volume_frac = (N*4.0/3.0*PI*rh*rh*rh) / (boxsize*boxsize*boxsize);
 }
 
 __host__
@@ -161,6 +164,7 @@ void FCM_solver::prompt_info() {
 		std::cout << "dx:\t\t\t" << dx<< "\n";
         std::cout << "boxsize:\t\t" << boxsize<< "\n";
 		std::cout << "Cell number:\t\t" << M << "\n";
+        std::cout << "Rc/a:\t\t\t" << Rc/rh << "\n";
 		std::cout << "Repeat number:\t\t" << repeat << "\n";
 		std::cout << "Volume fraction:\t" << Volume_frac << "\n";
 		

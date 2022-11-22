@@ -78,7 +78,7 @@ void init_drag(Real *F, Real rad, int N, Real Fref, curandState *states){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    int seed = index; // different seed per thread
+    int seed = index + clock64(); // different seed per thread
     curand_init(seed, index, 0, &states[index]);
     Real rnd1, rnd2, rnd3;
 
@@ -312,6 +312,8 @@ void random_packer::spatial_hashing(){
     copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
     sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, F_device, aux_device, N);
     // Find cell starting/ending points
+    reset_device<int>(cell_start_device, ncell);
+    reset_device<int>(cell_end_device, ncell);
     create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
     
 }
