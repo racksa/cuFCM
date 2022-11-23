@@ -31,10 +31,10 @@ class SIM:
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 31) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 26) # alpha, beta, eta, npts
 
         self.nphi = 1
-        self.nn = 10
+        self.nn = 11
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -59,8 +59,8 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                self.pars['N']=             int((10+10*j) **3)
-                self.pars['rh']=            0.04 * 2**i
+                self.pars['N']=             int(1000*2**j)
+                self.pars['rh']=            0.024 * 2**i
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'])
                 self.pars['Fref']=          self.pars['rh']
                 self.print_siminfo(i, j)
@@ -131,12 +131,12 @@ class SIM:
                     for k in range(self.search_grid_shape[2]):
                         self.pars['alpha']=      1.0 + 0.02*i
                         self.pars['beta']=       (9. + j ) / self.pars['alpha']
-                        # self.pars['eta']=        round(5.5 + .1*k, 1)
-                        self.pars['eta']=        5.0
+                        self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
+
                         if(HIsolver==1):
-                            npts = min(100 + 8*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi))))
+                            npts = min(100 + 20*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi))))
                         if(HIsolver==0):
-                            npts = 100 + 8*l
+                            npts = 100 + 20*l
                         self.pars['nx']=         npts
                         self.pars['ny']=         npts
                         self.pars['nz']=         npts
@@ -165,14 +165,20 @@ class SIM:
                             self.print_scalar(sim_dict)
                             util.write_scalar(self.pars, sim_dict)
 
-        layer = util.filter_array(Verror_array, tol)
-        time_compute_layer = time_compute_array*layer
+        my_filter = util.filter_array(Verror_array, tol)
+        time_compute_layer = time_compute_array*my_filter
         if(not len(time_compute_layer[time_compute_layer > 0]) == 0):
+            # Tolerance reached by at least one value
             min_time = time_compute_layer[time_compute_layer > 0].min()
             min_index = np.where(time_compute_layer == min_time)
         else:
-            min_time = time_compute_array[time_compute_array > 0].min()
-            min_index = np.where(time_compute_array == min_time)
+            # Tolerance not reached
+            # min_time = time_compute_array[time_compute_array > 0].min()
+            min_error = Verror_array.min()
+            min_index = np.where(Verror_array == min_error)
+            min_time = time_compute_array[min_index]
+            print('Tolerance not satisfied in optimal finding. Carry on with the smallest error.')
+
         optimal_Verror = Verror_array[min_index][0]
         optimal_Werror = Werror_array[min_index][0]
         optimal_alpha = alpha_array[min_index][0]
@@ -209,7 +215,7 @@ class SIM:
         self.pars['ny']=         npts
         self.pars['nz']=         npts
         self.pars['Fref']=       1.0
-        self.pars['repeat']=     1
+        self.pars['repeat']=     40
         self.pars['prompt']=     10
         self.pars['boxsize']=    np.pi*2*fac
         self.pars['Ffac']=       fac**2
@@ -268,6 +274,46 @@ class SIM:
                 print('--------------------')
 
         print(self.optimal_time_compute_array)
+
+    def analyse_both(self):
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        # ax2 = ax.twiny()
+
+        for j in range(2):
+            global HIsolver
+            global save_directory
+            HIsolver = j
+            if (HIsolver==0):
+                save_directory = fcm_directory
+                label = 'FCM'
+                marker = 'o'
+            if (HIsolver==1):
+                save_directory = fastfcm_directory
+                label = 'Fast FCM'
+                marker = 's'
+            self.analyse()
+
+            for i, n in enumerate(self.n_array):
+                ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
+                ax.plot(self.n_array[i], ptps_array, marker=marker, c=util.color_codex[2*i+HIsolver], label=label)
+        
+                # ax2.plot(self.n_array[i], ptps_array)
+                # # ax2.set_xlim(ax.get_xlim())
+                # ax2.set_xticks(self.n_array[i])
+                # ax2.set_xticklabels(self.phi_array[i].round(2))
+                # ax2.set_xscale('log')
+
+                print('phi',self.phi_array[i])
+        
+        # adding title and labels
+        ax.legend()
+        ax.set_title("PTPS vs. N")
+        ax.set_xlabel('N')
+        ax.set_ylabel('PTPS')
+        ax.set_xscale('log')
+        plt.savefig('img/ptps_combined.eps', format='eps')
+        plt.show()
 
     
     def plot_ptps(self):
