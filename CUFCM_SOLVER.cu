@@ -180,6 +180,8 @@ void FCM_solver::init_cuda(){
 	cudaDeviceSynchronize();
 	time_start = get_time();
 
+    cudaMalloc((void **)&nan_check_device, sizeof (bool));
+
 	aux_host = malloc_host<Real>(3*N);					    aux_device = malloc_device<Real>(3*N);
     
 
@@ -382,7 +384,15 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
 
     correction();
 
+    if(prompt>10){printf("pass7\n");}
+
+    // check_nan();
+
+    if(prompt>10){printf("pass8\n");}
+
     sortback();
+
+    if(prompt>10){printf("pass9\n");}
 
     rept += 1;
 
@@ -639,11 +649,16 @@ void FCM_solver::sortback(){
      /* Sort back */
     #if SORT_BACK == 1
 
+        if(prompt>10){printf("sortback pass0\n");}
         particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, N);
+        if(prompt>10){printf("sortback pass1\n");}
         sort_index_by_key(particle_index_device, sortback_index_device, key_buf, index_buf, N);
+        if(prompt>10){printf("sortback pass2\n");}
 
         copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+        if(prompt>10){printf("sortback pass3\n");}
         sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
+        if(prompt>10){printf("sortback pass4\n");}
 
         copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
         sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, F_device, aux_device, N);
@@ -658,6 +673,18 @@ void FCM_solver::sortback(){
         sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, W_device, aux_device, N);
         
     #endif
+}
+
+__host__
+void FCM_solver::check_nan(){
+    nan_check_host = true;
+    cudaMemcpy(nan_check_device, &nan_check_host, sizeof(bool), cudaMemcpyHostToDevice);
+    check_nan_in<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, 3*N, nan_check_device);
+    check_nan_in<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(W_device, 3*N, nan_check_device);
+    cudaMemcpy(&nan_check_host, nan_check_device, sizeof(bool), cudaMemcpyDeviceToHost);
+    if(!nan_check_host){
+        printf("FATAL ERROR: NAN encountered\n\n");
+    }
 }
 
 __host__
@@ -708,17 +735,11 @@ void FCM_solver::prompt_time(){
 __host__
 void FCM_solver::finish(){
 
-    if(prompt>10){printf("pass10\n");}
 	copy_to_host<Real>(Y_device, Y_host, 3*N);
-    if(prompt>10){printf("pass11\n");}
 	copy_to_host<Real>(F_device, F_host, 3*N);
-    if(prompt>10){printf("pass12\n");}
 	copy_to_host<Real>(T_device, T_host, 3*N);
-    if(prompt>10){printf("pass13\n");}
 	copy_to_host<Real>(V_device, V_host, 3*N);
-    if(prompt>10){printf("pass14\n");}
 	copy_to_host<Real>(W_device, W_host, 3*N);
-    if(prompt>10){printf("pass15\n");}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Time

@@ -13,6 +13,8 @@ public:
     int grid_size, fft_grid_size, ngd;
     Real dx, Rc_fac, Rc, Rcsq,  Volume_frac;
 
+    bool *nan_check_device, nan_check_host=true;
+
     /* Timing */
     Real time_start, time_cuda_initialisation, time_readfile;
     Real *time_hashing_array, *time_linklist_array,*time_precompute_array,
@@ -151,6 +153,9 @@ public:
 
     __host__
     void sortback();
+
+    __host__
+    void check_nan();
 
     __host__
     void prompt_time();

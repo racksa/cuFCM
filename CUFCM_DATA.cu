@@ -306,3 +306,16 @@ void box(Real *Y, int N, Real box_size){
     }
 
 }
+
+__global__
+void check_nan_in(Real* arr, int L, bool* result){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    for(int i = index; i < L; i += stride){
+        if (isnan(arr[i])){
+            *result = false;
+        }
+    }
+
+}

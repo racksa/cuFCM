@@ -31,10 +31,10 @@ class SIM:
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 26) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 20+1) # alpha, beta, eta, npts
 
-        self.nphi = 1
-        self.nn = 11
+        self.nphi = 10
+        self.nn = 12
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -59,10 +59,19 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                self.pars['N']=             int(1000*2**j)
-                self.pars['rh']=            0.024 * 2**i
+                phi=                        0.0001 * 2**j
+                self.pars['rh']=            0.024 + 0.006*i
+                self.pars['N']=             util.compute_N(phi, self.pars['rh'])
+
+                # self.pars['N']=             int(1000*2**j)
+                # self.pars['rh']=            0.024 * 2**i
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'])
                 self.pars['Fref']=          self.pars['rh']
+
+                self.phi_array[i, j] = phi
+                self.rh_array[i, j] = self.pars['rh']
+                self.n_array[i, j] = self.pars['N']
+
                 self.print_siminfo(i, j)
                 if(sys.argv[1] == 'run'):
                     util.execute_random_generator(self.pars)
@@ -87,11 +96,8 @@ class SIM:
                 self.optimal_beta_array[i, j] = self.pars['beta']
                 self.optimal_eta_array[i, j] = self.pars['eta']
                 self.optimal_npts_array[i, j] = self.pars['nx']
-
-                self.phi_array[i, j] = phi
-                self.rh_array[i, j] = self.pars['rh']
-                self.n_array[i, j] = self.pars['N']
                 self.sigfac_array[i, j] = (self.pars['alpha']*self.pars['boxsize']/self.pars['nx'])/(self.pars['rh']/np.sqrt(np.pi))
+
         
         self.save_optimal_arrays()
 
@@ -134,9 +140,9 @@ class SIM:
                         self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
 
                         if(HIsolver==1):
-                            npts = min(100 + 20*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi))))
+                            npts = min(100 + 18*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi))))
                         if(HIsolver==0):
-                            npts = 100 + 20*l
+                            npts = 200 + 18*l
                         self.pars['nx']=         npts
                         self.pars['ny']=         npts
                         self.pars['nz']=         npts
@@ -176,7 +182,7 @@ class SIM:
             # min_time = time_compute_array[time_compute_array > 0].min()
             min_error = Verror_array.min()
             min_index = np.where(Verror_array == min_error)
-            min_time = time_compute_array[min_index]
+            min_time = time_compute_array[min_index][0]
             print('Tolerance not satisfied in optimal finding. Carry on with the smallest error.')
 
         optimal_Verror = Verror_array[min_index][0]
@@ -243,14 +249,14 @@ class SIM:
 
     def print_siminfo(self, i, j):
         print('\n===========================================')
-        print('(', i, ',', j, ') N=', str(self.pars['N']), 'rh=', str(self.pars['rh']))
+        print('(', i, ',', j, ') N=', str(self.pars['N']), 'rh=', str(self.pars['rh']), 'phi=', str(self.phi_array[i, j]), 'solver=', str(HIsolver))
         print('===========================================')
 
 
     def compute_error(self):
         vx, vy, vz, wx, wy, wz = util.read_data(cufcm_dir + 'data/simulation/simulation_data.dat', 0, int(self.pars['N']))
         vx_ref, vy_ref, vz_ref, wx_ref, wy_ref, wz_ref =\
-                util.read_data(save_directory + 'simulation_data' + util.parser(self.reference_pars) + '.dat', 0, int(self.reference_pars['N']))
+                util.read_data(fastfcm_directory + 'simulation_data' + util.parser(self.reference_pars) + '.dat', 0, int(self.reference_pars['N']))
 
         v_array = np.array([vx, vy, vz])
         vref_array = np.array([vx_ref, vy_ref, vz_ref])
@@ -275,41 +281,31 @@ class SIM:
 
         print(self.optimal_time_compute_array)
 
-    def analyse_both(self):
+    def analyse_and_plot_both(self):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        # ax2 = ax.twiny()
 
         for j in range(2):
-            global HIsolver
-            global save_directory
-            HIsolver = j
-            if (HIsolver==0):
-                save_directory = fcm_directory
-                label = 'FCM'
-                marker = 'o'
-            if (HIsolver==1):
-                save_directory = fastfcm_directory
-                label = 'Fast FCM'
-                marker = 's'
+            self.mod_solver(j)
             self.analyse()
 
             for i, n in enumerate(self.n_array):
-                ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
-                ax.plot(self.n_array[i], ptps_array, marker=marker, c=util.color_codex[2*i+HIsolver], label=label)
-        
-                # ax2.plot(self.n_array[i], ptps_array)
-                # # ax2.set_xlim(ax.get_xlim())
-                # ax2.set_xticks(self.n_array[i])
-                # ax2.set_xticklabels(self.phi_array[i].round(2))
-                # ax2.set_xscale('log')
+                if (HIsolver==0):
+                    label = 'FCM a=' + str(self.rh_array[i][0])
+                    marker = 'o'
+                    linestyle='solid'
+                if (HIsolver==1):
+                    label = 'Fast FCM a=' + str(self.rh_array[i][0])
+                    marker = 's'
+                    linestyle='dashed'
 
-                print('phi',self.phi_array[i])
+                ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
+                ax.plot(self.phi_array[i], ptps_array, marker=marker, linestyle=linestyle, c=util.color_codex[i], label=label)
         
         # adding title and labels
         ax.legend()
-        ax.set_title("PTPS vs. N")
-        ax.set_xlabel('N')
+        ax.set_title(r"PTPS vs. $\phi$")
+        ax.set_xlabel(r'$phi$')
         ax.set_ylabel('PTPS')
         ax.set_xscale('log')
         plt.savefig('img/ptps_combined.eps', format='eps')
@@ -331,6 +327,23 @@ class SIM:
         ax.set_ylabel('PTPS')
         ax.set_xscale('log')
         plt.savefig('img/ptps_optimal.eps', format='eps')
+        plt.show()
+
+    def plot_ptps_vs_phi(self):
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        
+        for i, n in enumerate(self.phi_array):
+            ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
+            ax.plot(self.phi_array[i], ptps_array, marker='o', c=util.color_codex[i], label=r'$a$=' + str(round(self.rh_array[i][0], 4)))
+        ax.legend()
+        
+        # adding title and labels
+        ax.set_title(r"PTPS vs. $\phi$")
+        ax.set_xlabel(r'$\phi$')
+        ax.set_ylabel('PTPS')
+        ax.set_xscale('log')
+        plt.savefig('img/ptps_vs_phi_optimal.eps', format='eps')
         plt.show()
 
     
@@ -397,6 +410,15 @@ class SIM:
         self.n_array = np.load(save_directory + 'n_array.npy')
         self.sigfac_array = np.load(save_directory + 'sigfac_array.npy')
 
+    def mod_solver(self, n):
+        global HIsolver
+        global save_directory
+        HIsolver = n
+        if (HIsolver==0):
+            save_directory = fcm_directory
+        if (HIsolver==1):
+            save_directory = fastfcm_directory
+            
 # Parameter explanation:
 # Alpha:    Sigma/dx
 # Beta:     (ngd*dx)/Sigma

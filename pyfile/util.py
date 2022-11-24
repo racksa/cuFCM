@@ -87,6 +87,14 @@ def write_scalar(idict, sim_dict):
     for key in sim_dict:
         replace(key, str(sim_dict[key]), fileName)
 
+def file_exists(idict):
+    """Check if file exists
+    """
+    fileName = save_directory + "simulation_scalar" + parser(idict) + ".dat"
+    if os.path.exists(fileName):
+        return True
+    return False
+
 
 def read_data(filePath, t, N):
     '''Read simulation data at time frame t
@@ -324,7 +332,11 @@ def compute_rad(N, volume_frac):
     return (6*np.pi**2*volume_frac/N)**(1./3.)
 
 def compute_phi(N, rad):
-    return 4./3.*np.pi*rad**3*N/(2.*np.pi)**3
+    return (4./3.*np.pi)*N*rad**3/(2.*np.pi)**3
+
+def compute_N(phi, rad):
+    return int(phi*(2*np.pi/rad)**3/(4./3.*np.pi))
+
 
 def compute_fastfcm_npts(rad):
     return 2*int(0.02609300415934458 * 256. / rad /2)

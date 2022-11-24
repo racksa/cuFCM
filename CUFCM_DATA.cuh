@@ -53,3 +53,6 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states);
 __global__
 void box(Real *Y, int N, Real box_size);
 
+__global__
+void check_nan_in(Real* arr, int L, bool* result);
+
