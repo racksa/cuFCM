@@ -18,11 +18,11 @@ class SIM:
     def __init__(self):
         pardict, filedict = util.read_info(info_file_name)
         # Initialise parameters
-        pardict['repeat']=     40
-        pardict['prompt']=     -1
+        pardict['repeat']=     1
+        pardict['prompt']=     11
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
-        pardict['packrep']=    50
+        pardict['packrep']=    1000
         pardict['boxsize']=    np.pi*2
         pardict['Ffac']=       1.0
         pardict['Tfac']=       1.0
@@ -31,10 +31,10 @@ class SIM:
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 20+1) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 25+1) # alpha, beta, eta, npts
 
-        self.nphi = 10
-        self.nn = 12
+        self.nphi = 1
+        self.nn = 1
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -59,8 +59,10 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                phi=                        0.0001 * 2**j
-                self.pars['rh']=            0.024 + 0.006*i
+                # phi=                        0.01 + 0.005*j
+                # self.pars['rh']=            0.024 + 0.024*i
+                phi=                        0.6
+                self.pars['rh']=            0.04
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'])
 
                 # self.pars['N']=             int(1000*2**j)
@@ -108,7 +110,7 @@ class SIM:
         self.reference_pars['alpha']        = 1.5
         self.reference_pars['beta']         = 15.0 / self.reference_pars['alpha']
         self.reference_pars['eta']          = round(8.0, 1)
-        npts                                = min( int(0.026/self.reference_pars['rh'] * 270)/2 * 2, 460)
+        npts                                = min( int(0.026/self.reference_pars['rh'] * 270 /2) * 2, 460)
         self.reference_pars['nx']=          npts
         self.reference_pars['ny']=          npts
         self.reference_pars['nz']=          npts
@@ -140,9 +142,9 @@ class SIM:
                         self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
 
                         if(HIsolver==1):
-                            npts = min(100 + 18*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi))))
+                            npts = min(60 + 14*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
                         if(HIsolver==0):
-                            npts = 200 + 18*l
+                            npts = 60 + 20*l
                         self.pars['nx']=         npts
                         self.pars['ny']=         npts
                         self.pars['nz']=         npts
@@ -221,7 +223,7 @@ class SIM:
         self.pars['ny']=         npts
         self.pars['nz']=         npts
         self.pars['Fref']=       1.0
-        self.pars['repeat']=     40
+        self.pars['repeat']=     50
         self.pars['prompt']=     10
         self.pars['boxsize']=    np.pi*2*fac
         self.pars['Ffac']=       fac**2
@@ -235,7 +237,35 @@ class SIM:
         util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
 
         self.plot_pie_chart_of_time()
+    
+    def run_single(self):
+        self.datafiles['$posfile'] = './data/init_data/new/pos_data.dat'
+        self.datafiles['$forcefile'] = './data/init_data/new/force_data.dat'
+        self.datafiles['$torquefile'] = './data/init_data/new/torque_data.dat'
+        self.pars['checkerror'] = 0
 
+        fac = 1.0
+        self.pars['N']=          555165
+        self.pars['rh']=         0.024
+        self.pars['alpha']=      1.0
+        self.pars['beta']=       9.0
+        self.pars['eta']=        5.01178
+        npts = 88  # Fast FCM
+        # npts = 480  # Regular FCM
+
+        self.pars['nx']=         npts
+        self.pars['ny']=         npts
+        self.pars['nz']=         npts
+        self.pars['Fref']=       1.0
+        self.pars['repeat']=     1
+        self.pars['prompt']=     11
+        self.pars['boxsize']=    np.pi*2*fac
+        self.pars['Ffac']=       fac**2
+        self.pars['Tfac']=       fac**3
+
+        util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
+
+        
 
     def print_scalar(self, sim_dict):
         if(self.siminfo):
@@ -254,9 +284,9 @@ class SIM:
 
 
     def compute_error(self):
-        vx, vy, vz, wx, wy, wz = util.read_data(cufcm_dir + 'data/simulation/simulation_data.dat', 0, int(self.pars['N']))
+        vx, vy, vz, wx, wy, wz = util.read_velocity(cufcm_dir + 'data/simulation/simulation_data.dat', 0, int(self.pars['N']))
         vx_ref, vy_ref, vz_ref, wx_ref, wy_ref, wz_ref =\
-                util.read_data(fastfcm_directory + 'simulation_data' + util.parser(self.reference_pars) + '.dat', 0, int(self.reference_pars['N']))
+                util.read_velocity(fastfcm_directory + 'simulation_data' + util.parser(self.reference_pars) + '.dat', 0, int(self.reference_pars['N']))
 
         v_array = np.array([vx, vy, vz])
         vref_array = np.array([vx_ref, vy_ref, vz_ref])
@@ -303,11 +333,11 @@ class SIM:
                 ax.plot(self.phi_array[i], ptps_array, marker=marker, linestyle=linestyle, c=util.color_codex[i], label=label)
         
         # adding title and labels
-        ax.legend()
         ax.set_title(r"PTPS vs. $\phi$")
         ax.set_xlabel(r'$phi$')
         ax.set_ylabel('PTPS')
-        ax.set_xscale('log')
+        ax.legend()
+        # ax.set_xscale('log')
         plt.savefig('img/ptps_combined.eps', format='eps')
         plt.show()
 

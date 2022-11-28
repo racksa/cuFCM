@@ -38,7 +38,7 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
-                    if (rijsq < rad*rad){
+                    if (rijsq < 4*rad*rad){
                         printf("ERROR: Overlap between %d and %d within same cell\n", i, j);
                     }
                 }
@@ -62,7 +62,7 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
                 zij = zij - box_size * ((Real) ((int) (zij/(box_size/Real(2.0)))));
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
-                    if (rijsq < rad*rad){
+                    if (rijsq < 4*rad*rad){
                         printf("ERROR: Overlap between %d in %d and %d in %d \n", i, icell, j, jcell);
                     }
                 }
@@ -105,6 +105,7 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
 
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
+
 
 
     for(int i = index; i < N; i += stride){
@@ -300,7 +301,7 @@ void random_packer::spatial_hashing(){
     ///////////////////////////////////////////////////////////////////////////////
 
     // Create Hash (i, j, k) -> Hash
-    create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M);
+    create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
 
     // Sort particle index by hash
     particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);

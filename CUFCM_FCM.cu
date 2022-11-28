@@ -409,15 +409,15 @@ __global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
                       myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
                       int nx, int ny, int nz, Real boxsize){
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
+    const int i = threadIdx.x + blockIdx.x*blockDim.x;
+
+    // TODO: removed all for loops!!!
 
     int fft_nx = nx/2 + 1;
     Real grid_size = nx*ny*nz;
     int fft_grid_size = fft_nx*ny*nz;
 
-    // Stay in the loop as long as any thread in the block still needs to compute velocities.
-    for(int i = index; i < fft_grid_size; i += stride){
+    if(i < fft_grid_size){
         const int indk = (i)/(ny*fft_nx);
         const int indj = (i - indk*(ny*fft_nx))/fft_nx;
         const int indi = i - (indk*ny + indj)*fft_nx;
@@ -465,7 +465,7 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
             uk_z[0].x = (Real)0.0;
             uk_z[0].y = (Real)0.0;
         }
-    }// End of striding loop over filament segment velocities.
+    }
     return;
 }
 
@@ -812,7 +812,6 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
     
-    // TODO change to reduction
     for(int np = blockIdx.x; np < N; np += gridDim.x){
         if(threadIdx.x == 0){
             Y_shared[0] = Y[3*np + 0];

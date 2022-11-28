@@ -229,6 +229,7 @@ void FCM_solver::init_cuda(){
 		return ;	
 	}
 
+    num_thread_blocks_FFTGRID = (fft_grid_size + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	num_thread_blocks_GRID = (grid_size + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 	num_thread_blocks_NX = (nx + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
@@ -380,13 +381,15 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
 
     gather();
 
+    check_nan();
+
     if(prompt>10){printf("pass6\n");}
 
     correction();
 
     if(prompt>10){printf("pass7\n");}
 
-    // check_nan();
+    check_nan();
 
     if(prompt>10){printf("pass8\n");}
 
@@ -416,7 +419,18 @@ void FCM_solver::spatial_hashing(){
     cudaDeviceSynchronize();	time_start = get_time();
 
     // Create Hash (i, j, k) -> Hash
-    create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M);
+    create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
+
+    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+    for(int i=0; i < N; i++){
+        if(particle_cellhash_host[i] > (ncell-1)){
+            printf("cellL: %.6f cellL*M: %.6f boxsize: %.6f\n", cellL, cellL*Real(M), boxsize);
+            printf("(%d) index:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
+            printf("xc yc zc (%d %d %d)\n", int(Y_host[3*i]/cellL), int(Y_host[3*i+1]/cellL), int(Y_host[3*i+2]/cellL));
+            printf("compute index %d\n", int(Y_host[3*i]/cellL) + (int(Y_host[3*i+1]/cellL) + int(Y_host[3*i+2]/cellL)*M)*M );
+        }
+    }
 
     // Sort particle index by hash
     particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
@@ -520,7 +534,7 @@ void FCM_solver::fft_solve(){
     ///////////////////////////////////////////////////////////////////////////////
     // Solve for the flow
     ///////////////////////////////////////////////////////////////////////////////
-    cufcm_flow_solve<<<num_thread_blocks_GRID, THREADS_PER_BLOCK>>>(fk_x_device, fk_y_device, fk_z_device,
+    cufcm_flow_solve<<<num_thread_blocks_FFTGRID, THREADS_PER_BLOCK>>>(fk_x_device, fk_y_device, fk_z_device,
                                                             uk_x_device, uk_y_device, uk_z_device,
                                                             nx, ny, nz, boxsize);
     ///////////////////////////////////////////////////////////////////////////////
@@ -683,7 +697,7 @@ void FCM_solver::check_nan(){
     check_nan_in<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(W_device, 3*N, nan_check_device);
     cudaMemcpy(&nan_check_host, nan_check_device, sizeof(bool), cudaMemcpyDeviceToHost);
     if(!nan_check_host){
-        printf("FATAL ERROR: NAN encountered\n\n");
+        printf("\n\n********FATAL ERROR: NAN encountered********\n\n");
     }
 }
 
@@ -786,11 +800,13 @@ void FCM_solver::finish(){
 	if (checkerror == 1){
         Real* Y_validation = malloc_host<Real>(3*N);
 		Real* F_validation = malloc_host<Real>(3*N);
+        Real* T_validation = malloc_host<Real>(3*N);
 		Real* V_validation = malloc_host<Real>(3*N);
 		Real* W_validation = malloc_host<Real>(3*N);
 
 		read_validate_data(Y_validation,
 						   F_validation,
+                           T_validation,
 						   V_validation,
 						   W_validation, N, "./data/refdata/ref_data_N500000");
 
@@ -845,7 +861,7 @@ void FCM_solver::finish(){
 	// Write to file
 	///////////////////////////////////////////////////////////////////////////////
 	#if OUTPUT_TO_FILE == 1
-		write_data(Y_host, F_host, V_host, W_host, N, 
+		write_data(Y_host, F_host, T_host, V_host, W_host, N, 
                    "./data/simulation/simulation_data.dat", "w");
 		
 		write_time(time_cuda_initialisation, 

@@ -7,11 +7,11 @@
 
 void read_init_data(Real *Y, int N, const char *initpos_file_name);
 
-void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name);
+void read_validate_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name);
 
 void write_pos(Real *Y, Real rh, int N, const char *file_name);
 
-void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name, const char *mode);
+void write_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name, const char *mode);
 
 void write_init_data(Real *Y, Real *F, Real *T, int N);
 

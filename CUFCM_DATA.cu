@@ -26,7 +26,7 @@ void read_init_data(Real *Y, int N, const char *file_name){
     return;
 }
 
-void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name){
+void read_validate_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name){
     FILE *ifile;
     ifile = fopen(file_name, "r");
     for(int np = 0; np < N; np++){
@@ -35,6 +35,7 @@ void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *f
             &Y[3*np + 0],
             &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2],
             &F[3*np + 0], &F[3*np + 1], &F[3*np + 2],
+            //&T[3*np + 0], &T[3*np + 1], &T[3*np + 2],
             &V[3*np + 0], &V[3*np + 1], &V[3*np + 2],
             &W[3*np + 0], &W[3*np + 1], &W[3*np + 2]) == 0){
                 printf("fscanf error: Unable to read data");
@@ -44,6 +45,7 @@ void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *f
             &Y[3*np + 0],
             &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2],
             &F[3*np + 0], &F[3*np + 1], &F[3*np + 2],
+            //&T[3*np + 0], &T[3*np + 1], &T[3*np + 2],
             &V[3*np + 0], &V[3*np + 1], &V[3*np + 2],
             &W[3*np + 0], &W[3*np + 1], &W[3*np + 2]) == 0){
                 printf("fscanf error: Unable to read data");
@@ -55,13 +57,14 @@ void read_validate_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *f
     return;
 }
 
-void write_data(Real *Y, Real *F, Real *V, Real *W, int N, const char *file_name, const char *mode){
+void write_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name, const char *mode){
     FILE *pfile;
     pfile = fopen(file_name, mode);
     for(int i = 0; i < N; i++){
-        fprintf(pfile, "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
+        fprintf(pfile, "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
         Y[3*i + 0], Y[3*i + 1], Y[3*i + 2], 
         F[3*i + 0], F[3*i + 1], F[3*i + 2], 
+        T[3*i + 0], T[3*i + 1], T[3*i + 2],
         V[3*i + 0], V[3*i + 1], V[3*i + 2], 
         W[3*i + 0], W[3*i + 1], W[3*i + 2]);
         }

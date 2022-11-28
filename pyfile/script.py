@@ -26,6 +26,9 @@ if(sys.argv[1] == 'run' or sys.argv[1] == 'read'):
 if(sys.argv[1] == 'test'):
     sim.run_test()
 
+if(sys.argv[1] == 'single'):
+    sim.run_single()
+
 if(sys.argv[1] == 'read_npy'):
     sim.analyse()
     sim.plot_ptps_vs_phi()
@@ -37,7 +40,6 @@ if(sys.argv[1] == 'plot_combine'):
 if(sys.argv[1] == 'plot_piechart'):
     sim.analyse()
     sim.plot_pie_chart_of_time()
-
 
 
 # Parameter explanation:

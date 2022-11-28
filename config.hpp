@@ -16,7 +16,7 @@
 
 #define THREADS_PER_BLOCK 32
 
-#define SOLVER_MODE 0
+#define SOLVER_MODE 1
 // 0 = FCM
 // 1 = Fast FCM
 

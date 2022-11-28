@@ -61,6 +61,7 @@ public:
 
 	int *map_host, *map_device;
     /* cuda thread */
+    int num_thread_blocks_FFTGRID;
     int num_thread_blocks_GRID;
 	int num_thread_blocks_N;
 	int num_thread_blocks_NX;

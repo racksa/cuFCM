@@ -87,6 +87,7 @@ def write_scalar(idict, sim_dict):
     for key in sim_dict:
         replace(key, str(sim_dict[key]), fileName)
 
+
 def file_exists(idict):
     """Check if file exists
     """
@@ -96,7 +97,7 @@ def file_exists(idict):
     return False
 
 
-def read_data(filePath, t, N):
+def read_velocity(filePath, t, N):
     '''Read simulation data at time frame t
     '''
     read_frame = pd.read_csv(filePath, delimiter=' ', header=None, skiprows=int(t*(N+1)), nrows=N)
@@ -108,6 +109,39 @@ def read_data(filePath, t, N):
     wy = read_frame[10]
     wz = read_frame[11]
     return vx, vy, vz, wx, wy, wz
+
+def separate_datafile(filePath):
+    '''Separate quantities into different files
+    '''
+    infoFile = open(filePath, 'r')
+    lines = infoFile.readlines()
+    N = len(lines)-2
+    infoFile.close()
+
+    read_frame = pd.read_csv(filePath, delimiter=' ', header=None, skiprows=int(0*(N+1)), nrows=N)
+
+    x = read_frame[0]
+    y = read_frame[1]
+    z = read_frame[2]
+    fx = read_frame[3]
+    fy = read_frame[4]
+    fz = read_frame[5]
+
+    infoFile = open(filePath, 'r')
+    pos_lines = list()
+    force_lines = list()
+    for row in range(N):
+        pos_string = str(x[row]) + ' ' + str(y[row]) + ' ' + str(z[row]) + '\n'
+        pos_lines.append(pos_string)
+        force_string = str(fx[row]) + ' ' + str(fy[row]) + ' ' + str(fz[row]) + '\n'
+        force_lines.append(force_string)
+
+    infoFile = open(cufcm_dir + "data/init_data/artificial/output_pos_data.dat", 'w')
+    infoFile.writelines(pos_lines)
+    infoFile.close()
+    infoFile = open(cufcm_dir + "data/init_data/artificial/output_force_data.dat", 'w')
+    infoFile.writelines(force_lines)
+    infoFile.close()
 
 
 def parser(idict):
@@ -413,6 +447,13 @@ color_codex = {0: 'r',
                1: 'b',
                2: 'g',
                3: 'y',
-               4: 'cyan',
+               4: 'c',
                5: 'grey',
-               6: 'balck'}
+               6: 'black',
+               7: 'brown',
+               8: 'orange',
+               9: 'purple',
+               10: 'silver',
+               11: 'aqua',
+               12: 'gold',
+               13: 'fuchsia'}

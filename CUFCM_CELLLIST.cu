@@ -55,7 +55,7 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 }
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M){
+void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, Real boxsize){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -63,9 +63,13 @@ void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M){
 		if(Y[3*np + 0]<0 || Y[3*np + 1]<0 || Y[3*np + 2]<0){
 			printf("\nERROR position\n\n");
 		}
-		int xc = (int) (Y[3*np + 0]/dx);
-		int yc = (int) (Y[3*np + 1]/dx);
-		int zc = (int) (Y[3*np + 2]/dx);
+		// int xc = (int) (Y[3*np + 0]/dx);
+		// int yc = (int) (Y[3*np + 1]/dx);
+		// int zc = (int) (Y[3*np + 2]/dx);
+
+		int xc = int(Y[3*np + 0]/boxsize * M);
+		int yc = int(Y[3*np + 1]/boxsize * M);
+		int zc = int(Y[3*np + 2]/boxsize * M);
 
 		hash[np] = xc + (yc + zc*M)*M;
 	}
@@ -75,11 +79,10 @@ void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M){
 __global__
 void particle_index_range(int *particle_index, int N){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
 
-    for(int np = index; np < N; np+=stride){
-        particle_index[np] = np;
-    }
+	if(index < N){
+		particle_index[index] = index;
+	}
     
     return;
 }

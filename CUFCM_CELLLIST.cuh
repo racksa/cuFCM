@@ -11,7 +11,7 @@ __device__ __host__
 void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int));
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M);
+void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, Real boxsize);
 
 __global__
 void particle_index_range(int *particle_index, int N);
