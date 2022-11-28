@@ -360,6 +360,8 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     T_device = T_device_input;
     V_device = V_device_input;
     W_device = W_device_input;
+    
+    box_particle();
 
     if(prompt>10){printf("pass1\n");}
     
@@ -368,6 +370,18 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     if(prompt>10){printf("pass2\n");}
 
     spatial_hashing();
+
+    // copy_to_host<int>(cell_start_device, cell_start_host, ncell);
+    // copy_to_host<int>(cell_end_device, cell_end_host, ncell);
+    // write_celllist(cell_start_host, cell_end_host, ncell, "./data/simulation/celllist_data.dat");
+
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+	// copy_to_host<Real>(F_device, F_host, 3*N);
+	// copy_to_host<Real>(T_device, T_host, 3*N);
+	// copy_to_host<Real>(V_device, V_host, 3*N);
+	// copy_to_host<Real>(W_device, W_host, 3*N);
+    // write_data(Y_host, F_host, T_host, V_host, W_host, N, 
+    //                "./data/simulation/simulation_data.dat", "w");
 
     if(prompt>10){printf("pass3\n");}
 
@@ -380,8 +394,6 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     if(prompt>10){printf("pass5\n");}
 
     gather();
-
-    check_nan();
 
     if(prompt>10){printf("pass6\n");}
 
@@ -421,10 +433,11 @@ void FCM_solver::spatial_hashing(){
     // Create Hash (i, j, k) -> Hash
     create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
 
+    // DEBUG
     copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
     copy_to_host<Real>(Y_device, Y_host, 3*N);
     for(int i=0; i < N; i++){
-        if(particle_cellhash_host[i] > (ncell-1)){
+        if(particle_cellhash_host[i] > (ncell-1) || particle_cellhash_host[i] < 0){
             printf("cellL: %.6f cellL*M: %.6f boxsize: %.6f\n", cellL, cellL*Real(M), boxsize);
             printf("(%d) index:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
             printf("xc yc zc (%d %d %d)\n", int(Y_host[3*i]/cellL), int(Y_host[3*i+1]/cellL), int(Y_host[3*i+2]/cellL));

@@ -102,12 +102,12 @@ def read_velocity(filePath, t, N):
     '''
     read_frame = pd.read_csv(filePath, delimiter=' ', header=None, skiprows=int(t*(N+1)), nrows=N)
 
-    vx = read_frame[6]
-    vy = read_frame[7]
-    vz = read_frame[8]
-    wx = read_frame[9]
-    wy = read_frame[10]
-    wz = read_frame[11]
+    vx = read_frame[9]
+    vy = read_frame[10]
+    vz = read_frame[11]
+    wx = read_frame[12]
+    wy = read_frame[13]
+    wz = read_frame[14]
     return vx, vy, vz, wx, wy, wz
 
 def separate_datafile(filePath):
@@ -126,21 +126,30 @@ def separate_datafile(filePath):
     fx = read_frame[3]
     fy = read_frame[4]
     fz = read_frame[5]
+    tx = read_frame[6]
+    ty = read_frame[7]
+    tz = read_frame[8]
 
     infoFile = open(filePath, 'r')
     pos_lines = list()
     force_lines = list()
+    torque_lines = list()
     for row in range(N):
         pos_string = str(x[row]) + ' ' + str(y[row]) + ' ' + str(z[row]) + '\n'
         pos_lines.append(pos_string)
         force_string = str(fx[row]) + ' ' + str(fy[row]) + ' ' + str(fz[row]) + '\n'
         force_lines.append(force_string)
+        torque_string = str(tx[row]) + ' ' + str(ty[row]) + ' ' + str(tz[row]) + '\n'
+        torque_lines.append(torque_string)
 
     infoFile = open(cufcm_dir + "data/init_data/artificial/output_pos_data.dat", 'w')
     infoFile.writelines(pos_lines)
     infoFile.close()
     infoFile = open(cufcm_dir + "data/init_data/artificial/output_force_data.dat", 'w')
     infoFile.writelines(force_lines)
+    infoFile.close()
+    infoFile = open(cufcm_dir + "data/init_data/artificial/output_torque_data.dat", 'w')
+    infoFile.writelines(torque_lines)
     infoFile.close()
 
 

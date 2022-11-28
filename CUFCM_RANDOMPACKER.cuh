@@ -76,6 +76,7 @@ public:
 
     __host__
     void write();
+    
 
 private:
     /* sorting & cell list */

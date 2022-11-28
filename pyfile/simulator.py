@@ -18,11 +18,11 @@ class SIM:
     def __init__(self):
         pardict, filedict = util.read_info(info_file_name)
         # Initialise parameters
-        pardict['repeat']=     1
-        pardict['prompt']=     11
+        pardict['repeat']=     40
+        pardict['prompt']=     -1
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
-        pardict['packrep']=    1000
+        pardict['packrep']=    100
         pardict['boxsize']=    np.pi*2
         pardict['Ffac']=       1.0
         pardict['Tfac']=       1.0
@@ -33,8 +33,8 @@ class SIM:
 
         self.search_grid_shape = (1, 1, 1, 25+1) # alpha, beta, eta, npts
 
-        self.nphi = 1
-        self.nn = 1
+        self.nphi = 4
+        self.nn = 41
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -59,10 +59,8 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                # phi=                        0.01 + 0.005*j
-                # self.pars['rh']=            0.024 + 0.024*i
-                phi=                        0.6
-                self.pars['rh']=            0.04
+                phi=                        0.01 + 0.005*j
+                self.pars['rh']=            0.025 + 0.025*i
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'])
 
                 # self.pars['N']=             int(1000*2**j)
@@ -238,20 +236,21 @@ class SIM:
 
         self.plot_pie_chart_of_time()
     
+
     def run_single(self):
-        self.datafiles['$posfile'] = './data/init_data/new/pos_data.dat'
-        self.datafiles['$forcefile'] = './data/init_data/new/force_data.dat'
-        self.datafiles['$torquefile'] = './data/init_data/new/torque_data.dat'
+        self.datafiles['$posfile'] = './data/init_data/artificial/output_pos_data.dat'
+        self.datafiles['$forcefile'] = './data/init_data/artificial/output_force_data.dat'
+        self.datafiles['$torquefile'] = './data/init_data/artificial/output_torque_data.dat'
         self.pars['checkerror'] = 0
 
         fac = 1.0
-        self.pars['N']=          555165
-        self.pars['rh']=         0.024
+        self.pars['N']=          360043
+        self.pars['rh']=         0.025
         self.pars['alpha']=      1.0
         self.pars['beta']=       9.0
-        self.pars['eta']=        5.01178
-        npts = 88  # Fast FCM
-        # npts = 480  # Regular FCM
+        self.pars['eta']=        10.01178
+
+        npts = 300  
 
         self.pars['nx']=         npts
         self.pars['ny']=         npts

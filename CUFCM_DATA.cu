@@ -139,6 +139,18 @@ void write_error(Real Verror,
     fclose(pfile);
 }
 
+void write_celllist(int *cell_start_list, int *cell_end_list, int ncell, const char *file_name){
+    FILE *pfile;
+    pfile = fopen(file_name, "w");
+    fprintf(pfile, "#\n");
+    for(int i = 0; i < ncell; i++){
+        fprintf(pfile, "celli %d/%d [%d %d]\n", 
+        i, ncell, cell_start_list[i], cell_end_list[i]);
+        }
+    fprintf(pfile, "\n");
+    fclose(pfile);
+}
+
 void read_config(Real *values, std::vector<std::string>& datafile_names, const char *file_name){
     std::ifstream cFile (file_name);
     if (cFile.is_open()){

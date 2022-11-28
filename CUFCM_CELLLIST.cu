@@ -57,21 +57,21 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 __global__
 void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, Real boxsize){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
+    // const int stride = blockDim.x*gridDim.x;
 
-	for(int np = index; np < N; np += stride){
-		if(Y[3*np + 0]<0 || Y[3*np + 1]<0 || Y[3*np + 2]<0){
+	if(index < N){
+		if(Y[3*index + 0]<0 || Y[3*index + 1]<0 || Y[3*index + 2]<0){
 			printf("\nERROR position\n\n");
 		}
-		// int xc = (int) (Y[3*np + 0]/dx);
-		// int yc = (int) (Y[3*np + 1]/dx);
-		// int zc = (int) (Y[3*np + 2]/dx);
+		// int xc = (int) (Y[3*index + 0]/dx);
+		// int yc = (int) (Y[3*index + 1]/dx);
+		// int zc = (int) (Y[3*index + 2]/dx);
 
-		int xc = int(Y[3*np + 0]/boxsize * M);
-		int yc = int(Y[3*np + 1]/boxsize * M);
-		int zc = int(Y[3*np + 2]/boxsize * M);
+		int xc = int(Y[3*index + 0]/boxsize * M);
+		int yc = int(Y[3*index + 1]/boxsize * M);
+		int zc = int(Y[3*index + 2]/boxsize * M);
 
-		hash[np] = xc + (yc + zc*M)*M;
+		hash[index] = xc + (yc + zc*M)*M;
 	}
 	return;
 }

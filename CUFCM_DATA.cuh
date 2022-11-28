@@ -29,6 +29,8 @@ void write_error(Real Verror,
                  Real Werror,
                  const char *file_name);
 
+void write_celllist(int *cell_start_list, int *cell_end_list, int ncell, const char *file_name);
+
 void read_config(Real *values, std::vector<std::string>& datafile_names, const char *file_name);
 
 __global__
