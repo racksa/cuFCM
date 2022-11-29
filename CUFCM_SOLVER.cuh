@@ -169,4 +169,7 @@ public:
                                     Real *F_host_o, Real *T_host_o, 
                                     Real *V_host_o, Real *W_host_o);
 
+    __host__
+    void write_cell_list();
+
 };

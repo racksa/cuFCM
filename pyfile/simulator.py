@@ -33,7 +33,7 @@ class SIM:
 
         self.search_grid_shape = (1, 1, 1, 25+1) # alpha, beta, eta, npts
 
-        self.nphi = 4
+        self.nphi = 12
         self.nn = 41
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
@@ -60,7 +60,7 @@ class SIM:
         for i in range(self.nphi):
             for j in range(self.nn):
                 phi=                        0.01 + 0.005*j
-                self.pars['rh']=            0.025 + 0.025*i
+                self.pars['rh']=            0.025 + 0.006*i
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'])
 
                 # self.pars['N']=             int(1000*2**j)
@@ -318,22 +318,22 @@ class SIM:
             self.mod_solver(j)
             self.analyse()
 
-            for i, n in enumerate(self.n_array):
+            for i in range(len(self.n_array)-1):
                 if (HIsolver==0):
-                    label = 'FCM a=' + str(self.rh_array[i][0])
-                    marker = 'o'
+                    label = 'FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 4))
+                    marker = '+'
                     linestyle='solid'
                 if (HIsolver==1):
-                    label = 'Fast FCM a=' + str(self.rh_array[i][0])
-                    marker = 's'
+                    label = 'F-FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 4))
+                    marker = ','
                     linestyle='dashed'
-
+                
                 ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
                 ax.plot(self.phi_array[i], ptps_array, marker=marker, linestyle=linestyle, c=util.color_codex[i], label=label)
         
         # adding title and labels
         ax.set_title(r"PTPS vs. $\phi$")
-        ax.set_xlabel(r'$phi$')
+        ax.set_xlabel(r'$\phi$')
         ax.set_ylabel('PTPS')
         ax.legend()
         # ax.set_xscale('log')

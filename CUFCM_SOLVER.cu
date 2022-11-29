@@ -360,7 +360,7 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     T_device = T_device_input;
     V_device = V_device_input;
     W_device = W_device_input;
-    
+
     box_particle();
 
     if(prompt>10){printf("pass1\n");}
@@ -370,18 +370,6 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     if(prompt>10){printf("pass2\n");}
 
     spatial_hashing();
-
-    // copy_to_host<int>(cell_start_device, cell_start_host, ncell);
-    // copy_to_host<int>(cell_end_device, cell_end_host, ncell);
-    // write_celllist(cell_start_host, cell_end_host, ncell, "./data/simulation/celllist_data.dat");
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // write_data(Y_host, F_host, T_host, V_host, W_host, N, 
-    //                "./data/simulation/simulation_data.dat", "w");
 
     if(prompt>10){printf("pass3\n");}
 
@@ -401,7 +389,7 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
 
     if(prompt>10){printf("pass7\n");}
 
-    check_nan();
+    // check_nan();
 
     if(prompt>10){printf("pass8\n");}
 
@@ -771,6 +759,7 @@ void FCM_solver::finish(){
 	///////////////////////////////////////////////////////////////////////////////
 	// Time
 	///////////////////////////////////////////////////////////////////////////////
+    
 	auto time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
 	auto time_spreading = mean(&time_spreading_array[warmup], repeat-warmup);
 	auto time_FFT = mean(&time_FFT_array[warmup], repeat-warmup);
@@ -893,4 +882,10 @@ void FCM_solver::finish(){
             "./data/simulation/simulation_scalar.dat");
 
 	#endif
+}
+
+void FCM_solver::write_cell_list(){
+    copy_to_host<int>(cell_start_device, cell_start_host, ncell);
+    copy_to_host<int>(cell_end_device, cell_end_host, ncell);
+    write_celllist(cell_start_host, cell_end_host, ncell, "./data/simulation/celllist_data.dat");
 }
