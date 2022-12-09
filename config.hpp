@@ -24,6 +24,10 @@
 // 0 = Generate random packing
 // 1 = Read initial data from file
 
+#define ROTATION 1
+// 0 = no rotation
+// 1 = rotation
+
 #define SPREAD_TYPE 4
 // 0 = Thread per particle (TPP) register   **deprecated
 // 1 = Thread per particle (TPP) recompute  **deprecated
@@ -54,7 +58,7 @@
 // 0 = Dont check error     **default
 // 1 = Check error from file
 
-#define USE_DOUBLE_PRECISION false
+#define USE_DOUBLE_PRECISION true
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;

@@ -329,7 +329,7 @@ void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N, Real boxsi
 
 }
 
-
+/*
 __global__
 void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,
                     Real sigmaFCM,
@@ -427,7 +427,7 @@ void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, i
         return;
     }
 }
-
+*/
 
 
 // __global__

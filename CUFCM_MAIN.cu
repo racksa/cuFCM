@@ -53,18 +53,6 @@ int main(int argc, char** argv) {
 	read_init_data(Y_host, pars.N, datafile_names[0].c_str());
 	read_init_data(F_host, pars.N, datafile_names[1].c_str());
 	read_init_data(T_host, pars.N, datafile_names[2].c_str());
-	
-	// read_init_data(Y_host, pars.N, "./data/init_data/new/pos_data.dat");
-	// read_init_data(F_host, pars.N, "./data/init_data/new/force_data.dat");
-	// read_init_data(T_host, pars.N, "./data/init_data/new/torque_data.dat");
-
-	// read_init_data(Y_host, pars.N, "./data/init_data/N500000/pos-N500000-rh02609300-2.dat");
-	// read_init_data(F_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300.dat");
-	// read_init_data(T_host, pars.N, "./data/init_data/N500000/force-N500000-rh02609300-2.dat");
-
-	// read_init_data(Y_host, pars.N, "./data/init_data/artificial/artificial_pos.dat");
-	// read_init_data(F_host, pars.N, "./data/init_data/artificial/artificial_force.dat");
-	// read_init_data(T_host, pars.N, "./data/init_data/artificial/artificial_torque.dat");
 
 	for(int i = 0; i<3*pars.N; i++){
 		Y_host[i] = Y_host[i] * pars.boxsize/PI2;
@@ -75,62 +63,6 @@ int main(int argc, char** argv) {
 	copy_to_device<Real>(Y_host, Y_device, 3*pars.N);
 	copy_to_device<Real>(F_host, F_device, 3*pars.N);
 	copy_to_device<Real>(T_host, T_device, 3*pars.N);
-
-
-	// #elif INIT_FROM_FILE == 0
-
-	// 	{
-	// 		Random_Pars rpars;
-	// 		Real rvalues[100];
-	// 		read_config(rvalues, "simulation_info_long");
-	// 		rpars.N = rvalues[0];
-	// 		rpars.rh = rvalues[1];
-	// 		rpars.alpha = rvalues[2];
-	// 		rpars.beta = rvalues[3];
-	// 		rpars.eta = rvalues[4];
-	// 		rpars.nx = rvalues[5];
-	// 		rpars.ny = rvalues[6];
-	// 		rpars.nz = rvalues[7];
-	// 		rpars.repeat = rvalues[8];
-	// 		rpars.prompt = rvalues[9];
-	// 		rpars.dt = rvalues[10];
-	// 		rpars.Fref = rvalues[11];
-	// 		rpars.boxsize = rvalues[13];
-
-	// 		Real packrep = values[12];
-
-	// 		init_random_force(F_device, rpars.rh, rpars.N);
-	// 		init_random_force(T_device, rpars.rh, rpars.N);
-
-	// 		FILE *pfile;
-	// 		pfile = fopen("data/simulation/spherepacking.dat", "w");
-	// 		fclose(pfile);
-			
-	// 		random_packer *packer = new random_packer(Y_host, Y_device, rpars);
-	// 		for(int t = 0; t < packrep; t++){
-	// 			if(pars.prompt > 5){
-	// 				std::cout << "\rGenerating random spheres iteration: " << t+1 << "/" << packrep;
-	// 			}
-	// 			packer->update();
-	// 			if(t>packrep-11){
-	// 				packer->write();
-	// 			}
-	// 		}
-	// 		packer->finish();
-	// 		if(pars.prompt > 5){
-	// 			printf("\nFinished packing");
-	// 		}
-	// 	}
-	// 	if(pars.prompt > 5){
-	// 		printf("\nCopying to host...\n");
-	// 	}
-	// 	copy_to_host<Real>(Y_device, Y_host, 3*pars.N);
-	// 	copy_to_host<Real>(F_device, F_host, 3*pars.N);
-	// 	copy_to_host<Real>(T_device, T_host, 3*pars.N);
-
-	// 	write_init_data(Y_host, F_host, T_host, pars.N);
-
-	// #endif
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Start repeat

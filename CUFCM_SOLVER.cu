@@ -264,9 +264,13 @@ void FCM_solver::reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
     int num_thread_blocks_Nblob = (num_blob + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 
     copy_device<Real> <<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(x_seg, Y_device, 3*num_seg);
-    interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg,  F_device, T_device, num_seg);
-    interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg,  V_device, W_device, num_seg);
+    interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);
+    interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);
+
     copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(x_blob, &Y_device[3*num_seg], 3*num_blob);
+    // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], 3*num_blob);
+    // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], 3*num_blob);
+
     interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
     interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
 
@@ -283,30 +287,6 @@ void FCM_solver::Mss(){
     if(prompt>10){printf("pass2\n");}
 
     spatial_hashing();
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-    // copy_to_host<Real>(F_device, F_host, 3*N);
-    // copy_to_host<Real>(T_device, T_host, 3*N);
-    // copy_to_host<Real>(V_device, V_host, 3*N);
-    // copy_to_host<Real>(W_device, W_host, 3*N);
-
-    // write_data(Y_host, F_host, V_host, W_host, N, "../CUFCM/data/simulation/simulation_data.dat", "w");
-
-    // copy_to_host<int>(cell_start_device, cell_start_host, ncell);
-    // copy_to_host<int>(cell_end_device, cell_end_host, ncell);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // FILE *pfile;
-    // pfile = fopen("cell_list.dat", "w");
-    // for(int i = 0; i < ncell; i++){
-    //     fprintf(pfile, "%d (%d %d)\n", 
-    //     i, cell_start_host[i], cell_end_host[i]);
-    //     }
-    // fprintf(pfile, "\n#");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "%d (%.4f %.4f %.4f) in cell %d\n", 
-    //     i, Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2], particle_cellhash_host[i]);
-    //     }
-    // fclose(pfile);
     
     if(prompt>10){printf("pass3\n");}
 
@@ -326,11 +306,6 @@ void FCM_solver::Mss(){
     if(prompt>10){printf("pass8\n");}
 
     if(prompt>9){prompt_time();}
-
-    // cufcm_compute_formula<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>
-	// 						(Y_device, V_device, W_device,
-	// 						 F_device, T_device, N, N,
-	// 						 sigmaFCM, sigmaFCMdip, StokesMob, WT1Mob);
 
 }
 
@@ -427,7 +402,7 @@ void FCM_solver::spatial_hashing(){
     for(int i=0; i < N; i++){
         if(particle_cellhash_host[i] > (ncell-1) || particle_cellhash_host[i] < 0){
             printf("cellL: %.6f cellL*M: %.6f boxsize: %.6f\n", cellL, cellL*Real(M), boxsize);
-            printf("(%d) index:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
+            printf("particle %d with cellindex:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
             printf("xc yc zc (%d %d %d)\n", int(Y_host[3*i]/cellL), int(Y_host[3*i+1]/cellL), int(Y_host[3*i+2]/cellL));
             printf("compute index %d\n", int(Y_host[3*i]/cellL) + (int(Y_host[3*i+1]/cellL) + int(Y_host[3*i+2]/cellL)*M)*M );
         }
