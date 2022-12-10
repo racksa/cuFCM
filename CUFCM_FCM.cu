@@ -404,6 +404,15 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
 }
 
 __global__
+void cufcm_mono_dipole_distribution_mono(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
+              Real *Y, Real *F,
+              int N, int ngd, 
+              Real sigma, Real Sigma,
+              Real dx, double nx, double ny, double nz){
+
+              }
+
+__global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
                       myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
                       int nx, int ny, int nz, Real boxsize){
@@ -898,6 +907,16 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
         }
     }
 }
+
+__global__
+void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+                                Real *Y,
+                                Real *VTEMP,
+                                int N, int ngd, 
+                                Real sigma, Real Sigma,
+                                Real dx, Real nx, Real ny, Real nz){
+                                    
+                                }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Regular FCM

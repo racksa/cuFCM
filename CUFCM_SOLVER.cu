@@ -268,11 +268,11 @@ void FCM_solver::reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
     interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);
 
     copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(x_blob, &Y_device[3*num_seg], 3*num_blob);
-    // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], 3*num_blob);
-    // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], 3*num_blob);
+    copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], 3*num_blob);
+    copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], 3*num_blob);
 
-    interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
-    interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
+    // interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
+    // interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
 
     return;
 }
@@ -320,9 +320,13 @@ void FCM_solver::reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
     // copy_device<Real> <<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(Y_device, x_seg, 3*num_seg);
     separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);
     separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);
+
     // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&Y_device[3*num_seg], x_blob, 3*num_blob);
-    separate2interleaved<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
-    separate2interleaved<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
+    copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&F_device[3*num_seg], f_blob, 3*num_blob);
+    copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&V_device[3*num_seg], v_blob, 3*num_blob);
+
+    // separate2interleaved<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
+    // separate2interleaved<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
 
     return;
 }
@@ -466,12 +470,18 @@ void FCM_solver::spread(){
                                             
         #elif SPREAD_TYPE == 4
 
-            cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
+            #if ROTATION
+
+                cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
                                                     (hx_device, hy_device, hz_device, 
                                                     Y_device, T_device, F_device,
                                                     N, ngd,
                                                     sigmaFCM, SigmaGRID,
                                                     dx, nx, ny, nz);
+            #else 
+
+
+            #endif
                                                     
 
         #endif
@@ -570,12 +580,17 @@ void FCM_solver::gather(){
 
         #elif GATHER_TYPE == 4
 
+            #if ROTATION
+
             cufcm_particle_velocities_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
                                         (hx_device, hy_device, hz_device,
                                         Y_device, V_device, W_device,
                                         N, ngd,
                                         sigmaFCM, SigmaGRID,
                                         dx, nx, ny, nz);
+
+            #else
+            #endif
 
         #endif
 
@@ -614,20 +629,33 @@ void FCM_solver::correction(){
         
         #elif CORRECTION_TYPE == 1
 
-            cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
-                                particle_cellhash_device, cell_start_device, cell_end_device,
-                                map_device,
-                                ncell, Rcsq,
-                                SigmaGRID,
-                                sigmaFCM,
-                                sigmaFCMdip);
+            #if ROTATION
+
+                cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
+                                    particle_cellhash_device, cell_start_device, cell_end_device,
+                                    map_device,
+                                    ncell, Rcsq,
+                                    SigmaGRID,
+                                    sigmaFCM,
+                                    sigmaFCMdip);
+            #else
+
+            
+
+            #endif
 
         #endif
 
-        cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N, boxsize,
-                                StokesMob, ModStokesMob,
-                                PDStokesMob, BiLapMob,
-                                WT1Mob, WT2Mob);
+        #if ROTATION
+
+            cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N, boxsize,
+                                    StokesMob, ModStokesMob,
+                                    PDStokesMob, BiLapMob,
+                                    WT1Mob, WT2Mob);
+        #else
+
+
+        #endif
 
     #endif
 

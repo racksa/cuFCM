@@ -1,4 +1,5 @@
 #include "CUFCM_DATA.cuh"
+#include <__clang_cuda_complex_builtins.h>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
@@ -298,29 +299,40 @@ void box(Real *Y, int N, Real box_size){
     const int stride = blockDim.x*gridDim.x;
 
     for(int i = index; i < N; i += stride){
-        if(Y[3*i + 0]>box_size){
-            Y[3*i + 0] -= box_size;
-        }
-        if(Y[3*i + 0]<0){
-            Y[3*i + 0] += box_size;
-        }
 
-        if(Y[3*i + 1]>box_size){
-            Y[3*i + 1] -= box_size;
-        }
-        if(Y[3*i + 1]<0){
-            Y[3*i + 1] += box_size;
-        }
+        images(Y[3*i + 0], box_size);
+        images(Y[3*i + 1], box_size);
+        images(Y[3*i + 2], box_size);
+        
+        // if(Y[3*i + 0]>box_size){
+        //     Y[3*i + 0] -= box_size;
+        // }
+        // if(Y[3*i + 0]<0){
+        //     Y[3*i + 0] += box_size;
+        // }
 
-        if(Y[3*i + 2]>box_size){
-            Y[3*i + 2] -= box_size;
-        }
-        if(Y[3*i + 2]<0){
-            Y[3*i + 2] += box_size;
-        }
+        // if(Y[3*i + 1]>box_size){
+        //     Y[3*i + 1] -= box_size;
+        // }
+        // if(Y[3*i + 1]<0){
+        //     Y[3*i + 1] += box_size;
+        // }
+
+        // if(Y[3*i + 2]>box_size){
+        //     Y[3*i + 2] -= box_size;
+        // }
+        // if(Y[3*i + 2]<0){
+        //     Y[3*i + 2] += box_size;
+        // }
     }
 
 }
+
+__host__ __device__
+void images(Real &x, Real box_size){
+    x -= floor(x/box_size)*box_size;
+}
+
 
 __global__
 void check_nan_in(Real* arr, int L, bool* result){

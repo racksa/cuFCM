@@ -329,6 +329,25 @@ void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N, Real boxsi
 
 }
 
+__global__
+void cufcm_pair_correction_mono(Real* Y, Real* V, Real* F, int N, Real boxsize,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rrefsq,
+                    Real sigma,
+                    Real sigmaFCM,
+                    Real sigmaFCMdip){
+
+                    }
+
+__global__
+void cufcm_self_correction_mono(Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
+                                Real StokesMob, Real ModStokesMob,
+                                Real PDStokesMob, Real BiLapMob,
+                                Real WT1Mob, Real WT2Mob){
+                                    
+                                }
+
 /*
 __global__
 void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,
@@ -429,209 +448,206 @@ void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, i
 }
 */
 
+/*
+__global__
+void cufcm_pair_correction_old(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rrefsq,
+                    Real pdmag,
+                    Real sigma, Real sigmasq,
+                    Real sigmaFCM, Real sigmaFCMsq,
+                    Real sigmaFCMdip, Real sigmaFCMdipsq){
 
-// __global__
-// void cufcm_pair_correction_old(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
-//                     int *particle_cellindex, int *cell_start, int *cell_end,
-//                     int *map,
-//                     int ncell, Real Rrefsq,
-//                     Real pdmag,
-//                     Real sigma, Real sigmasq,
-//                     Real sigmaFCM, Real sigmaFCMsq,
-//                     Real sigmaFCMdip, Real sigmaFCMdipsq){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
 
-//     const int index = threadIdx.x + blockIdx.x*blockDim.x;
-//     const int stride = blockDim.x*gridDim.x;
+    int icell = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
+    Real vxi = (Real)0.0, vyi = (Real)0.0, vzi = (Real)0.0;
+    Real wxi = (Real)0.0, wyi = (Real)0.0, wzi = (Real)0.0;
 
-//     int icell = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
-//     Real vxi = (Real)0.0, vyi = (Real)0.0, vzi = (Real)0.0;
-//     Real wxi = (Real)0.0, wyi = (Real)0.0, wzi = (Real)0.0;
+    Real pdmagsq_quarter = pdmag * pdmag * (Real)0.25;
+    Real gamma = sqrtf((Real)2.0)*sigma;
+    Real gammasq = gamma*gamma;
+    Real gammaVF_FCM = sqrtf((Real)2.0)*sigmaFCM;
+    Real gammaVF_FCMsq = gammaVF_FCM*gammaVF_FCM;
+    Real gammaVTWF_FCM = sqrtf(sigmaFCM*sigmaFCM + sigmaFCMdip*sigmaFCMdip);
+    Real gammaVTWF_FCMsq = gammaVTWF_FCM*gammaVTWF_FCM;
+    Real gammaWT_FCM = sqrtf((Real)2.0)*sigmaFCMdip;
+    Real gammaWT_FCMsq = gammaWT_FCM*gammaWT_FCM;
 
-//     Real pdmagsq_quarter = pdmag * pdmag * (Real)0.25;
-//     Real gamma = sqrtf((Real)2.0)*sigma;
-//     Real gammasq = gamma*gamma;
-//     Real gammaVF_FCM = sqrtf((Real)2.0)*sigmaFCM;
-//     Real gammaVF_FCMsq = gammaVF_FCM*gammaVF_FCM;
-//     Real gammaVTWF_FCM = sqrtf(sigmaFCM*sigmaFCM + sigmaFCMdip*sigmaFCMdip);
-//     Real gammaVTWF_FCMsq = gammaVTWF_FCM*gammaVTWF_FCM;
-//     Real gammaWT_FCM = sqrtf((Real)2.0)*sigmaFCMdip;
-//     Real gammaWT_FCMsq = gammaWT_FCM*gammaWT_FCM;
-
-//     for(int i = index; i < N; i += stride){
-//         icell = particle_cellindex[i];
+    for(int i = index; i < N; i += stride){
+        icell = particle_cellindex[i];
         
-//         Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
-//         Real xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0;
-//         /* intra-cell interactions */
-//         /* corrections only apply to particle i */
-//         for(j = cell_start[icell]; j < cell_end[icell]; j++){
-//             if(i != j){
-//                 Real xij = xi - Y[3*j + 0];
-//                 Real yij = yi - Y[3*j + 1];
-//                 Real zij = zi - Y[3*j + 2];
+        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
+        Real xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0;
+        for(j = cell_start[icell]; j < cell_end[icell]; j++){
+            if(i != j){
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
 
-//                 xij = xij - boxsize * (Real) ((int) (xij/(boxsize/Real(2.0))));
-//                 yij = yij - boxsize * (Real) ((int) (yij/(boxsize/Real(2.0))));
-//                 zij = zij - boxsize * (Real) ((int) (zij/(boxsize/Real(2.0))));
+                xij = xij - boxsize * (Real) ((int) (xij/(boxsize/Real(2.0))));
+                yij = yij - boxsize * (Real) ((int) (yij/(boxsize/Real(2.0))));
+                zij = zij - boxsize * (Real) ((int) (zij/(boxsize/Real(2.0))));
 
-//                 Real rijsq=xij*xij+yij*yij+zij*zij;
-//                 if(rijsq < Rrefsq){
-//                     Real rij = sqrtf(rijsq);
-//                     Real erfS = erf((Real)0.5*rij/sigma);
-//                     Real expS = exp(-rijsq/((Real)2.0*gammasq));
-//                     Real gaussgam = expS/pow((Real)PI2*gammasq, (Real)1.5);
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < Rrefsq){
+                    Real rij = sqrtf(rijsq);
+                    Real erfS = erf((Real)0.5*rij/sigma);
+                    Real expS = exp(-rijsq/((Real)2.0*gammasq));
+                    Real gaussgam = expS/pow((Real)PI2*gammasq, (Real)1.5);
 
-//                     Real erfS_VF_FCM = erf(rij/(sqrtf((Real)2.0)*gammaVF_FCM));
-//                     Real expS_VF_FCM = exp(-rijsq/((Real)2.0*gammaVF_FCMsq));
+                    Real erfS_VF_FCM = erf(rij/(sqrtf((Real)2.0)*gammaVF_FCM));
+                    Real expS_VF_FCM = exp(-rijsq/((Real)2.0*gammaVF_FCMsq));
 
-//                     Real erfS_VTWF_FCM = erf(rij/(sqrtf((Real)2.0)*gammaVTWF_FCM));
-//                     Real expS_VTWF_FCM = exp(-rijsq/((Real)2.0*gammaVTWF_FCMsq));
+                    Real erfS_VTWF_FCM = erf(rij/(sqrtf((Real)2.0)*gammaVTWF_FCM));
+                    Real expS_VTWF_FCM = exp(-rijsq/((Real)2.0*gammaVTWF_FCMsq));
 
-//                     Real erfS_WT_FCM = erf(rij/(sqrtf((Real)2.0)*gammaWT_FCM));
-//                     Real expS_WT_FCM = exp(-rijsq/((Real)2.0*gammaWT_FCMsq));
+                    Real erfS_WT_FCM = erf(rij/(sqrtf((Real)2.0)*gammaWT_FCM));
+                    Real expS_WT_FCM = exp(-rijsq/((Real)2.0*gammaWT_FCMsq));
 
-//                     // ------------VF------------
-//                     Real Fjdotx = xij*F[3*j + 0] + yij*F[3*j + 1] + zij*F[3*j + 2];
-//                     Real Fidotx = xij*F[3*i + 0] + yij*F[3*i + 1] + zij*F[3*i + 2];
+                    // ------------VF------------
+                    Real Fjdotx = xij*F[3*j + 0] + yij*F[3*j + 1] + zij*F[3*j + 2];
+                    Real Fidotx = xij*F[3*i + 0] + yij*F[3*i + 1] + zij*F[3*i + 2];
 
-//                     Real AFCMtemp = A_old(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
-//                     Real BFCMtemp = B_old(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
-//                     Real Atemp = A_old(rij, rijsq, gamma, gammasq, expS, erfS);
-//                     Real Btemp = B_old(rij, rijsq, gamma, gammasq, expS, erfS);
-//                     Real Ctemp = Q_I(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
-//                     Real Dtemp = Q_xx(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
-//                     Real Ptemp = T_I(rij, rijsq, gamma, gammasq, gaussgam)*pdmagsq_quarter/sigmasq;
-//                     Real Qtemp = T_xx(rij, rijsq, gamma, gammasq, gaussgam)*pdmagsq_quarter/sigmasq;
+                    Real AFCMtemp = A_old(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                    Real BFCMtemp = B_old(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                    Real Atemp = A_old(rij, rijsq, gamma, gammasq, expS, erfS);
+                    Real Btemp = B_old(rij, rijsq, gamma, gammasq, expS, erfS);
+                    Real Ctemp = Q_I(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
+                    Real Dtemp = Q_xx(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
+                    Real Ptemp = T_I(rij, rijsq, gamma, gammasq, gaussgam)*pdmagsq_quarter/sigmasq;
+                    Real Qtemp = T_xx(rij, rijsq, gamma, gammasq, gaussgam)*pdmagsq_quarter/sigmasq;
 
-//                     Real temp1VF = (AFCMtemp - Atemp - Ctemp - Ptemp);
-//                     Real temp2VF = (BFCMtemp - Btemp - Dtemp - Qtemp);
+                    Real temp1VF = (AFCMtemp - Atemp - Ctemp - Ptemp);
+                    Real temp2VF = (BFCMtemp - Btemp - Dtemp - Qtemp);
 
-//                     // ------------WF+VT------------
-//                     Real fFCMtemp_VTWF = f_old(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, expS_VTWF_FCM, erfS_VTWF_FCM);
-//                     Real ftemp = f_old(rij, rijsq, gamma, gammasq, expS, erfS);
-//                     Real quatemp = (Real)0.25*pdmag/(gammasq)*gaussgam;
+                    // ------------WF+VT------------
+                    Real fFCMtemp_VTWF = f_old(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, expS_VTWF_FCM, erfS_VTWF_FCM);
+                    Real ftemp = f_old(rij, rijsq, gamma, gammasq, expS, erfS);
+                    Real quatemp = (Real)0.25*pdmag/(gammasq)*gaussgam;
 
-//                     Real tempVTWF = (fFCMtemp_VTWF - ftemp + quatemp);
+                    Real tempVTWF = (fFCMtemp_VTWF - ftemp + quatemp);
 
-//                     // ------------WT------------
-//                     Real fFCMtemp_WT = f_old(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
-//                     Real dfdrFCMtemp = dfdr_old(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
-//                     Real dfdrtemp = dfdr_old(rij, rijsq, gamma, gammasq, expS, erfS);
+                    // ------------WT------------
+                    Real fFCMtemp_WT = f_old(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                    Real dfdrFCMtemp = dfdr_old(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                    Real dfdrtemp = dfdr_old(rij, rijsq, gamma, gammasq, expS, erfS);
 
-//                     Real Tidotx = (T[3*i + 0]*xij + T[3*i + 1]*yij + T[3*i + 2]*zij);
-//                     Real Tjdotx = (T[3*j + 0]*xij + T[3*j + 1]*yij + T[3*j + 2]*zij);
+                    Real Tidotx = (T[3*i + 0]*xij + T[3*i + 1]*yij + T[3*i + 2]*zij);
+                    Real Tjdotx = (T[3*j + 0]*xij + T[3*j + 1]*yij + T[3*j + 2]*zij);
 
-//                     Real temp1WT = (dfdrFCMtemp*rij + (Real)2.0*fFCMtemp_WT) - (dfdrtemp*rij + (Real)2.0*ftemp);
-//                     Real temp2WT = dfdrFCMtemp/rij - dfdrtemp/rij;
+                    Real temp1WT = (dfdrFCMtemp*rij + (Real)2.0*fFCMtemp_WT) - (dfdrtemp*rij + (Real)2.0*ftemp);
+                    Real temp2WT = dfdrFCMtemp/rij - dfdrtemp/rij;
                     
 
-//                     // Summation
-//                     wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
-//                     wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
-//                     wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
+                    // Summation
+                    wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                    wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                    wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
 
-//                     vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
-//                     vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
-//                     vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+                    vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
+                    vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
+                    vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
 
-//                 }
-//             }
+                }
+            }
             
-//         }
-//         jcello = 13*icell;
-//         /* inter-cell interactions */
-//         /* corrections apply to both parties in different cells */
-//         for(nabor = 0; nabor < 13; nabor++){
-//             jcell = map[jcello + nabor];
-//             for(j = cell_start[jcell]; j < cell_end[jcell]; j++){
-//                 // if(i == j){
-//                 //     printf("particle %d in icell %d (%d %d) particle %d in jcell %d (%d %d)\n", 
-//                 //     i, icell, cell_start[icell], cell_end[icell], j, jcell, cell_start[jcell], cell_end[jcell]);
-//                 // }
-//                 xij = xi - Y[3*j + 0];
-//                 yij = yi - Y[3*j + 1];
-//                 zij = zi - Y[3*j + 2];
+        }
+        jcello = 13*icell;
+        for(nabor = 0; nabor < 13; nabor++){
+            jcell = map[jcello + nabor];
+            for(j = cell_start[jcell]; j < cell_end[jcell]; j++){
+                // if(i == j){
+                //     printf("particle %d in icell %d (%d %d) particle %d in jcell %d (%d %d)\n", 
+                //     i, icell, cell_start[icell], cell_end[icell], j, jcell, cell_start[jcell], cell_end[jcell]);
+                // }
+                xij = xi - Y[3*j + 0];
+                yij = yi - Y[3*j + 1];
+                zij = zi - Y[3*j + 2];
 
-//                 xij = xij - boxsize * ((Real) ((int) (xij/(boxsize/Real(2.0)))));
-//                 yij = yij - boxsize * ((Real) ((int) (yij/(boxsize/Real(2.0)))));
-//                 zij = zij - boxsize * ((Real) ((int) (zij/(boxsize/Real(2.0)))));
-//                 Real rijsq=xij*xij+yij*yij+zij*zij;
-//                 if(rijsq < Rrefsq){
-//                     Real rij = sqrtf(rijsq);
-//                     Real erfS = erf((Real)0.5*rij/sigma);
-//                     Real expS = exp(-rijsq/((Real)2.0*gammasq));
-//                     Real gaussgam = expS/pow((Real)PI2*gammasq, (Real)1.5);
+                xij = xij - boxsize * ((Real) ((int) (xij/(boxsize/Real(2.0)))));
+                yij = yij - boxsize * ((Real) ((int) (yij/(boxsize/Real(2.0)))));
+                zij = zij - boxsize * ((Real) ((int) (zij/(boxsize/Real(2.0)))));
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < Rrefsq){
+                    Real rij = sqrtf(rijsq);
+                    Real erfS = erf((Real)0.5*rij/sigma);
+                    Real expS = exp(-rijsq/((Real)2.0*gammasq));
+                    Real gaussgam = expS/pow((Real)PI2*gammasq, (Real)1.5);
 
-//                     Real erfS_VF_FCM = erf(rij/(sqrtf((Real)2.0)*gammaVF_FCM));
-//                     Real expS_VF_FCM = exp(-rijsq/((Real)2.0*gammaVF_FCMsq));
+                    Real erfS_VF_FCM = erf(rij/(sqrtf((Real)2.0)*gammaVF_FCM));
+                    Real expS_VF_FCM = exp(-rijsq/((Real)2.0*gammaVF_FCMsq));
 
-//                     Real erfS_VTWF_FCM = erf(rij/(sqrtf((Real)2.0)*gammaVTWF_FCM));
-//                     Real expS_VTWF_FCM = exp(-rijsq/((Real)2.0*gammaVTWF_FCMsq));
+                    Real erfS_VTWF_FCM = erf(rij/(sqrtf((Real)2.0)*gammaVTWF_FCM));
+                    Real expS_VTWF_FCM = exp(-rijsq/((Real)2.0*gammaVTWF_FCMsq));
 
-//                     Real erfS_WT_FCM = erf(rij/(sqrtf((Real)2.0)*gammaWT_FCM));
-//                     Real expS_WT_FCM = exp(-rijsq/((Real)2.0*gammaWT_FCMsq));
+                    Real erfS_WT_FCM = erf(rij/(sqrtf((Real)2.0)*gammaWT_FCM));
+                    Real expS_WT_FCM = exp(-rijsq/((Real)2.0*gammaWT_FCMsq));
 
-//                     // ------------VF------------
-//                     Real Fjdotx = xij*F[3*j + 0] + yij*F[3*j + 1] + zij*F[3*j + 2];
-//                     Real Fidotx = xij*F[3*i + 0] + yij*F[3*i + 1] + zij*F[3*i + 2];
+                    // ------------VF------------
+                    Real Fjdotx = xij*F[3*j + 0] + yij*F[3*j + 1] + zij*F[3*j + 2];
+                    Real Fidotx = xij*F[3*i + 0] + yij*F[3*i + 1] + zij*F[3*i + 2];
 
-//                     Real AFCMtemp = A_old(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
-//                     Real BFCMtemp = B_old(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
-//                     Real Atemp = A_old(rij, rijsq, gamma, gammasq, expS, erfS);
-//                     Real Btemp = B_old(rij, rijsq, gamma, gammasq, expS, erfS);
-//                     Real Ctemp = Q_I(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
-//                     Real Dtemp = Q_xx(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
-//                     Real Ptemp = T_I(rij, rijsq, gamma, gammasq, gaussgam)*pdmagsq_quarter/sigmasq;
-//                     Real Qtemp = T_xx(rij, rijsq, gamma, gammasq, gaussgam)*pdmagsq_quarter/sigmasq;
+                    Real AFCMtemp = A_old(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                    Real BFCMtemp = B_old(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, expS_VF_FCM, erfS_VF_FCM);
+                    Real Atemp = A_old(rij, rijsq, gamma, gammasq, expS, erfS);
+                    Real Btemp = B_old(rij, rijsq, gamma, gammasq, expS, erfS);
+                    Real Ctemp = Q_I(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
+                    Real Dtemp = Q_xx(rij, rijsq, gamma, gammasq, gaussgam, erfS)*pdmag;
+                    Real Ptemp = T_I(rij, rijsq, gamma, gammasq, gaussgam)*pdmagsq_quarter/sigmasq;
+                    Real Qtemp = T_xx(rij, rijsq, gamma, gammasq, gaussgam)*pdmagsq_quarter/sigmasq;
 
-//                     Real temp1VF = (AFCMtemp - Atemp - Ctemp - Ptemp);
-//                     Real temp2VF = (BFCMtemp - Btemp - Dtemp - Qtemp);
+                    Real temp1VF = (AFCMtemp - Atemp - Ctemp - Ptemp);
+                    Real temp2VF = (BFCMtemp - Btemp - Dtemp - Qtemp);
 
-//                     // ------------WF+VT------------
-//                     Real fFCMtemp_VTWF = f(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, expS_VTWF_FCM, erfS_VTWF_FCM);
-//                     Real ftemp = f(rij, rijsq, gamma, gammasq, expS, erfS);
-//                     Real quatemp = (Real)0.25*pdmag/(gammasq)*gaussgam;
+                    // ------------WF+VT------------
+                    Real fFCMtemp_VTWF = f(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, expS_VTWF_FCM, erfS_VTWF_FCM);
+                    Real ftemp = f(rij, rijsq, gamma, gammasq, expS, erfS);
+                    Real quatemp = (Real)0.25*pdmag/(gammasq)*gaussgam;
 
-//                     Real tempVTWF = (fFCMtemp_VTWF - ftemp + quatemp);
+                    Real tempVTWF = (fFCMtemp_VTWF - ftemp + quatemp);
 
-//                     // ------------WT------------
-//                     Real fFCMtemp_WT = f_old(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
-//                     Real dfdrFCMtemp = dfdr_old(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
-//                     Real dfdrtemp = dfdr_old(rij, rijsq, gamma, gammasq, expS, erfS);
+                    // ------------WT------------
+                    Real fFCMtemp_WT = f_old(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                    Real dfdrFCMtemp = dfdr_old(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, expS_WT_FCM, erfS_WT_FCM);
+                    Real dfdrtemp = dfdr_old(rij, rijsq, gamma, gammasq, expS, erfS);
 
-//                     Real Tidotx = (T[3*i + 0]*xij + T[3*i + 1]*yij + T[3*i + 2]*zij);
-//                     Real Tjdotx = (T[3*j + 0]*xij + T[3*j + 1]*yij + T[3*j + 2]*zij);
+                    Real Tidotx = (T[3*i + 0]*xij + T[3*i + 1]*yij + T[3*i + 2]*zij);
+                    Real Tjdotx = (T[3*j + 0]*xij + T[3*j + 1]*yij + T[3*j + 2]*zij);
 
-//                     Real temp1WT = (dfdrFCMtemp*rij + (Real)2.0*fFCMtemp_WT) - (dfdrtemp*rij + (Real)2.0*ftemp);
-//                     Real temp2WT = dfdrFCMtemp/rij - dfdrtemp/rij;
+                    Real temp1WT = (dfdrFCMtemp*rij + (Real)2.0*fFCMtemp_WT) - (dfdrtemp*rij + (Real)2.0*ftemp);
+                    Real temp2WT = dfdrFCMtemp/rij - dfdrtemp/rij;
 
-//                     // Summation
-//                     wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
-//                     wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
-//                     wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
+                    // Summation
+                    wxi = wxi + (Real)0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                    wyi = wyi + (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                    wzi = wzi + (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
 
-//                     atomicAdd(&W[3*j + 0], (Real)0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
-//                     atomicAdd(&W[3*j + 1], (Real)0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
-//                     atomicAdd(&W[3*j + 2], (Real)0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
+                    atomicAdd(&W[3*j + 0], (Real)0.5*( T[3*i + 0]*temp1WT - xij*Tidotx*temp2WT ) - tempVTWF*( zij*F[3*i + 1] - yij*F[3*i + 2] ));
+                    atomicAdd(&W[3*j + 1], (Real)0.5*( T[3*i + 1]*temp1WT - yij*Tidotx*temp2WT ) - tempVTWF*( xij*F[3*i + 2] - zij*F[3*i + 0] ));
+                    atomicAdd(&W[3*j + 2], (Real)0.5*( T[3*i + 2]*temp1WT - zij*Tidotx*temp2WT ) - tempVTWF*( yij*F[3*i + 0] - xij*F[3*i + 1] ));
 
-//                     vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
-//                     vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
-//                     vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+                    vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
+                    vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
+                    vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
                     
-//                     atomicAdd(&V[3*j + 0], temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ));
-//                     atomicAdd(&V[3*j + 1], temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ));
-//                     atomicAdd(&V[3*j + 2], temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
+                    atomicAdd(&V[3*j + 0], temp1VF*F[3*i + 0] + temp2VF*xij*Fidotx - tempVTWF*( zij*T[3*i + 1] - yij*T[3*i + 2] ));
+                    atomicAdd(&V[3*j + 1], temp1VF*F[3*i + 1] + temp2VF*yij*Fidotx - tempVTWF*( xij*T[3*i + 2] - zij*T[3*i + 0] ));
+                    atomicAdd(&V[3*j + 2], temp1VF*F[3*i + 2] + temp2VF*zij*Fidotx - tempVTWF*( yij*T[3*i + 0] - xij*T[3*i + 1] ));
 
-//                 }      
-//             }
-//         }
-//         atomicAdd(&V[3*i + 0], vxi);
-//         atomicAdd(&V[3*i + 1], vyi);
-//         atomicAdd(&V[3*i + 2], vzi);
-//         atomicAdd(&W[3*i + 0], wxi);
-//         atomicAdd(&W[3*i + 1], wyi);
-//         atomicAdd(&W[3*i + 2], wzi);
+                }      
+            }
+        }
+        atomicAdd(&V[3*i + 0], vxi);
+        atomicAdd(&V[3*i + 1], vyi);
+        atomicAdd(&V[3*i + 2], vzi);
+        atomicAdd(&W[3*i + 0], wxi);
+        atomicAdd(&W[3*i + 1], wyi);
+        atomicAdd(&W[3*i + 2], wzi);
 
-//         return;
-//     }
-// }
+        return;
+    }
+}
+*/
