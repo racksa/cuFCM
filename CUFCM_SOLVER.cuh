@@ -109,6 +109,13 @@ public:
     __host__
     void init_aux_for_filament();
 
+    __global__
+    void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
+                        int *particle_cellindex, int *cell_start, int *cell_end,
+                        int *map,
+                        int ncell, Real Rrefsq,
+                        Real Fref);
+
     __host__
     void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
                      Real *x_blob, Real *f_blob, Real *v_blob,

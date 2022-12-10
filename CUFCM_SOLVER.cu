@@ -826,41 +826,6 @@ void FCM_solver::finish(){
 			std::cout << "%W error:\t" << Werror << "\n";
 		}
     }
-    
-	// else if (checkerror == 2){
-    //     int N_truncate;
-	// 	if(N>1000){
-	// 		N_truncate = int(N*0.001);
-	// 	}
-	// 	else{
-	// 		N_truncate = int(N);
-	// 	}
-		
-	// 	Real* V_validation = malloc_host<Real>(3*N);
-	// 	Real* W_validation = malloc_host<Real>(3*N);
-	// 	Real* V_validation_device = malloc_device<Real>(3*N_truncate);
-	// 	Real* W_validation_device = malloc_device<Real>(3*N_truncate);
-
-	// 	Real hasimoto = Real(1.0) - Real(1.7601)*pow(Volume_frac, 1.0/3.0) - Real(1.5593)*pow(Volume_frac, 2.0);
-
-	// 	const int num_thread_blocks_N_trunc = (N_truncate + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
-	// 	cufcm_compute_formula<<<num_thread_blocks_N_trunc, THREADS_PER_BLOCK>>>
-	// 						(Y_device, V_validation_device, W_validation_device,
-	// 						F_device, T_device, N, N_truncate,
-	// 						sigmaFCM, sigmaFCMdip, StokesMob, WT1Mob, hasimoto);
-
-	// 	copy_to_host<Real>(V_validation_device, V_validation, 3*N_truncate);
-	// 	copy_to_host<Real>(W_validation_device, W_validation, 3*N_truncate);
-	// 	Real Verror = percentage_error_magnitude(V_host, V_validation, N_truncate);
-	// 	Real Werror = percentage_error_magnitude(W_host, W_validation, N_truncate);
-		
-	// 	if(prompt > 1){
-	// 		std::cout << "-------\nError\n-------\n";
-	// 		std::cout << "%Y error:\t" << 0 << "\n";
-	// 		std::cout << "%V error:\t" << Verror << "\n";
-	// 		std::cout << "%W error:\t" << Werror << "\n";
-	// 	}
-    // }
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Write to file
@@ -891,4 +856,106 @@ void FCM_solver::write_cell_list(){
     copy_to_host<int>(cell_start_device, cell_start_host, ncell);
     copy_to_host<int>(cell_end_device, cell_end_host, ncell);
     write_celllist(cell_start_host, cell_end_host, ncell, "./data/simulation/celllist_data.dat");
+}
+
+__global__
+void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rcsq,
+                    Real Fref){
+
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+
+
+    for(int i = index; i < N; i += stride){
+        Real fxi = (Real)0.0, fyi = (Real)0.0, fzi = (Real)0.0;
+        int icell = particle_cellindex[i];
+        
+        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
+        Real xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0;
+        /* intra-cell interactions */
+        /* corrections only apply to particle i */
+        for(int j = cell_start[icell]; j < cell_end[icell]; j++){
+            if(i != j){
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
+
+                xij = xij - box_size * Real(int(xij/(box_size/Real(2.0))));
+                yij = yij - box_size * Real(int(yij/(box_size/Real(2.0))));
+                zij = zij - box_size * Real(int(zij/(box_size/Real(2.0))));
+
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < Rcsq){
+
+                    Real rij = sqrtf(rijsq);
+                    // Real temp = Rcsq - Real(4.0) * rad * rad;
+                    // Real temp2 = (Rcsq - rijsq)/temp;
+                    // temp2 = temp2*temp2;
+
+                    // Real fxij = Real(4.0)*Fref*temp2*temp2*xij/(Real(2.0)*rad);
+                    // Real fyij = Real(4.0)*Fref*temp2*temp2*yij/(Real(2.0)*rad);
+                    // Real fzij = Real(4.0)*Fref*temp2*temp2*zij/(Real(2.0)*rad);
+
+                    Real fxij = Fref*xij/rijsq;
+                    Real fyij = Fref*yij/rijsq;
+                    Real fzij = Fref*zij/rijsq;
+
+                    fxi += fxij;
+                    fyi += fyij;
+                    fzi += fzij;
+
+                }
+            }
+            
+        }
+        int jcello = 13*icell;
+        /* inter-cell interactions */
+        /* corrections apply to both parties in different cells */
+        for(int nabor = 0; nabor < 13; nabor++){
+            int jcell = map[jcello + nabor];
+            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
+                xij = xi - Y[3*j + 0];
+                yij = yi - Y[3*j + 1];
+                zij = zi - Y[3*j + 2];
+
+                xij = xij - box_size * Real(int(xij/(box_size/Real(2.0))));
+                yij = yij - box_size * Real(int(yij/(box_size/Real(2.0))));
+                zij = zij - box_size * Real(int(zij/(box_size/Real(2.0))));
+
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < Rcsq){
+
+                    Real rij = sqrtf(rijsq);
+                    // Real temp = Rcsq - Real(4.0) * rad * rad;
+                    // Real temp2 = (Rcsq - rijsq)/temp;
+                    // temp2 = temp2*temp2;
+
+                    // Real fxij = Real(4.0)*Fref*temp2*temp2*xij/(Real(2.0)*rad);
+                    // Real fyij = Real(4.0)*Fref*temp2*temp2*yij/(Real(2.0)*rad);
+                    // Real fzij = Real(4.0)*Fref*temp2*temp2*zij/(Real(2.0)*rad);
+
+                    Real fxij = Fref*xij/rijsq;
+                    Real fyij = Fref*yij/rijsq;
+                    Real fzij = Fref*zij/rijsq;
+
+                    fxi += fxij;
+                    fyi += fyij;
+                    fzi += fzij;
+
+                    atomicAdd(&F[3*j + 0], -fxij);
+                    atomicAdd(&F[3*j + 1], -fyij);
+                    atomicAdd(&F[3*j + 2], -fzij);
+                }
+            }
+        }
+        atomicAdd(&F[3*i + 0], fxi);
+        atomicAdd(&F[3*i + 1], fyi);
+        atomicAdd(&F[3*i + 2], fzi);
+
+        return;
+    }
 }

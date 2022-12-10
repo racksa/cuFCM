@@ -1,5 +1,4 @@
 #include "CUFCM_DATA.cuh"
-#include <__clang_cuda_complex_builtins.h>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
