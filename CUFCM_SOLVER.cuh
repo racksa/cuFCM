@@ -1,6 +1,19 @@
 #pragma once
 #include "config.hpp"
 
+__global__
+void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rrefsq,
+                    Real Fref);
+
+__global__
+void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rcsq);
+
 class FCM_solver{
 
 public:
@@ -109,12 +122,8 @@ public:
     __host__
     void init_aux_for_filament();
 
-    __global__
-    void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
-                        int *particle_cellindex, int *cell_start, int *cell_end,
-                        int *map,
-                        int ncell, Real Rrefsq,
-                        Real Fref);
+    __host__
+    void apply_repulsion();
 
     __host__
     void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
@@ -136,6 +145,9 @@ public:
 
     __host__
     void Mbb();
+
+    __host__
+    void apply_repulsion_for_timcode();
     /* Filament code end*/
 
     __host__
@@ -178,5 +190,8 @@ public:
 
     __host__
     void write_cell_list();
+
+    __host__
+    void check_overlap();
 
 };

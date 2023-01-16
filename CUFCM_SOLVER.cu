@@ -251,11 +251,6 @@ void FCM_solver::init_aux_for_filament(){
 }
 
 __host__
-void FCM_solver::box_particle(){
-    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
-}
-
-__host__
 void FCM_solver::reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
                              Real *x_blob, Real *f_blob, Real *v_blob,
                              int num_seg, int num_blob){
@@ -265,14 +260,9 @@ void FCM_solver::reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
 
     copy_device<Real> <<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(x_seg, Y_device, 3*num_seg);
     interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);
-    interleaved2separate<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);
 
     copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(x_blob, &Y_device[3*num_seg], 3*num_blob);
     copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], 3*num_blob);
-    copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], 3*num_blob);
-
-    // interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
-    // interleaved2separate<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
 
     return;
 }
@@ -289,6 +279,8 @@ void FCM_solver::Mss(){
     spatial_hashing();
     
     if(prompt>10){printf("pass3\n");}
+
+    // check_overlap();
 
     spread();
     if(prompt>10){printf("pass4\n");}
@@ -310,6 +302,17 @@ void FCM_solver::Mss(){
 }
 
 __host__
+void FCM_solver::apply_repulsion_for_timcode(){
+    box_particle();
+
+    // spatial_hashing();
+
+    apply_repulsion();
+
+    // sortback();
+}
+
+__host__
 void FCM_solver::reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
                              Real *x_blob, Real *f_blob, Real *v_blob,
                              int num_seg, int num_blob){
@@ -322,11 +325,8 @@ void FCM_solver::reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
     separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);
 
     // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&Y_device[3*num_seg], x_blob, 3*num_blob);
-    copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&F_device[3*num_seg], f_blob, 3*num_blob);
+    // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&F_device[3*num_seg], f_blob, 3*num_blob);
     copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&V_device[3*num_seg], v_blob, 3*num_blob);
-
-    // separate2interleaved<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], &T_device[3*num_seg], num_blob);
-    // separate2interleaved<<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], &W_device[3*num_seg], num_blob);
 
     return;
 }
@@ -380,6 +380,10 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
 
 }
 
+__host__
+void FCM_solver::box_particle(){
+    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+}
 
 __host__ 
 void FCM_solver::reset_grid(){
@@ -858,8 +862,24 @@ void FCM_solver::write_cell_list(){
     write_celllist(cell_start_host, cell_end_host, ncell, "./data/simulation/celllist_data.dat");
 }
 
+__host__
+void FCM_solver::apply_repulsion(){
+    contact_force<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, boxsize,
+                    particle_cellhash_device, cell_start_device, cell_end_device,
+                    map_device,
+                    ncell, 1.21*(2*rh)*(2*rh),
+                    1.0);
+}
+
+__host__
+void FCM_solver::check_overlap(){
+    check_overlap_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N, boxsize,
+                      particle_cellhash_device, cell_start_device, cell_end_device, 
+                      map_device, ncell, Rcsq);
+}
+
 __global__
-void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
+void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rcsq,
@@ -867,15 +887,13 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
 
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
-
-
+    const Real a_sum = 2.0*rad;
 
     for(int i = index; i < N; i += stride){
         Real fxi = (Real)0.0, fyi = (Real)0.0, fzi = (Real)0.0;
         int icell = particle_cellindex[i];
-        
         Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
-        Real xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0;
+
         /* intra-cell interactions */
         /* corrections only apply to particle i */
         for(int j = cell_start[icell]; j < cell_end[icell]; j++){
@@ -884,29 +902,32 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - box_size * Real(int(xij/(box_size/Real(2.0))));
-                yij = yij - box_size * Real(int(yij/(box_size/Real(2.0))));
-                zij = zij - box_size * Real(int(zij/(box_size/Real(2.0))));
+                xij -= box_size * Real(int(xij/(Real(0.5)*box_size)));
+                yij -= box_size * Real(int(yij/(Real(0.5)*box_size)));
+                zij -= box_size * Real(int(zij/(Real(0.5)*box_size)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < Rcsq){
+                if(rijsq < 1.21*a_sum*a_sum){
 
                     Real rij = sqrtf(rijsq);
-                    // Real temp = Rcsq - Real(4.0) * rad * rad;
-                    // Real temp2 = (Rcsq - rijsq)/temp;
-                    // temp2 = temp2*temp2;
+                    Real chi_fac = Real(10.0)/a_sum;
 
-                    // Real fxij = Real(4.0)*Fref*temp2*temp2*xij/(Real(2.0)*rad);
-                    // Real fyij = Real(4.0)*Fref*temp2*temp2*yij/(Real(2.0)*rad);
-                    // Real fzij = Real(4.0)*Fref*temp2*temp2*zij/(Real(2.0)*rad);
+                    Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
+                    fac *= Fref*Real(2.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
 
-                    Real fxij = Fref*xij/rijsq;
-                    Real fyij = Fref*yij/rijsq;
-                    Real fzij = Fref*zij/rijsq;
+                    const double dm1 = 1.0/rij;
 
-                    fxi += fxij;
-                    fyi += fyij;
-                    fzi += fzij;
+                    fxi += fac*xij*dm1;
+                    fyi += fac*yij*dm1;
+                    fzi += fac*zij*dm1;
+
+                    // Real fxij = Fref*xij/rijsq;
+                    // Real fyij = Fref*yij/rijsq;
+                    // Real fzij = Fref*zij/rijsq;
+
+                    // fxi += fxij;
+                    // fyi += fyij;
+                    // fzi += fzij;
 
                 }
             }
@@ -918,29 +939,32 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
         for(int nabor = 0; nabor < 13; nabor++){
             int jcell = map[jcello + nabor];
             for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
-                xij = xi - Y[3*j + 0];
-                yij = yi - Y[3*j + 1];
-                zij = zi - Y[3*j + 2];
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
 
-                xij = xij - box_size * Real(int(xij/(box_size/Real(2.0))));
-                yij = yij - box_size * Real(int(yij/(box_size/Real(2.0))));
-                zij = zij - box_size * Real(int(zij/(box_size/Real(2.0))));
+                xij = xij - box_size * Real(int(xij/(Real(0.5)*box_size)));
+                yij = yij - box_size * Real(int(yij/(Real(0.5)*box_size)));
+                zij = zij - box_size * Real(int(zij/(Real(0.5)*box_size)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < Rcsq){
+                if(rijsq < 1.21*a_sum*a_sum){
 
                     Real rij = sqrtf(rijsq);
-                    // Real temp = Rcsq - Real(4.0) * rad * rad;
-                    // Real temp2 = (Rcsq - rijsq)/temp;
-                    // temp2 = temp2*temp2;
+                    Real chi_fac = Real(10.0)/a_sum;
 
-                    // Real fxij = Real(4.0)*Fref*temp2*temp2*xij/(Real(2.0)*rad);
-                    // Real fyij = Real(4.0)*Fref*temp2*temp2*yij/(Real(2.0)*rad);
-                    // Real fzij = Real(4.0)*Fref*temp2*temp2*zij/(Real(2.0)*rad);
+                    Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
+                    fac *= Fref*Real(2.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
 
-                    Real fxij = Fref*xij/rijsq;
-                    Real fyij = Fref*yij/rijsq;
-                    Real fzij = Fref*zij/rijsq;
+                    const double dm1 = 1.0/rij;
+
+                    Real fxij = fac*xij*dm1;
+                    Real fyij = fac*yij*dm1;
+                    Real fzij = fac*zij*dm1;
+                    
+                    // Real fxij = Fref*xij/rijsq;
+                    // Real fyij = Fref*yij/rijsq;
+                    // Real fzij = Fref*zij/rijsq;
 
                     fxi += fxij;
                     fyi += fyij;
@@ -952,9 +976,71 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
                 }
             }
         }
+
+        if(i==0){
+            printf("fx=%.4f x = (%.4f %.4f %.4f)\n", fxi, xi, yi, zi);
+        }
         atomicAdd(&F[3*i + 0], fxi);
         atomicAdd(&F[3*i + 1], fyi);
         atomicAdd(&F[3*i + 2], fzi);
+
+        return;
+    }
+}
+
+__global__
+void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rcsq){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    for(int i = index; i < N; i += stride){
+        int icell = particle_cellindex[i];
+        
+        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
+        for(int j = cell_start[icell]; j < cell_end[icell]; j++){
+            if(i != j){
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
+
+                xij = xij - box_size * Real(int(xij/(Real(0.5)*box_size)));
+                yij = yij - box_size * Real(int(yij/(Real(0.5)*box_size)));
+                zij = zij - box_size * Real(int(zij/(Real(0.5)*box_size)));
+
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < Rcsq){
+                    if (rijsq < 3.98*rad*rad){
+                        printf("ERROR: Overlap between %d (%.4f %.4f %.4f) and %d (%.4f %.4f %.4f) within same cell. sep = %.6f 2rad = %.6f \n",
+                        i, xi, yi, zi, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], sqrt(rijsq), (2*rad));
+                    }
+                }
+            }
+        }
+        int jcello = 13*icell;
+        /* inter-cell interactions */
+        /* corrections apply to both parties in different cells */
+        for(int nabor = 0; nabor < 13; nabor++){
+            int jcell = map[jcello + nabor];
+            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){                
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
+
+                xij = xij - box_size * Real(int(xij/(Real(0.5)*box_size)));
+                yij = yij - box_size * Real(int(yij/(Real(0.5)*box_size)));
+                zij = zij - box_size * Real(int(zij/(Real(0.5)*box_size)));
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < Rcsq){
+                    if (rijsq < 3.98*rad*rad){
+                        printf("ERROR: Overlap between %d (%.4f %.4f %.4f) in %d and %d (%.4f %.4f %.4f) in %d. sep = %.6f 2rad = %.6f  \n", 
+                        i, xi, yi, zi, icell, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], jcell, sqrt(rijsq), (2*rad));
+                    }
+                }
+            }
+        }
 
         return;
     }

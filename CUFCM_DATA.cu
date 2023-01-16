@@ -302,27 +302,6 @@ void box(Real *Y, int N, Real box_size){
         images(Y[3*i + 0], box_size);
         images(Y[3*i + 1], box_size);
         images(Y[3*i + 2], box_size);
-        
-        // if(Y[3*i + 0]>box_size){
-        //     Y[3*i + 0] -= box_size;
-        // }
-        // if(Y[3*i + 0]<0){
-        //     Y[3*i + 0] += box_size;
-        // }
-
-        // if(Y[3*i + 1]>box_size){
-        //     Y[3*i + 1] -= box_size;
-        // }
-        // if(Y[3*i + 1]<0){
-        //     Y[3*i + 1] += box_size;
-        // }
-
-        // if(Y[3*i + 2]>box_size){
-        //     Y[3*i + 2] -= box_size;
-        // }
-        // if(Y[3*i + 2]<0){
-        //     Y[3*i + 2] += box_size;
-        // }
     }
 
 }
