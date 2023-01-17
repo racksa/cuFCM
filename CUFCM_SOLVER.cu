@@ -253,7 +253,7 @@ void FCM_solver::init_aux_for_filament(){
 __host__
 void FCM_solver::reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
                              Real *x_blob, Real *f_blob, Real *v_blob,
-                             int num_seg, int num_blob){
+                             int num_seg, int num_blob, bool is_barrier){
     
     int num_thread_blocks_Nseg = (num_seg + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
     int num_thread_blocks_Nblob = (num_blob + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
@@ -302,31 +302,38 @@ void FCM_solver::Mss(){
 }
 
 __host__
-void FCM_solver::apply_repulsion_for_timcode(){
+void FCM_solver::apply_repulsion_for_timcode(int num_seg, int num_blob){
     box_particle();
 
-    // spatial_hashing();
+    reset_device<Real> (&F_device[3*num_seg], 3*num_blob);
+
+    spatial_hashing();
 
     apply_repulsion();
 
-    // sortback();
+    sortback();
+
 }
 
 __host__
 void FCM_solver::reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
                              Real *x_blob, Real *f_blob, Real *v_blob,
-                             int num_seg, int num_blob){
+                             int num_seg, int num_blob, bool is_barrier){
 
     int num_thread_blocks_Nseg = (num_seg + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
     int num_thread_blocks_Nblob = (num_blob + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
 
     // copy_device<Real> <<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(Y_device, x_seg, 3*num_seg);
-    separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);
-    separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);
-
     // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&Y_device[3*num_seg], x_blob, 3*num_blob);
-    // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&F_device[3*num_seg], f_blob, 3*num_blob);
-    copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&V_device[3*num_seg], v_blob, 3*num_blob);
+
+    if(is_barrier){
+        separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);
+        copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&F_device[3*num_seg], f_blob, 3*num_blob);
+    }
+    else{
+        separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);
+        copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&V_device[3*num_seg], v_blob, 3*num_blob);
+    }
 
     return;
 }
@@ -856,6 +863,18 @@ void FCM_solver::finish(){
 	#endif
 }
 
+__host__
+void FCM_solver::write_data_call(){
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+	copy_to_host<Real>(F_device, F_host, 3*N);
+	copy_to_host<Real>(T_device, T_host, 3*N);
+	copy_to_host<Real>(V_device, V_host, 3*N);
+	copy_to_host<Real>(W_device, W_host, 3*N);
+    printf("\n\nWriting to file\n\n");
+    write_data(Y_host, F_host, T_host, V_host, W_host, N, 
+                   "simulation_data.dat", "w");
+}
+
 void FCM_solver::write_cell_list(){
     copy_to_host<int>(cell_start_device, cell_start_host, ncell);
     copy_to_host<int>(cell_end_device, cell_end_host, ncell);
@@ -909,7 +928,7 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < 1.21*a_sum*a_sum){
 
-                    Real rij = sqrtf(rijsq);
+                    Real rij = sqrt(rijsq);
                     Real chi_fac = Real(10.0)/a_sum;
 
                     Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
@@ -917,17 +936,17 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
 
                     const double dm1 = 1.0/rij;
 
-                    fxi += fac*xij*dm1;
-                    fyi += fac*yij*dm1;
-                    fzi += fac*zij*dm1;
+                    Real fxij = fac*xij*dm1;
+                    Real fyij = fac*yij*dm1;
+                    Real fzij = fac*zij*dm1;
 
                     // Real fxij = Fref*xij/rijsq;
                     // Real fyij = Fref*yij/rijsq;
                     // Real fzij = Fref*zij/rijsq;
 
-                    // fxi += fxij;
-                    // fyi += fyij;
-                    // fzi += fzij;
+                    fxi += fxij;
+                    fyi += fyij;
+                    fzi += fzij;
 
                 }
             }
@@ -950,7 +969,7 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < 1.21*a_sum*a_sum){
 
-                    Real rij = sqrtf(rijsq);
+                    Real rij = sqrt(rijsq);
                     Real chi_fac = Real(10.0)/a_sum;
 
                     Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
@@ -977,9 +996,6 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
             }
         }
 
-        if(i==0){
-            printf("fx=%.4f x = (%.4f %.4f %.4f)\n", fxi, xi, yi, zi);
-        }
         atomicAdd(&F[3*i + 0], fxi);
         atomicAdd(&F[3*i + 1], fyi);
         atomicAdd(&F[3*i + 2], fzi);

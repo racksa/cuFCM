@@ -128,11 +128,15 @@ public:
     __host__
     void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
                      Real *x_blob, Real *f_blob, Real *v_blob,
-                     int num_seg, int num_blob);
-                
+                     int num_seg, int num_blob, bool is_barrier);
+    
+    __host__
     void reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
                      Real *x_blob, Real *f_blob, Real *v_blob,
-                     int num_seg, int num_blob);
+                     int num_seg, int num_blob, bool is_barrier);
+
+    __host__
+    void write_data_call();
 
     __host__
     void Mss();
@@ -147,7 +151,7 @@ public:
     void Mbb();
 
     __host__
-    void apply_repulsion_for_timcode();
+    void apply_repulsion_for_timcode(int num_seg, int num_blob);
     /* Filament code end*/
 
     __host__
