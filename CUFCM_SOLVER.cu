@@ -873,6 +873,17 @@ void FCM_solver::write_data_call(){
     printf("\n\nWriting to file\n\n");
     write_data(Y_host, F_host, T_host, V_host, W_host, N, 
                    "simulation_data.dat", "w");
+    for(int i = 0; i<N; i++){
+        if(abs(F_host[3*i]) > 1000 || abs(F_host[3*i+1]) > 1000 || abs(F_host[3*i+2]) > 1000){
+            printf("V TOO LARGE %d (%.4f %.4f %.4f) \n", i, F_host[3*i], F_host[3*i+1], F_host[3*i+2]);
+        }
+        if(abs(V_host[3*i]) > 1000 || abs(V_host[3*i+1]) > 1000 || abs(V_host[3*i+2]) > 1000){
+            printf("V TOO LARGE %d (%.4f %.4f %.4f) \n", i, V_host[3*i], V_host[3*i+1], V_host[3*i+2]);
+        }
+        if(abs(W_host[3*i]) > 1000 || abs(W_host[3*i+1]) > 1000 || abs(W_host[3*i+2]) > 1000){
+            printf("V TOO LARGE %d (%.4f %.4f %.4f) \n", i, W_host[3*i], W_host[3*i+1], W_host[3*i+2]);
+        }
+    }
 }
 
 void FCM_solver::write_cell_list(){
@@ -926,7 +937,7 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                 zij -= box_size * Real(int(zij/(Real(0.5)*box_size)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < 1.21*a_sum*a_sum){
+                if(rijsq < 1.1*a_sum*a_sum){
 
                     Real rij = sqrt(rijsq);
                     Real chi_fac = Real(10.0)/a_sum;
@@ -967,7 +978,7 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                 zij = zij - box_size * Real(int(zij/(Real(0.5)*box_size)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < 1.21*a_sum*a_sum){
+                if(rijsq < 1.1*a_sum*a_sum){
 
                     Real rij = sqrt(rijsq);
                     Real chi_fac = Real(10.0)/a_sum;

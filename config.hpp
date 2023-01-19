@@ -72,6 +72,7 @@
     #define my_rint rint
     #define my_exp exp
     #define my_floor floor
+    #define my_fmod fmod
 #else
     typedef float Real;
     typedef int Integer;
@@ -84,6 +85,7 @@
     #define my_rint rintf
     #define my_exp expf
     #define my_floor floorf
+    #define my_fmod fmodf
     
 #endif
 
