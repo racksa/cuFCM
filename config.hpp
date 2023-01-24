@@ -24,10 +24,6 @@
 // 0 = Generate random packing
 // 1 = Read initial data from file
 
-#define ROTATION 1
-// 0 = no rotation
-// 1 = rotation
-
 #define SPREAD_TYPE 4
 // 0 = Thread per particle (TPP) register   **deprecated
 // 1 = Thread per particle (TPP) recompute  **deprecated

@@ -57,11 +57,10 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 __global__
 void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, Real boxsize){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    // const int stride = blockDim.x*gridDim.x;
 
 	if(index < N){
 		if(Y[3*index + 0]<0 || Y[3*index + 1]<0 || Y[3*index + 2]<0){
-			printf("\nERROR position\n\n");
+			printf("\nERROR position in cell list\n\n");
 		}
 		// int xc = (int) (Y[3*index + 0]/dx);
 		// int yc = (int) (Y[3*index + 1]/dx);

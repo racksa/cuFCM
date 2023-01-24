@@ -76,14 +76,12 @@ void cufcm_pair_correction_mono(Real* Y, Real* V, Real* F, int N, Real boxsize,
                     int *map,
                     int ncell, Real Rrefsq,
                     Real sigma,
-                    Real sigmaFCM,
-                    Real sigmaFCMdip);
+                    Real sigmaFCM);
 
 __global__
-void cufcm_self_correction_mono(Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
+void cufcm_self_correction_mono(Real* V, Real* W, Real* F, int N, Real boxsize,
                                 Real StokesMob, Real ModStokesMob,
-                                Real PDStokesMob, Real BiLapMob,
-                                Real WT1Mob, Real WT2Mob);
+                                Real PDStokesMob, Real BiLapMob);
 
 // __global__
 // void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,

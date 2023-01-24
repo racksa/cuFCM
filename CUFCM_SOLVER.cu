@@ -252,8 +252,7 @@ void FCM_solver::init_aux_for_filament(){
 
 __host__
 void FCM_solver::reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
-                             Real *x_blob, Real *f_blob, Real *v_blob,
-                             int num_seg, int num_blob, bool is_barrier){
+                             Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier){
     
     int num_thread_blocks_Nseg = (num_seg + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
     int num_thread_blocks_Nblob = (num_blob + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
@@ -271,43 +270,67 @@ __host__
 void FCM_solver::Mss(){
 
     box_particle();
-    if(prompt>10){printf("pass1\n");}
     
     reset_grid();
-    if(prompt>10){printf("pass2\n");}
 
     spatial_hashing();
-    
-    if(prompt>10){printf("pass3\n");}
 
-    // check_overlap();
+    sort_particle(0, num_seg);
 
-    spread();
-    if(prompt>10){printf("pass4\n");}
+    spread_seg_force();
 
     fft_solve();
-    if(prompt>10){printf("pass5\n");}
 
-    gather();
-    if(prompt>10){printf("pass6\n");}
+    gather_seg_velocity();
 
-    correction();
-    if(prompt>10){printf("pass7\n");}
+    correction_seg();
 
     sortback();
-    if(prompt>10){printf("pass8\n");}
-
-    if(prompt>9){prompt_time();}
 
 }
 
 __host__
-void FCM_solver::apply_repulsion_for_timcode(int num_seg, int num_blob){
+void FCM_solver::Msb(){
+
+}
+
+__host__
+void FCM_solver::Mbb(){
+
+    box_particle();
+    
+    reset_grid();
+
+    spatial_hashing();
+
+    sort_particle(num_seg, num_blob);
+
+    spread_blob_force();
+
+    fft_solve();
+
+    gather_blob_velocity();
+
+    correction_blob();
+
+    sortback();
+
+}
+
+__host__
+void FCM_solver::Mbs(){
+
+}
+
+__host__
+void FCM_solver::apply_repulsion_for_timcode(){
     box_particle();
 
     reset_device<Real> (&F_device[3*num_seg], 3*num_blob);
 
     spatial_hashing();
+
+    sort_particle(num_seg, num_blob);
 
     apply_repulsion();
 
@@ -316,15 +339,60 @@ void FCM_solver::apply_repulsion_for_timcode(int num_seg, int num_blob){
 }
 
 __host__
+void FCM_solver::spread_seg_force(){
+    
+}
+
+__host__
+void FCM_solver::spread_blob_force(){
+    cufcm_mono_dipole_distribution_mono<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
+                                                (hx_device, hy_device, hz_device, 
+                                                &Y_device[3*num_seg], &F_device[3*num_seg],
+                                                num_blob, ngd,
+                                                sigmaFCM, SigmaGRID,
+                                                dx, nx, ny, nz);
+}
+
+__host__
+void FCM_solver::gather_seg_velocity(){
+
+}
+
+__host__
+void FCM_solver::gather_blob_velocity(){
+    cufcm_particle_velocities_mono<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
+                                        (hx_device, hy_device, hz_device,
+                                        &Y_device[3*num_seg], &V_device[3*num_seg],
+                                        num_blob, ngd,
+                                        sigmaFCM, SigmaGRID,
+                                        dx, nx, ny, nz);
+}
+
+__host__
+void FCM_solver::correction_blob(){
+    cufcm_pair_correction_mono<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&Y_device[3*num_seg], &V_device[3*num_seg], &F_device[3*num_seg], num_blob, boxsize,
+                                particle_cellhash_device, cell_start_device, cell_end_device,
+                                map_device,
+                                ncell, Rcsq,
+                                SigmaGRID,
+                                sigmaFCM);
+
+    cufcm_self_correction_mono<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&V_device[3*num_seg], &W_device[3*num_seg], &F_device[3*num_seg], num_blob, boxsize,
+                            StokesMob, ModStokesMob,
+                            PDStokesMob, BiLapMob);
+}
+
+__host__
+void FCM_solver::correction_seg(){
+
+}
+
+__host__
 void FCM_solver::reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
-                             Real *x_blob, Real *f_blob, Real *v_blob,
-                             int num_seg, int num_blob, bool is_barrier){
+                             Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier){
 
     int num_thread_blocks_Nseg = (num_seg + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
     int num_thread_blocks_Nblob = (num_blob + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
-
-    // copy_device<Real> <<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(Y_device, x_seg, 3*num_seg);
-    // copy_device<Real> <<<num_thread_blocks_Nblob, THREADS_PER_BLOCK>>>(&Y_device[3*num_seg], x_blob, 3*num_blob);
 
     if(is_barrier){
         separate2interleaved<<<num_thread_blocks_Nseg, THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);
@@ -348,40 +416,24 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     W_device = W_device_input;
 
     box_particle();
-
-    if(prompt>10){printf("pass1\n");}
     
     reset_grid();
 
-    if(prompt>10){printf("pass2\n");}
-
     spatial_hashing();
 
-    if(prompt>10){printf("pass3\n");}
+    sort_particle(0, N);
 
     spread();
 
-    if(prompt>10){printf("pass4\n");}
-
     fft_solve();
-
-    if(prompt>10){printf("pass5\n");}
 
     gather();
 
-    if(prompt>10){printf("pass6\n");}
-
     correction();
-
-    if(prompt>10){printf("pass7\n");}
 
     // check_nan();
 
-    if(prompt>10){printf("pass8\n");}
-
     sortback();
-
-    if(prompt>10){printf("pass9\n");}
 
     rept += 1;
 
@@ -410,38 +462,40 @@ void FCM_solver::spatial_hashing(){
 
     // Create Hash (i, j, k) -> Hash
     create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
+    particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
 
     // DEBUG
-    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    copy_to_host<Real>(Y_device, Y_host, 3*N);
-    for(int i=0; i < N; i++){
-        if(particle_cellhash_host[i] > (ncell-1) || particle_cellhash_host[i] < 0){
-            printf("cellL: %.6f cellL*M: %.6f boxsize: %.6f\n", cellL, cellL*Real(M), boxsize);
-            printf("particle %d with cellindex:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
-            printf("xc yc zc (%d %d %d)\n", int(Y_host[3*i]/cellL), int(Y_host[3*i+1]/cellL), int(Y_host[3*i+2]/cellL));
-            printf("compute index %d\n", int(Y_host[3*i]/cellL) + (int(Y_host[3*i+1]/cellL) + int(Y_host[3*i+2]/cellL)*M)*M );
-        }
-    }
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+    // for(int i=0; i < N; i++){
+    //     if(particle_cellhash_host[i] > (ncell-1) || particle_cellhash_host[i] < 0){
+    //         printf("cellL: %.6f cellL*M: %.6f boxsize: %.6f\n", cellL, cellL*Real(M), boxsize);
+    //         printf("particle %d with cellindex:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
+    //         printf("xc yc zc (%d %d %d)\n", int(Y_host[3*i]/cellL), int(Y_host[3*i+1]/cellL), int(Y_host[3*i+2]/cellL));
+    //         printf("compute index %d\n", int(Y_host[3*i]/cellL) + (int(Y_host[3*i+1]/cellL) + int(Y_host[3*i+2]/cellL)*M)*M );
+    //     }
+    // }
 
+    cudaDeviceSynchronize();	time_hashing_array[rept] = get_time() - time_start;
+}
+
+__host__
+void FCM_solver::sort_particle(int start_index, int particle_number){
     // Sort particle index by hash
-    particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
-    sort_index_by_key(particle_cellhash_device, particle_index_device, key_buf, index_buf, N);
+    sort_index_by_key(particle_cellhash_device, particle_index_device, key_buf, index_buf, particle_number);
 
     // Sort pos/force/torque by particle index
-    copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
-    sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
-    copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
-    sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, F_device, aux_device, N);
-    copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
-    sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, T_device, aux_device, N);
+    copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&Y_device[3*start_index], &aux_device[3*start_index], 3*particle_number);
+    sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&particle_index_device[3*start_index], &Y_device[3*start_index], &aux_device[start_index], particle_number);
+    copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&F_device[3*start_index], &aux_device[3*start_index], 3*particle_number);
+    sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&particle_index_device[3*start_index], &F_device[3*start_index], &aux_device[start_index], particle_number);
+    copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&T_device[3*start_index], &aux_device[3*start_index], 3*particle_number);
+    sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&particle_index_device[3*start_index], &T_device[3*start_index], &aux_device[start_index], particle_number);
 
     // Find cell starting/ending points
     reset_device<int>(cell_start_device, ncell);
     reset_device<int>(cell_end_device, ncell);
-    create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
-
-
-    cudaDeviceSynchronize();	time_hashing_array[rept] = get_time() - time_start;
+    create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&particle_cellhash_device[3*start_index], cell_start_device, cell_end_device, particle_number);
 }
 
 __host__
@@ -481,19 +535,13 @@ void FCM_solver::spread(){
                                             
         #elif SPREAD_TYPE == 4
 
-            #if ROTATION
 
-                cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
-                                                    (hx_device, hy_device, hz_device, 
-                                                    Y_device, T_device, F_device,
-                                                    N, ngd,
-                                                    sigmaFCM, SigmaGRID,
-                                                    dx, nx, ny, nz);
-            #else 
-
-
-            #endif
-                                                    
+            cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
+                                                (hx_device, hy_device, hz_device, 
+                                                Y_device, T_device, F_device,
+                                                N, ngd,
+                                                sigmaFCM, SigmaGRID,
+                                                dx, nx, ny, nz);
 
         #endif
     
@@ -591,17 +639,12 @@ void FCM_solver::gather(){
 
         #elif GATHER_TYPE == 4
 
-            #if ROTATION
-
             cufcm_particle_velocities_bpp_shared_dynamic<<<N, THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
                                         (hx_device, hy_device, hz_device,
                                         Y_device, V_device, W_device,
                                         N, ngd,
                                         sigmaFCM, SigmaGRID,
                                         dx, nx, ny, nz);
-
-            #else
-            #endif
 
         #endif
 
@@ -640,33 +683,19 @@ void FCM_solver::correction(){
         
         #elif CORRECTION_TYPE == 1
 
-            #if ROTATION
-
-                cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
-                                    particle_cellhash_device, cell_start_device, cell_end_device,
-                                    map_device,
-                                    ncell, Rcsq,
-                                    SigmaGRID,
-                                    sigmaFCM,
-                                    sigmaFCMdip);
-            #else
-
-            
-
-            #endif
-
+            cufcm_pair_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
+                                particle_cellhash_device, cell_start_device, cell_end_device,
+                                map_device,
+                                ncell, Rcsq,
+                                SigmaGRID,
+                                sigmaFCM,
+                                sigmaFCMdip);
         #endif
-
-        #if ROTATION
 
             cufcm_self_correction<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N, boxsize,
                                     StokesMob, ModStokesMob,
                                     PDStokesMob, BiLapMob,
                                     WT1Mob, WT2Mob);
-        #else
-
-
-        #endif
 
     #endif
 
@@ -886,6 +915,7 @@ void FCM_solver::write_data_call(){
     }
 }
 
+__host__
 void FCM_solver::write_cell_list(){
     copy_to_host<int>(cell_start_device, cell_start_host, ncell);
     copy_to_host<int>(cell_end_device, cell_end_host, ncell);
@@ -937,13 +967,13 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                 zij -= box_size * Real(int(zij/(Real(0.5)*box_size)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < 1.1*a_sum*a_sum){
+                if(rijsq < 1.21*a_sum*a_sum){
 
                     Real rij = sqrt(rijsq);
                     Real chi_fac = Real(10.0)/a_sum;
 
                     Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
-                    fac *= Fref*Real(2.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
+                    fac *= Fref*Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
 
                     const double dm1 = 1.0/rij;
 
@@ -978,13 +1008,13 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                 zij = zij - box_size * Real(int(zij/(Real(0.5)*box_size)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < 1.1*a_sum*a_sum){
+                if(rijsq < 1.21*a_sum*a_sum){
 
                     Real rij = sqrt(rijsq);
                     Real chi_fac = Real(10.0)/a_sum;
 
                     Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
-                    fac *= Fref*Real(2.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
+                    fac *= Fref*Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
 
                     const double dm1 = 1.0/rij;
 

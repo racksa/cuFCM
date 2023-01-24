@@ -409,8 +409,94 @@ void cufcm_mono_dipole_distribution_mono(myCufftReal *fx, myCufftReal *fy, myCuf
               int N, int ngd, 
               Real sigma, Real Sigma,
               Real dx, double nx, double ny, double nz){
+    int ngdh = ngd/2;
 
-              }
+    extern __shared__ Integer s[];
+    Integer *indx_shared = s;
+    Integer *indy_shared = (Integer*)&indx_shared[ngd];
+    Integer *indz_shared = (Integer*)&indy_shared[ngd];
+    Real *xdis_shared = (Real*)&indz_shared[ngd];    
+    Real *ydis_shared = (Real*)&xdis_shared[ngd];
+    Real *zdis_shared = (Real*)&ydis_shared[ngd];
+    Real *gaussx_shared = (Real*)&zdis_shared[ngd]; 
+    Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
+    Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
+    Real *grad_gaussx_dip_shared = (Real*)&gaussz_shared[ngd];
+    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
+    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
+    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+    Real *F_shared = (Real*)&Y_shared[3];
+
+    Real Sigmasq = Sigma*Sigma;
+    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real width2 = (Real(2.0)*Sigmasq);
+    Real pdmag = sigma*sigma - Sigmasq;
+
+    for(int np = blockIdx.x; np < N; np += gridDim.x){
+
+        if(threadIdx.x == 0){
+            Y_shared[0] = Y[3*np + 0];
+            Y_shared[1] = Y[3*np + 1];
+            Y_shared[2] = Y[3*np + 2];
+
+            F_shared[0] = F[3*np + 0];
+            F_shared[1] = F[3*np + 1];
+            F_shared[2] = F[3*np + 2];
+        }
+        __syncthreads();
+
+        for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+
+            Real xx = xg*dx - Y_shared[0];
+            Real yy = yg*dx - Y_shared[1];
+            Real zz = zg*dx - Y_shared[2];
+            /* dis */
+            if(i<ngd){ 
+                xdis_shared[i] = xx;
+                ydis_shared[i] = yy;
+                zdis_shared[i] = zz;
+            }
+            /* gauss */
+            if(i>=ngd && i<2*ngd){
+                gaussx_shared[i-ngd] = Anorm*my_exp(-xx*xx/width2);
+                gaussy_shared[i-ngd] = Anorm*my_exp(-yy*yy/width2);
+                gaussz_shared[i-ngd] = Anorm*my_exp(-zz*zz/width2);
+            }
+            /* grad_gauss */
+            if(i>=2*ngd && i<3*ngd){
+            }
+            /* ind */
+            if(i>=3*ngd){
+                indx_shared[i-3*ngd] = xg - nx * my_floor( xg / nx );
+                indy_shared[i-3*ngd] = yg - ny * my_floor( yg / ny );
+                indz_shared[i-3*ngd] = zg - nz * my_floor( zg / nz );
+            }
+        }
+        __syncthreads();
+        
+        for(int t = threadIdx.x; t < ngd*ngd*ngd; t += blockDim.x){
+            const int k = t/(ngd*ngd);
+            const int j = (t - k*ngd*ngd)/ngd;
+            const int i = t - k*ngd*ngd - j*ngd;
+
+            int ind = indx_shared[i] + indy_shared[j]*nx + indz_shared[k]*nx*ny;
+            Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
+            Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
+            Real temp2 = Real(0.5) * pdmag / Sigmasq;
+            Real temp3 = temp2 / Sigmasq;
+            Real temp4 = Real(3.0)*temp2;
+            Real temp5 = temp*( Real(1.0) + temp3*r2 - temp4);
+
+            atomicAdd(&fx[ind], F_shared[0]*temp5);
+            atomicAdd(&fy[ind], F_shared[1]*temp5);
+            atomicAdd(&fz[ind], F_shared[2]*temp5);
+
+        }
+    }    
+}
 
 __global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
@@ -915,8 +1001,109 @@ void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftRea
                                 int N, int ngd, 
                                 Real sigma, Real Sigma,
                                 Real dx, Real nx, Real ny, Real nz){
-                                    
-                                }
+    int ngdh = ngd/2;
+    Real norm = dx*dx*dx;
+    Real Vx = (Real) 0.0, Vy = (Real) 0.0, Vz = (Real) 0.0;
+
+    extern __shared__ Integer s[];
+    Integer *indx_shared = s;
+    Integer *indy_shared = (Integer*)&indx_shared[ngd];
+    Integer *indz_shared = (Integer*)&indy_shared[ngd];
+    Real *xdis_shared = (Real*)&indz_shared[ngd];    
+    Real *ydis_shared = (Real*)&xdis_shared[ngd];
+    Real *zdis_shared = (Real*)&ydis_shared[ngd];
+    Real *gaussx_shared = (Real*)&zdis_shared[ngd]; 
+    Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
+    Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
+    Real *grad_gaussx_dip_shared = (Real*)&gaussz_shared[ngd];
+    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
+    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
+    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+
+    Real Sigmasq = Sigma*Sigma;
+    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real width2 = (Real(2.0)*Sigmasq);
+    Real pdmag = sigma*sigma - Sigmasq;
+
+    // Specialize BlockReduce
+    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    // Allocate shared memory for BlockReduce
+    __shared__ typename BlockReduce::TempStorage temp_storage;
+    
+    for(int np = blockIdx.x; np < N; np += gridDim.x){
+        if(threadIdx.x == 0){
+            Y_shared[0] = Y[3*np + 0];
+            Y_shared[1] = Y[3*np + 1];
+            Y_shared[2] = Y[3*np + 2];
+        }
+        __syncthreads();
+
+        for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+
+            Real xx = xg*dx - Y_shared[0];
+            Real yy = yg*dx - Y_shared[1];
+            Real zz = zg*dx - Y_shared[2];
+            /* dis */
+            if(i<ngd){ 
+                xdis_shared[i] = xx;
+                ydis_shared[i] = yy;
+                zdis_shared[i] = zz;
+            }
+            /* gauss */
+            if(i>=ngd && i<2*ngd){
+                gaussx_shared[i-ngd] = Anorm*my_exp(-xx*xx/width2);
+                gaussy_shared[i-ngd] = Anorm*my_exp(-yy*yy/width2);
+                gaussz_shared[i-ngd] = Anorm*my_exp(-zz*zz/width2);
+            }
+            /* grad_gauss */
+            if(i>=2*ngd && i<3*ngd){
+            }
+            /* ind */
+            if(i>=3*ngd){
+                indx_shared[i-3*ngd] = xg - nx * my_floor( xg / nx);
+                indy_shared[i-3*ngd] = yg - ny * my_floor( yg / ny);
+                indz_shared[i-3*ngd] = zg - nz * my_floor( zg / nz);
+            }
+        }
+        __syncthreads();
+
+        for(int t = threadIdx.x; t < ngd*ngd*ngd; t += blockDim.x){
+            const int k = t/(ngd*ngd);
+            const int j = (t - k*ngd*ngd)/ngd;
+            const int i = t - k*ngd*ngd - j*ngd;
+
+            int ind = indx_shared[i] + indy_shared[j]*int(nx) + indz_shared[k]*int(nx)*int(ny);
+            Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
+            Real temp = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k]*norm;
+            Real temp2 = Real(0.5) * pdmag / Sigmasq;
+            Real temp3 = temp2 /Sigmasq;
+            Real temp4 = Real(3.0)*temp2;
+            Real temp5 = ( Real(1.0) + temp3*r2 - temp4);
+
+            Real ux_temp = ux[ind]*temp;
+            Real uy_temp = uy[ind]*temp;
+            Real uz_temp = uz[ind]*temp;
+
+            Vx += ux_temp*temp5;
+            Vy += uy_temp*temp5;
+            Vz += uz_temp*temp5;
+        }
+        
+        // Reduction
+        Real total_Vx = BlockReduce(temp_storage).Sum(Vx);
+        Real total_Vy = BlockReduce(temp_storage).Sum(Vy);
+        Real total_Vz = BlockReduce(temp_storage).Sum(Vz);
+    
+        if(threadIdx.x==0){
+            VTEMP[3*np + 0] = total_Vx;  
+            VTEMP[3*np + 1] = total_Vy;
+            VTEMP[3*np + 2] = total_Vz;
+        }
+    }                                  
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Regular FCM

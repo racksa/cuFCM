@@ -20,6 +20,7 @@ public:
     Pars pars;
 
     int N, nx, ny, nz, repeat, prompt, warmup, checkerror;
+    int num_seg, num_blob;
     Real rh, alpha, beta, eta;
     Real boxsize;
     Real values[100];
@@ -127,13 +128,11 @@ public:
 
     __host__
     void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
-                     Real *x_blob, Real *f_blob, Real *v_blob,
-                     int num_seg, int num_blob, bool is_barrier);
+                     Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier);
     
     __host__
     void reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
-                     Real *x_blob, Real *f_blob, Real *v_blob,
-                     int num_seg, int num_blob, bool is_barrier);
+                     Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier);
 
     __host__
     void write_data_call();
@@ -151,7 +150,26 @@ public:
     void Mbb();
 
     __host__
-    void apply_repulsion_for_timcode(int num_seg, int num_blob);
+    void apply_repulsion_for_timcode();
+
+    __host__
+    void spread_seg_force();
+
+    __host__
+    void spread_blob_force();
+
+    __host__
+    void gather_seg_velocity();
+
+    __host__
+    void gather_blob_velocity();
+
+    __host__
+    void correction_seg();
+
+    __host__
+    void correction_blob();
+
     /* Filament code end*/
 
     __host__
@@ -161,7 +179,7 @@ public:
     void spatial_hashing();
 
     __host__
-    void sort_particle();
+    void sort_particle(int start_index, int particle_number);
 
     __host__
     void spread();
