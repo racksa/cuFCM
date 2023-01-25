@@ -292,32 +292,50 @@ void FCM_solver::Mss(){
     reset_grid();
     printf("Mss pass 3 \n");
     spatial_hashing();
-    printf("Mss pass 4 \n");
-    sort_particle(0, num_seg);
+    // printf("Mss pass 4 \n");
+    // sort_particle(0, num_seg+1);
 
-    copy_to_host<Real>(Y_device, Y_host, 3*N);
-    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    copy_to_host<int>(particle_index_device, particle_index_host, N);
-    FILE *pfile;
-    pfile = fopen("sorted_seg", "w");
-    for(int i = 0; i < N; i++){
-        fprintf(pfile, "%.8f %.8f %.8f\n", 
-        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
-    }
-    fprintf(pfile, "\n#");
-    fclose(pfile);
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // copy_to_host<int>(particle_index_device, particle_index_host, N);
+    // FILE *pfile;
+    // pfile = fopen("sorted_seg.dat", "w");
+    // for(int i = 0; i < N; i++){
+    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f)\n", 
+    //     particle_index_host[i],
+    //     particle_cellhash_host[i],
+    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
+    // }
+    // fprintf(pfile, "\n#");
+    // fclose(pfile);
 
-    printf("Mss pass 5 \n");
-    spread_seg_force();
-    printf("Mss pass 6 \n");
-    fft_solve();
-    printf("Mss pass 7 \n");
-    gather_seg_velocity();
-    printf("Mss pass 8 \n");
-    correction_seg();
-    printf("Mss pass 9 \n");
-    sortback(0, num_seg);
-    printf("Mss pass 10 \n");
+    // printf("Mss pass 5 \n");
+    // spread_seg_force();
+    // printf("Mss pass 6 \n");
+    // fft_solve();
+    // printf("Mss pass 7 \n");
+    // gather_seg_velocity();
+    // printf("Mss pass 8 \n");
+    // correction_seg();
+    // printf("Mss pass 9 \n");
+    // sortback(0, num_seg);
+
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // copy_to_host<int>(particle_index_device, particle_index_host, N);
+    // FILE *pfile;
+    // pfile = fopen("sortback_seg.dat", "w");
+    // for(int i = 0; i < N; i++){
+    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f)\n", 
+    //     particle_index_host[i],
+    //     particle_cellhash_host[i],
+    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
+    // }
+    // fprintf(pfile, "\n#");
+    // fclose(pfile);
+
+
+    // printf("Mss pass 10 \n");
 }
 
 __host__
@@ -335,18 +353,60 @@ void FCM_solver::Mbb(){
     printf("Mbb pass 3 \n");
     spatial_hashing();
     printf("Mbb pass 4 \n");
-    // sort_particle(num_seg, num_blob);
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    copy_to_host<int>(particle_index_device, particle_index_host, N);
+    FILE *pfile;
+    pfile = fopen("sortbefore_blob.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f)\n", 
+        particle_index_host[i],
+        particle_cellhash_host[i],
+        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
+    }
+    fprintf(pfile, "\n#");
+    fclose(pfile);
+
+    sort_particle(num_seg, num_blob);
+
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    copy_to_host<int>(particle_index_device, particle_index_host, N);
+    pfile = fopen("sorted_blob.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f)\n", 
+        particle_index_host[i],
+        particle_cellhash_host[i],
+        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
+    }
+    fprintf(pfile, "\n#");
+    fclose(pfile);
+
     // printf("Mbb pass 5 \n");
-    spread_blob_force();
-    printf("Mbb pass 6 \n");
-    fft_solve();
-    printf("Mbb pass 7 \n");
-    gather_blob_velocity();
+    // spread_blob_force();
+    // printf("Mbb pass 6 \n");
+    // fft_solve();
+    // printf("Mbb pass 7 \n");
+    // gather_blob_velocity();
     // printf("Mbb pass 8 \n");
     // correction_blob();
     // printf("Mbb pass 9 \n");
-    // sortback(num_seg, num_blob);
-    // printf("Mbb pass 10 \n");
+    sortback(num_seg, num_blob);
+
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    copy_to_host<int>(particle_index_device, particle_index_host, N);
+    pfile = fopen("sortback_blob.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f)\n", 
+        particle_index_host[i],
+        particle_cellhash_host[i],
+        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2]);
+    }
+    fprintf(pfile, "\n#");
+    fclose(pfile);
+
+    printf("Mbb pass 10 \n");
 }
 
 __host__
@@ -516,11 +576,11 @@ void FCM_solver::spatial_hashing(){
 __host__
 void FCM_solver::sort_particle(int start_index, int particle_number){
     // Sort particle index by hash
-    sort_index_by_key(&particle_cellhash_device[start_index], &particle_index_device[start_index],&key_buf[start_index], &index_buf[start_index], particle_number);
+    sort_index_by_key(&particle_cellhash_device[start_index], &particle_index_device[start_index], &key_buf[start_index], &index_buf[start_index], particle_number);
 
     // Sort pos/force/torque by particle index
-    copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&Y_device[3*start_index], &aux_device[3*start_index], 3*particle_number);
-    sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&particle_index_device[start_index], &Y_device[3*start_index], &aux_device[3*start_index], particle_number);
+    copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+    sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
     copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&F_device[3*start_index], &aux_device[3*start_index], 3*particle_number);
     sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&particle_index_device[start_index], &F_device[3*start_index], &aux_device[3*start_index], particle_number);
     copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&T_device[3*start_index], &aux_device[3*start_index], 3*particle_number);
@@ -744,8 +804,8 @@ void FCM_solver::sortback(int start_index, int particle_number){
         particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, N);
         sort_index_by_key(&particle_index_device[start_index], &sortback_index_device[start_index], &key_buf[start_index], &index_buf[start_index], particle_number);
 
-        copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&Y_device[3*start_index], &aux_device[3*start_index], 3*particle_number);
-        sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&sortback_index_device[start_index], &Y_device[3*start_index], &aux_device[3*start_index], particle_number);
+        copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+        sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
 
         copy_device<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&F_device[3*start_index], &aux_device[3*start_index], 3*particle_number);
         sort_3d_by_index<Real> <<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(&sortback_index_device[start_index], &F_device[3*start_index], &aux_device[3*start_index], particle_number);

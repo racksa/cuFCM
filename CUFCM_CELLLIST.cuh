@@ -35,11 +35,11 @@ void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    for(int np = index; np < L; np+=stride){
+    if(index < L){
 
-        in[3*np + 0] = aux[3*pindex[np] + 0];
-        in[3*np + 1] = aux[3*pindex[np] + 1];
-        in[3*np + 2] = aux[3*pindex[np] + 2];
+        in[3*index + 0] = aux[3*pindex[index] + 0];
+        in[3*index + 1] = aux[3*pindex[index] + 1];
+        in[3*index + 2] = aux[3*pindex[index] + 2];
     }
     
     return;
