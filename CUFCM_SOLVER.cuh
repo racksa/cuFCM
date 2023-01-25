@@ -194,7 +194,7 @@ public:
     void correction();
 
     __host__
-    void sortback();
+    void sortback(int start_index, int particle_number);
 
     __host__
     void check_nan();
