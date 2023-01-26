@@ -60,7 +60,8 @@ void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, Real boxsize){
 
 	if(index < N){
 		if(Y[3*index + 0]<0 || Y[3*index + 1]<0 || Y[3*index + 2]<0){
-			printf("\nERROR position in cell list\n\n");
+			printf("ERROR particle %d (%.4f %.4f %.4f) not in box\n", 
+			index, Y[3*index + 0], Y[3*index + 1], Y[3*index + 2]);
 		}
 		// int xc = (int) (Y[3*index + 0]/dx);
 		// int yc = (int) (Y[3*index + 1]/dx);

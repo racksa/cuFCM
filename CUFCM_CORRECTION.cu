@@ -467,7 +467,7 @@ void cufcm_pair_correction_mono(Real* Y, Real* V, Real* F, int N, Real boxsize,
 }
 
 __global__
-void cufcm_self_correction_mono(Real* V, Real* W, Real* F, int N, Real boxsize,
+void cufcm_self_correction_mono(Real* V, Real* F, int N, Real boxsize,
                                 Real StokesMob, Real ModStokesMob,
                                 Real PDStokesMob, Real BiLapMob){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
