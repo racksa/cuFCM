@@ -127,6 +127,21 @@ public:
     void apply_repulsion();
 
     __host__
+    void reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver);
+
+    __host__
+    void reform_fseg(Real *f_seg, bool to_solver);
+
+    __host__
+    void reform_vseg(Real *v_seg, bool to_solver);
+
+    __host__
+    void reform_fblob(Real *f_blob, bool to_solver);
+
+    __host__
+    void reform_vblob(Real *v_blob, bool to_solver);
+
+    __host__
     void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
                      Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier);
     
