@@ -127,9 +127,9 @@ void sort_index_by_key(int *key, int *index, int *key_buf_, int *index_buf_, int
 	cudaMalloc(&d_temp_storage, temp_storage_bytes);
 	cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, key, key_buf, index, index_buf, N);
 
-    const int num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
-    copy_device<int><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(key_buf, key, N);
-    copy_device<int><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(index_buf, index, N);
+    const int num_thread_blocks_N = (N + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
+    copy_device<int><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(key_buf, key, N);
+    copy_device<int><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(index_buf, index, N);
 
     cudaFree(d_temp_storage);
     cudaFree(key_buf);

@@ -83,6 +83,43 @@ void cufcm_self_correction_mono(Real* V, Real* F, int N, Real boxsize,
                                 Real StokesMob, Real ModStokesMob,
                                 Real PDStokesMob, Real BiLapMob);
 
+
+
+
+
+
+__global__
+void cufcm_self_correction_selection(Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
+                                Real StokesMob, Real ModStokesMob,
+                                Real PDStokesMob, Real BiLapMob,
+                                Real WT1Mob, Real WT2Mob,
+                                int *particle_index, int start, int end);
+
+__global__
+void cufcm_pair_correction_selection(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rrefsq,
+                    Real sigma,
+                    Real sigmaFCM,
+                    Real sigmaFCMdip,
+                    int *particle_index, int start, int end);
+
+__global__
+void cufcm_pair_correction_mono_selection(Real* Y, Real* V, Real* F, int N, Real boxsize,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rrefsq,
+                    Real sigma,
+                    Real sigmaFCM,
+                    int *particle_index, int start, int end);
+
+__global__
+void cufcm_self_correction_mono_selection(Real* V, Real* F, int N, Real boxsize,
+                                Real StokesMob, Real ModStokesMob,
+                                Real PDStokesMob, Real BiLapMob,
+                                int *particle_index, int start, int end);
+
 // __global__
 // void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,
 //                     Real sigmaFCM, 

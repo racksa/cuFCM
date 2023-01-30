@@ -635,10 +635,7 @@ void cufcm_mono_dipole_distribution_mono_selection(myCufftReal *fx, myCufftReal 
     Real *gaussx_shared = (Real*)&zdis_shared[ngd]; 
     Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
     Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
-    Real *grad_gaussx_dip_shared = (Real*)&gaussz_shared[ngd];
-    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
-    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
-    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+    Real *Y_shared = (Real*)&gaussz_shared[ngd];
     Real *F_shared = (Real*)&Y_shared[3];
 
     Real Sigmasq = Sigma*Sigma;
@@ -882,7 +879,7 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
     __shared__ Real grad_gaussz_dip_shared[NGD];
     __shared__ Real Yx, Yy, Yz;
     // Specialize BlockReduce
-    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    typedef cub::BlockReduce<Real, FCM_THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
     
@@ -999,7 +996,7 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
     Real pdmag = sigma*sigma - Sigmasq;
 
     // Specialize BlockReduce
-    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    typedef cub::BlockReduce<Real, FCM_THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
 
@@ -1113,7 +1110,7 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
     Real pdmag = sigma*sigma - Sigmasq;
 
     // Specialize BlockReduce
-    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    typedef cub::BlockReduce<Real, FCM_THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
     
@@ -1242,7 +1239,7 @@ void cufcm_particle_velocities_selection(myCufftReal *ux, myCufftReal *uy, myCuf
     Real pdmag = sigma*sigma - Sigmasq;
 
     // Specialize BlockReduce
-    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    typedef cub::BlockReduce<Real, FCM_THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
     
@@ -1327,12 +1324,12 @@ void cufcm_particle_velocities_selection(myCufftReal *ux, myCufftReal *uy, myCuf
         Real total_Wz = BlockReduce(temp_storage).Sum(Wz);
     
         if(threadIdx.x==0){
-            VTEMP[3*np + 0] = total_Vx;  
-            VTEMP[3*np + 1] = total_Vy;
-            VTEMP[3*np + 2] = total_Vz;
-            WTEMP[3*np + 0] = total_Wx;
-            WTEMP[3*np + 1] = total_Wy;
-            WTEMP[3*np + 2] = total_Wz;
+            VTEMP[3*np + 0] += total_Vx;  
+            VTEMP[3*np + 1] += total_Vy;
+            VTEMP[3*np + 2] += total_Vz;
+            WTEMP[3*np + 0] += total_Wx;
+            WTEMP[3*np + 1] += total_Wy;
+            WTEMP[3*np + 2] += total_Wz;
         }
     }
 }
@@ -1358,10 +1355,7 @@ void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftRea
     Real *gaussx_shared = (Real*)&zdis_shared[ngd]; 
     Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
     Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
-    Real *grad_gaussx_dip_shared = (Real*)&gaussz_shared[ngd];
-    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
-    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
-    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+    Real *Y_shared = (Real*)&gaussz_shared[ngd];
 
     Real Sigmasq = Sigma*Sigma;
     Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
@@ -1369,7 +1363,7 @@ void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftRea
     Real pdmag = sigma*sigma - Sigmasq;
 
     // Specialize BlockReduce
-    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    typedef cub::BlockReduce<Real, FCM_THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
     
@@ -1470,10 +1464,7 @@ void cufcm_particle_velocities_mono_selection(myCufftReal *ux, myCufftReal *uy, 
     Real *gaussx_shared = (Real*)&zdis_shared[ngd]; 
     Real *gaussy_shared = (Real*)&gaussx_shared[ngd];
     Real *gaussz_shared = (Real*)&gaussy_shared[ngd];
-    Real *grad_gaussx_dip_shared = (Real*)&gaussz_shared[ngd];
-    Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
-    Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
-    Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
+    Real *Y_shared = (Real*)&gaussz_shared[ngd];
 
     Real Sigmasq = Sigma*Sigma;
     Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
@@ -1481,7 +1472,7 @@ void cufcm_particle_velocities_mono_selection(myCufftReal *ux, myCufftReal *uy, 
     Real pdmag = sigma*sigma - Sigmasq;
 
     // Specialize BlockReduce
-    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    typedef cub::BlockReduce<Real, FCM_THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
     
@@ -1553,9 +1544,9 @@ void cufcm_particle_velocities_mono_selection(myCufftReal *ux, myCufftReal *uy, 
         Real total_Vz = BlockReduce(temp_storage).Sum(Vz);
     
         if(threadIdx.x==0){
-            VTEMP[3*np + 0] = total_Vx;  
-            VTEMP[3*np + 1] = total_Vy;
-            VTEMP[3*np + 2] = total_Vz;
+            VTEMP[3*np + 0] += total_Vx;  
+            VTEMP[3*np + 1] += total_Vy;
+            VTEMP[3*np + 2] += total_Vz;
         }
     }                                  
 }
@@ -1705,7 +1696,7 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
     Real anormdip = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmadipsq);
 
     // Specialize BlockReduce
-    typedef cub::BlockReduce<Real, THREADS_PER_BLOCK> BlockReduce;
+    typedef cub::BlockReduce<Real, FCM_THREADS_PER_BLOCK> BlockReduce;
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
 

@@ -236,11 +236,11 @@ random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, Random_Pa
 
     init_cuda();
 
-    init_pos_lattice<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+    init_pos_lattice<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
 
     spatial_hashing();
 
-    init_drag<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(init_F_device, rh, N, Fref, dev_random);
+    init_drag<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(init_F_device, rh, N, Fref, dev_random);
 
     write();
 
@@ -287,9 +287,9 @@ void random_packer::init_cuda(){
 	bulkmap_loop(map_host, M, linear_encode);
 	copy_to_device<int>(map_host, map_device, mapsize);
 
-	num_thread_blocks_N = (N + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+	num_thread_blocks_N = (N + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
 	
-	cudaMalloc((void**)&dev_random, num_thread_blocks_N*THREADS_PER_BLOCK*sizeof(curandState));
+	cudaMalloc((void**)&dev_random, num_thread_blocks_N*FCM_THREADS_PER_BLOCK*sizeof(curandState));
 
 }
 
@@ -301,21 +301,21 @@ void random_packer::spatial_hashing(){
     ///////////////////////////////////////////////////////////////////////////////
 
     // Create Hash (i, j, k) -> Hash
-    create_hash_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
+    create_hash_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
 
     // Sort particle index by hash
-    particle_index_range<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, N);
+    particle_index_range<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, N);
     sort_index_by_key(particle_cellhash_device, particle_index_device, key_buf, index_buf, N);
 
     // Sort pos/force/torque by particle index
-    copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
-    sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
-    copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
-    sort_3d_by_index<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_index_device, F_device, aux_device, N);
+    copy_device<Real><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+    sort_3d_by_index<Real><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
+    copy_device<Real><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
+    sort_3d_by_index<Real><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, F_device, aux_device, N);
     // Find cell starting/ending points
     reset_device<int>(cell_start_device, ncell);
     reset_device<int>(cell_end_device, ncell);
-    create_cell_list<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
+    create_cell_list<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, N);
     
 }
 
@@ -323,27 +323,27 @@ void random_packer::spatial_hashing(){
 __host__
 void random_packer::update(){
 
-    copy_device<Real><<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(init_F_device, F_device, 3*N);
+    copy_device<Real><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(init_F_device, F_device, 3*N);
 
-    apply_repulsion<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, boxsize,
+    apply_repulsion<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, boxsize,
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, Rcsq,
                     Fref);
 
-    compute_stokes<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(F_device, V_device, rh, N);
+    compute_stokes<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, V_device, rh, N);
 
-    move_forward<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, V_device, dt, N);
+    move_forward<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, dt, N);
 
-    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+    box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
 }
 
 __host__
 void random_packer::finish(){
 
-    box<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+    box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
 
-    check_overlap_gpu<<<num_thread_blocks_N, THREADS_PER_BLOCK>>>(Y_device, rh, N, boxsize,
+    check_overlap_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, rh, N, boxsize,
                       particle_cellhash_device, cell_start_device, cell_end_device, 
                       map_device, ncell, Rcsq);
 
