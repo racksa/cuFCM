@@ -12,42 +12,41 @@
 #include "config.hpp"
 
 __device__ __host__
-int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+int icell(int Mx, int My, int Mz, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int, int, int)){
 	int xi, yi, zi;
-	xi = fmodf((x+M), M);
-	yi = fmodf((y+M), M);
-	zi = fmodf((z+M), M);
+	xi = fmodf((x+Mx), Mx);
+	yi = fmodf((y+My), My);
+	zi = fmodf((z+Mz), Mz);
 
-	return f(xi, yi, zi, M);
+	return f(xi, yi, zi, Mx, My, Mz);
 }
 __host__ __device__
-uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M){
-	return xi + (yi + zi*M)*M;
+uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int Mx, int My, int Mz){
+	return xi + (yi + zi*My)*Mx;
 }
 
 __device__ __host__
-void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int)){
+void bulkmap_loop(int* map, int Mx, int My, int Mz, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int, int, int)){
 	int imap=0, tempmap=0;
 	unsigned int iz = 0, iy = 0, ix = 0;
-	for(iz = 0; iz < M; iz++){
-		for(iy = 0; iy < M; iy++){
-			for(ix = 0; ix < M; ix++){
-				// printf("\t---------bulkmap(%d %d %d)---------\n", ix, iy, iz);
-				tempmap=icell(M, ix, iy, iz, linear_encode);
+	for(iz = 0; iz < Mz; iz++){
+		for(iy = 0; iy < My; iy++){
+			for(ix = 0; ix < Mx; ix++){
+				tempmap=icell(Mx, My, Mz, ix, iy, iz, linear_encode);
 				imap=tempmap*13;
-				map[imap]=icell(M, ix+1, iy, iz, f);
-				map[imap+1]=icell(M, ix+1, iy+1, iz, f);
-				map[imap+2]=icell(M, ix, iy+1, iz, f);
-				map[imap+3]=icell(M, ix-1, iy+1, iz, f);
-				map[imap+4]=icell(M, ix+1, iy, iz-1, f);
-				map[imap+5]=icell(M, ix+1, iy+1, iz-1, f);
-				map[imap+6]=icell(M, ix, iy+1, iz-1, f);
-				map[imap+7]=icell(M, ix-1, iy+1, iz-1, f);
-				map[imap+8]=icell(M, ix+1, iy, iz+1, f);
-				map[imap+9]=icell(M, ix+1, iy+1, iz+1, f);
-				map[imap+10]=icell(M, ix, iy+1, iz+1, f);
-				map[imap+11]=icell(M, ix-1, iy+1, iz+1, f);
-				map[imap+12]=icell(M, ix, iy, iz+1, f);
+				map[imap]=icell(Mx, My, Mz, ix+1, iy, iz, f);
+				map[imap+1]=icell(Mx, My, Mz, ix+1, iy+1, iz, f);
+				map[imap+2]=icell(Mx, My, Mz, ix, iy+1, iz, f);
+				map[imap+3]=icell(Mx, My, Mz, ix-1, iy+1, iz, f);
+				map[imap+4]=icell(Mx, My, Mz, ix+1, iy, iz-1, f);
+				map[imap+5]=icell(Mx, My, Mz, ix+1, iy+1, iz-1, f);
+				map[imap+6]=icell(Mx, My, Mz, ix, iy+1, iz-1, f);
+				map[imap+7]=icell(Mx, My, Mz, ix-1, iy+1, iz-1, f);
+				map[imap+8]=icell(Mx, My, Mz, ix+1, iy, iz+1, f);
+				map[imap+9]=icell(Mx, My, Mz, ix+1, iy+1, iz+1, f);
+				map[imap+10]=icell(Mx, My, Mz, ix, iy+1, iz+1, f);
+				map[imap+11]=icell(Mx, My, Mz, ix-1, iy+1, iz+1, f);
+				map[imap+12]=icell(Mx, My, Mz, ix, iy, iz+1, f);
 			}
 		}
 	}
@@ -55,7 +54,8 @@ void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, uns
 }
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, Real boxsize){
+void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int Mx, int My, int Mz,
+					Real Lx, Real Ly, Real Lz){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if(index < N){
@@ -63,15 +63,12 @@ void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, Real boxsize){
 			printf("ERROR particle %d (%.4f %.4f %.4f) not in box\n", 
 			index, Y[3*index + 0], Y[3*index + 1], Y[3*index + 2]);
 		}
-		// int xc = (int) (Y[3*index + 0]/dx);
-		// int yc = (int) (Y[3*index + 1]/dx);
-		// int zc = (int) (Y[3*index + 2]/dx);
 
-		int xc = int(Y[3*index + 0]/boxsize * M);
-		int yc = int(Y[3*index + 1]/boxsize * M);
-		int zc = int(Y[3*index + 2]/boxsize * M);
+		int xc = int(Y[3*index + 0]/Lx * Mx);
+		int yc = int(Y[3*index + 1]/Ly * My);
+		int zc = int(Y[3*index + 2]/Lz * Mz);
 
-		hash[index] = xc + (yc + zc*M)*M;
+		hash[index] = xc + (yc + zc*My)*Mx;
 	}
 	return;
 }

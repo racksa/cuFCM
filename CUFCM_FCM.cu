@@ -151,9 +151,9 @@ void cufcm_mono_dipole_distribution_bpp_shared(myCufftReal *fx, myCufftReal *fy,
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
             
-            Real xg = my_rint(Yx/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Yy/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Yz/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Yx/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Yy/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Yz/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Yx;
             Real yy = yg*dx - Yy;
@@ -224,7 +224,7 @@ void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *
 
     Real Sigmasq = Sigma*Sigma;
     Real Sigmadipsq = Sigmasq;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -315,7 +315,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
 
     Real Sigmasq = Sigma*Sigma;
     Real Sigmadipsq = Sigmasq;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -344,9 +344,9 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -433,7 +433,7 @@ void cufcm_mono_dipole_distribution_selection(myCufftReal *fx, myCufftReal *fy, 
 
     Real Sigmasq = Sigma*Sigma;
     Real Sigmadipsq = Sigmasq;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -462,9 +462,9 @@ void cufcm_mono_dipole_distribution_selection(myCufftReal *fx, myCufftReal *fy, 
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -546,7 +546,7 @@ void cufcm_mono_dipole_distribution_mono(myCufftReal *fx, myCufftReal *fy, myCuf
     Real *F_shared = (Real*)&Y_shared[3];
 
     Real Sigmasq = Sigma*Sigma;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -564,9 +564,9 @@ void cufcm_mono_dipole_distribution_mono(myCufftReal *fx, myCufftReal *fy, myCuf
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -639,7 +639,7 @@ void cufcm_mono_dipole_distribution_mono_selection(myCufftReal *fx, myCufftReal 
     Real *F_shared = (Real*)&Y_shared[3];
 
     Real Sigmasq = Sigma*Sigma;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -657,9 +657,9 @@ void cufcm_mono_dipole_distribution_mono_selection(myCufftReal *fx, myCufftReal 
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -712,24 +712,22 @@ void cufcm_mono_dipole_distribution_mono_selection(myCufftReal *fx, myCufftReal 
 __global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
                       myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
-                      int nx, int ny, int nz, Real boxsize){
+                      int nx, int ny, int nz, Real Lx, Real Ly, Real Lz){
     const int i = threadIdx.x + blockIdx.x*blockDim.x;
-
-    // TODO: removed all for loops!!!
 
     int fft_nx = nx/2 + 1;
     Real grid_size = nx*ny*nz;
     int fft_grid_size = fft_nx*ny*nz;
 
     if(i < fft_grid_size){
-        const int indk = (i)/(ny*fft_nx);
+        const int indk = i/(ny*fft_nx);
         const int indj = (i - indk*(ny*fft_nx))/fft_nx;
-        const int indi = i - (indk*ny + indj)*fft_nx;
+        const int indi = i - (indj + indk*ny)*fft_nx;
 
         int nptsh = nx/2;
-        Real q1 = ( (indi < nptsh || indi == nptsh)? Real(indi) : Real(indi - nx) ) * (Real(PI2)/boxsize);
-        Real q2 = ( (indj < nptsh || indj == nptsh)? Real(indj) : Real(indj - ny) ) * (Real(PI2)/boxsize);
-        Real q3 = ( (indk < nptsh || indk == nptsh)? Real(indk) : Real(indk - nz) ) * (Real(PI2)/boxsize);
+        Real q1 = ( (indi < nptsh || indi == nptsh)? Real(indi) : Real(indi - nx) ) * (Real(PI2)/Lx);
+        Real q2 = ( (indj < nptsh || indj == nptsh)? Real(indj) : Real(indj - ny) ) * (Real(PI2)/Ly);
+        Real q3 = ( (indk < nptsh || indk == nptsh)? Real(indk) : Real(indk - nz) ) * (Real(PI2)/Lz);
         Real qq = q1*q1 + q2*q2 + q3*q3;
         Real qq_inv = (Real)1.0/(qq);
 
@@ -893,9 +891,9 @@ void cufcm_particle_velocities_bpp_shared(myCufftReal *ux, myCufftReal *uy, myCu
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Yx/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Yy/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Yz/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Yx/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Yy/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Yz/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Yx;
             Real yy = yg*dx - Yy;
@@ -991,7 +989,7 @@ void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, m
 
     Real Sigmasq = Sigma*Sigma;
     Real Sigmadipsq = Sigmasq;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -1105,7 +1103,7 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
 
     Real Sigmasq = Sigma*Sigma;
     Real Sigmadipsq = Sigmasq;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -1123,9 +1121,9 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -1234,7 +1232,7 @@ void cufcm_particle_velocities_selection(myCufftReal *ux, myCufftReal *uy, myCuf
 
     Real Sigmasq = Sigma*Sigma;
     Real Sigmadipsq = Sigmasq;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -1252,9 +1250,9 @@ void cufcm_particle_velocities_selection(myCufftReal *ux, myCufftReal *uy, myCuf
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -1358,7 +1356,7 @@ void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftRea
     Real *Y_shared = (Real*)&gaussz_shared[ngd];
 
     Real Sigmasq = Sigma*Sigma;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -1376,9 +1374,9 @@ void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftRea
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -1467,7 +1465,7 @@ void cufcm_particle_velocities_mono_selection(myCufftReal *ux, myCufftReal *uy, 
     Real *Y_shared = (Real*)&gaussz_shared[ngd];
 
     Real Sigmasq = Sigma*Sigma;
-    Real Anorm = Real(1.0)/sqrt(Real(PI2)*Sigmasq);
+    Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
     Real width2 = (Real(2.0)*Sigmasq);
     Real pdmag = sigma*sigma - Sigmasq;
 
@@ -1485,9 +1483,9 @@ void cufcm_particle_velocities_mono_selection(myCufftReal *ux, myCufftReal *uy, 
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -1581,8 +1579,8 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
 
     Real sigmasq = sigma*sigma;
     Real sigmadipsq = sigmadip*sigmadip;
-    Real anorm = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmasq);
-    Real anormdip = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmadipsq);
+    Real anorm = Real(1.0)/my_sqrt(Real(2.0)*Real(PI)*sigmasq);
+    Real anormdip = Real(1.0)/my_sqrt(Real(2.0)*Real(PI)*sigmadipsq);
     
     for(int np = blockIdx.x; np < N; np += gridDim.x){
 
@@ -1609,9 +1607,9 @@ void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];
@@ -1692,8 +1690,8 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
 
     Real sigmasq = sigma*sigma;
     Real sigmadipsq = sigmadip*sigmadip;
-    Real anorm = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmasq);
-    Real anormdip = Real(1.0)/sqrt(Real(2.0)*Real(PI)*sigmadipsq);
+    Real anorm = Real(1.0)/my_sqrt(Real(2.0)*Real(PI)*sigmasq);
+    Real anormdip = Real(1.0)/my_sqrt(Real(2.0)*Real(PI)*sigmadipsq);
 
     // Specialize BlockReduce
     typedef cub::BlockReduce<Real, FCM_THREADS_PER_BLOCK> BlockReduce;
@@ -1709,9 +1707,9 @@ void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myC
         __syncthreads();
 
         for(int i = threadIdx.x; i < 4*ngd; i += blockDim.x){
-            Real xg = my_rint(Y_shared[0]/dx) - ngdh + fmodf(i, ngd);
-            Real yg = my_rint(Y_shared[1]/dx) - ngdh + fmodf(i, ngd);
-            Real zg = my_rint(Y_shared[2]/dx) - ngdh + fmodf(i, ngd);
+            Real xg = my_rint(Y_shared[0]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real yg = my_rint(Y_shared[1]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
+            Real zg = my_rint(Y_shared[2]/dx) - ngdh + my_fmod(Real(i), Real(ngd));
 
             Real xx = xg*dx - Y_shared[0];
             Real yy = yg*dx - Y_shared[1];

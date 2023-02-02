@@ -54,7 +54,7 @@
 // 0 = Dont check error     **default
 // 1 = Check error from file
 
-#define USE_DOUBLE_PRECISION true
+#define USE_DOUBLE_PRECISION false
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;
@@ -69,6 +69,7 @@
     #define my_exp exp
     #define my_floor floor
     #define my_fmod fmod
+    #define my_sqrt sqrt
 #else
     typedef float Real;
     typedef int Integer;
@@ -82,6 +83,7 @@
     #define my_exp expf
     #define my_floor floorf
     #define my_fmod fmodf
+    #define my_sqrt sqrtf
     
 #endif
 

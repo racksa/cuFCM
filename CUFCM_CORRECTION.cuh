@@ -54,15 +54,8 @@ Real T_xx(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
 __device__ __host__
 Real K(Real r, Real rsq, Real sigma, Real sigmasq, Real gaussgam);
 
-
 __global__
-void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
-                                Real StokesMob, Real ModStokesMob,
-                                Real PDStokesMob, Real BiLapMob,
-                                Real WT1Mob, Real WT2Mob);
-
-__global__
-void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
+void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,
@@ -70,33 +63,16 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
                     Real sigmaFCM,
                     Real sigmaFCMdip);
 
-__global__
-void cufcm_pair_correction_mono(Real* Y, Real* V, Real* F, int N, Real boxsize,
-                    int *particle_cellindex, int *cell_start, int *cell_end,
-                    int *map,
-                    int ncell, Real Rrefsq,
-                    Real sigma,
-                    Real sigmaFCM);
 
 __global__
-void cufcm_self_correction_mono(Real* V, Real* F, int N, Real boxsize,
-                                Real StokesMob, Real ModStokesMob,
-                                Real PDStokesMob, Real BiLapMob);
-
-
-
-
-
-
-__global__
-void cufcm_self_correction_selection(Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
+void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
                                 Real StokesMob, Real ModStokesMob,
                                 Real PDStokesMob, Real BiLapMob,
-                                Real WT1Mob, Real WT2Mob,
-                                int *particle_index, int start, int end);
+                                Real WT1Mob, Real WT2Mob);
+
 
 __global__
-void cufcm_pair_correction_selection(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
+void cufcm_pair_correction_selection(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,
@@ -106,7 +82,14 @@ void cufcm_pair_correction_selection(Real* Y, Real* V, Real* W, Real* F, Real* T
                     int *particle_index, int start, int end);
 
 __global__
-void cufcm_pair_correction_mono_selection(Real* Y, Real* V, Real* F, int N, Real boxsize,
+void cufcm_self_correction_selection(Real* V, Real* W, Real* F, Real* T, int N,
+                                Real StokesMob, Real ModStokesMob,
+                                Real PDStokesMob, Real BiLapMob,
+                                Real WT1Mob, Real WT2Mob,
+                                int *particle_index, int start, int end);
+
+__global__
+void cufcm_pair_correction_mono_selection(Real* Y, Real* V, Real* F, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,
@@ -115,25 +98,7 @@ void cufcm_pair_correction_mono_selection(Real* Y, Real* V, Real* F, int N, Real
                     int *particle_index, int start, int end);
 
 __global__
-void cufcm_self_correction_mono_selection(Real* V, Real* F, int N, Real boxsize,
+void cufcm_self_correction_mono_selection(Real* V, Real* F, int N,
                                 Real StokesMob, Real ModStokesMob,
                                 Real PDStokesMob, Real BiLapMob,
                                 int *particle_index, int start, int end);
-
-// __global__
-// void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, int N_truncate,
-//                     Real sigmaFCM, 
-//                     Real sigmaFCMdip,
-//                     Real StokesMob,
-//                     Real WT1Mob);
-
-
-// __global__
-// void cufcm_pair_correction_old(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real boxsize,
-//                     int *particle_cellindex, int *cell_start, int *cell_end,
-//                     int *map,
-//                     int ncell, Real Rrefsq,
-//                     Real pdmag,
-//                     Real sigma, Real sigmasq,
-//                     Real sigmaFCM, Real sigmaFCMsq,
-//                     Real sigmaFCMdip, Real sigmaFCMdipsq);

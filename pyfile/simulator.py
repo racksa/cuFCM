@@ -24,8 +24,6 @@ class SIM:
         pardict['Fref']=       pardict['rh']
         pardict['packrep']=    100
         pardict['boxsize']=    np.pi*2
-        pardict['Ffac']=       1.0
-        pardict['Tfac']=       1.0
 
         self.pars = pardict.copy()
         self.datafiles = filedict.copy()
@@ -120,7 +118,6 @@ class SIM:
 
         print("Finished generating reference")
 
-
     def find_optimal(self, tol):
         time_compute_array = np.zeros(self.search_grid_shape)
         Verror_array = np.zeros(self.search_grid_shape)
@@ -201,16 +198,14 @@ class SIM:
                         
         return optimal_alpha, optimal_beta, optimal_eta, optimal_npts, optimal_Verror, optimal_Werror, min_time
 
-
     def run_test(self):
         self.datafiles['$posfile'] = './data/init_data/N500000/pos-N500000-rh02609300-2.dat'
         self.datafiles['$forcefile'] = './data/init_data/N500000/force-N500000-rh02609300.dat'
         self.datafiles['$torquefile'] = './data/init_data/N500000/force-N500000-rh02609300-2.dat'
         self.pars['checkerror'] = 1
 
-        fac = 1.0
         self.pars['N']=          500000
-        self.pars['rh']=         0.02609300415934458*fac
+        self.pars['rh']=         0.02609300415934458
         self.pars['alpha']=      1.0
         self.pars['beta']=       9.0
         self.pars['eta']=        4.8
@@ -223,9 +218,7 @@ class SIM:
         self.pars['Fref']=       1.0
         self.pars['repeat']=     50
         self.pars['prompt']=     10
-        self.pars['boxsize']=    np.pi*2*fac
-        self.pars['Ffac']=       fac**2
-        self.pars['Tfac']=       fac**3
+        self.pars['boxsize']=    np.pi*2
 
         if HIsolver == 0:
             dx = self.pars['boxsize']/npts
@@ -236,34 +229,29 @@ class SIM:
 
         self.plot_pie_chart_of_time()
     
-
     def run_single(self):
-        self.datafiles['$posfile'] = './data/init_data/artificial/output_pos_data.dat'
-        self.datafiles['$forcefile'] = './data/init_data/artificial/output_force_data.dat'
-        self.datafiles['$torquefile'] = './data/init_data/artificial/output_torque_data.dat'
+        self.datafiles['$posfile'] = './data/init_data/artificial/artificial_pos.dat'
+        self.datafiles['$forcefile'] = './data/init_data/artificial/artificial_force.dat'
+        self.datafiles['$torquefile'] = './data/init_data/artificial/artificial_torque.dat'
         self.pars['checkerror'] = 0
 
-        fac = 1.0
-        self.pars['N']=          360043
-        self.pars['rh']=         0.025
+        self.pars['N']=          1
+        self.pars['rh']=         1.0
         self.pars['alpha']=      1.0
         self.pars['beta']=       9.0
-        self.pars['eta']=        10.01178
+        self.pars['eta']=        18.0
 
-        npts = 300  
+        npts = 100
 
         self.pars['nx']=         npts
-        self.pars['ny']=         npts
-        self.pars['nz']=         npts
+        self.pars['ny']=         npts/2
+        self.pars['nz']=         npts/2
         self.pars['Fref']=       1.0
         self.pars['repeat']=     1
         self.pars['prompt']=     11
-        self.pars['boxsize']=    np.pi*2*fac
-        self.pars['Ffac']=       fac**2
-        self.pars['Tfac']=       fac**3
+        self.pars['boxsize']=    100
 
         util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
-
         
 
     def print_scalar(self, sim_dict):

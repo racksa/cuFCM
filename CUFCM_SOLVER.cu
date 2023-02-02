@@ -110,17 +110,33 @@ void FCM_solver::init_fcm_var(){
     /* Neighbour list */
     Rc_fac = Real(eta*alpha);
     Rc = Rc_fac*dx;
+
+    Lx = boxsize;
+    Ly = boxsize/Real(nx)*Real(ny);
+    Lz = boxsize/Real(nx)*Real(nz);
+    int Lmin = std::min(std::min(Lx, Ly), Lz);
     
     Rcsq = Rc*Rc;
-    M = (int) (boxsize/Rc);
-    if(M < 3){
-        M = 3;
+    int Mmin = Lmin/Rc;
+
+    if(Mmin < 3){
+        Mmin = 3;
     }
-    cellL = boxsize / Real(M);
-    ncell = M*M*M;
+
+    Mx = Mmin*int(Lx/Lmin);
+    My = Mmin*int(Ly/Lmin);
+    Mz = Mmin*int(Lz/Lmin);
+
+    if(Mx%Mmin!=0 || My%Mmin!=0 || Mz%Mmin!=0){
+        std::cout<< "Fatal ERROR : box dimension not divisible"<<std::endl;
+    }
+
+    cellL = Lmin / Real(Mmin);
+
+    ncell = Mx*My*Mz;
     mapsize = 13*ncell;
 
-    Volume_frac = (N*4.0/3.0*PI*rh*rh*rh) / (boxsize*boxsize*boxsize);
+    Volume_frac = (N*4.0/3.0*PI*rh*rh*rh) / (Lx*Ly*Lz);
 }
 
 __host__
@@ -162,8 +178,8 @@ void FCM_solver::prompt_info() {
 			std::cout << "sigma:\t\t\t" << sigmaFCM << "\n";
 		#endif
 		std::cout << "dx:\t\t\t" << dx<< "\n";
-        std::cout << "boxsize:\t\t" << boxsize<< "\n";
-		std::cout << "Cell number:\t\t" << M << "\n";
+        std::cout << "boxsize:\t\t" << "(" << Lx << " " << Ly << " " << Lz << ")\n";
+		std::cout << "Cell number:\t\t" << "(" << Mx << " " << My << " " << Mz << ")\n";
         std::cout << "Rc/a:\t\t\t" << Rc/rh << "\n";
 		std::cout << "Repeat number:\t\t" << repeat << "\n";
 		std::cout << "Volume fraction:\t" << Volume_frac << "\n";
@@ -215,7 +231,7 @@ void FCM_solver::init_cuda(){
 
 	map_host = malloc_host<int>(mapsize);							map_device = malloc_device<int>(mapsize);
 
-	bulkmap_loop(map_host, M, linear_encode);
+	bulkmap_loop(map_host, Mx, My, Mz, linear_encode);
 	copy_to_device<int>(map_host, map_device, mapsize);
 
 	/* Create 3D FFT plans */
@@ -334,56 +350,21 @@ void FCM_solver::Mss(){
 
     spatial_hashing();
 
-    FILE *pfile;
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sorta0_ss.dat", "a");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
-
     sort_particle(0, N);
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sorta0_ss.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
 
     spread_seg_force();
 
     fft_solve();
 
     gather_seg_velocity();
+
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+	copy_to_host<Real>(F_device, F_host, 3*N);
+	copy_to_host<Real>(T_device, T_host, 3*N);
+	copy_to_host<Real>(V_device, V_host, 3*N);
+	copy_to_host<Real>(W_device, W_host, 3*N);
+    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    copy_to_host<int>(particle_index_device, particle_index_host, N);
 
     correction_seg();
 
@@ -396,7 +377,7 @@ void FCM_solver::Mss(){
 	// copy_to_host<Real>(W_device, W_host, 3*N);
     // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
     // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sorta0_ss.dat", "w");
+    // pfile = fopen("sortback_ss.dat", "w");
     // for(int i = 0; i < N; i++){
     //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
     //     particle_index_host[i],
@@ -420,54 +401,11 @@ void FCM_solver::Mbb(){
     reset_device<Real> (V_device, 3*N);
     reset_device<Real> (W_device, 3*N);
     reset_device<Real> (F_device, 3*num_seg);
-    reset_device<Real> (T_device, 3*num_seg);
+    reset_device<Real> (T_device, 3*N);
 
     spatial_hashing();
 
-    FILE *pfile;
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sorta0_bb.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
-
     sort_particle(0, N);
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sorta0_bb.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
 
     spread_blob_force();
 
@@ -486,7 +424,7 @@ void FCM_solver::Mbb(){
 	// copy_to_host<Real>(W_device, W_host, 3*N);
     // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
     // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sorta0_bb.dat", "w");
+    // pfile = fopen("sortback_bb.dat", "w");
     // for(int i = 0; i < N; i++){
     //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
     //     particle_index_host[i],
@@ -515,52 +453,9 @@ void FCM_solver::Mbs(){
     reset_device<Real> (&F_device[3*num_seg], 3*num_blob);
     reset_device<Real> (&T_device[3*num_seg], 3*num_blob);
 
-    FILE *pfile;
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sorta0_bs.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
-
     spatial_hashing();
 
     sort_particle(0, N);
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sortafter_bs.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
 
     spread_seg_force();
 
@@ -603,54 +498,11 @@ void FCM_solver::Msb(){
     reset_device<Real> (&V_device[3*num_seg], 3*num_blob);
     reset_device<Real> (&W_device[3*num_seg], 3*num_blob);
     reset_device<Real> (F_device, 3*num_seg);
-    reset_device<Real> (T_device, 3*num_seg);
+    reset_device<Real> (T_device, 3*N);
 
     spatial_hashing();
 
-    FILE *pfile;
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sorta0_sb.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
-
     sort_particle(0, N);
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sortafter_sb.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
 
     spread_blob_force();
 
@@ -754,21 +606,7 @@ void FCM_solver::gather_blob_velocity(){
 __host__
 void FCM_solver::correction_seg(){
 
-    // cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
-    //                             particle_cellhash_device, cell_start_device, cell_end_device,
-    //                             map_device,
-    //                             ncell, Rcsq,
-    //                             SigmaGRID,
-    //                             sigmaFCM,
-    //                             sigmaFCMdip);
-
-    // cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N, boxsize,
-    //                         StokesMob, ModStokesMob,
-    //                         PDStokesMob, BiLapMob,
-    //                         WT1Mob, WT2Mob);
-
-
-    cufcm_pair_correction_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
+    cufcm_pair_correction_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
                                 particle_cellhash_device, cell_start_device, cell_end_device,
                                 map_device,
                                 ncell, Rcsq,
@@ -777,7 +615,7 @@ void FCM_solver::correction_seg(){
                                 sigmaFCMdip,
                                 particle_index_device, 0, num_seg);
 
-    cufcm_self_correction_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N, boxsize,
+    cufcm_self_correction_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
                             StokesMob, ModStokesMob,
                             PDStokesMob, BiLapMob,
                             WT1Mob, WT2Mob,
@@ -786,19 +624,8 @@ void FCM_solver::correction_seg(){
 
 __host__
 void FCM_solver::correction_blob(){
-
-    // cufcm_pair_correction_mono<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, F_device, N, boxsize,
-    //                             particle_cellhash_device, cell_start_device, cell_end_device,
-    //                             map_device,
-    //                             ncell, Rcsq,
-    //                             SigmaGRID,
-    //                             sigmaFCM);
-
-    // cufcm_self_correction_mono<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, F_device, N, boxsize,
-    //                         StokesMob, ModStokesMob,
-    //                         PDStokesMob, BiLapMob);
                             
-    cufcm_pair_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, F_device, N, boxsize,
+    cufcm_pair_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, F_device, N, Lx, Ly, Lz,
                                 particle_cellhash_device, cell_start_device, cell_end_device,
                                 map_device,
                                 ncell, Rcsq,
@@ -806,7 +633,7 @@ void FCM_solver::correction_blob(){
                                 sigmaFCM,
                                 particle_index_device, num_seg, N);
 
-    cufcm_self_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, F_device, N, boxsize,
+    cufcm_self_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, F_device, N,
                             StokesMob, ModStokesMob,
                             PDStokesMob, BiLapMob,
                             particle_index_device, num_seg, N);
@@ -822,26 +649,103 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     W_device = W_device_input;
 
     box_particle();
-    
+
     reset_grid();
-    // reset_device<Real> (V_device, 3*N);
-    // reset_device<Real> (W_device, 3*N);
 
     spatial_hashing();
 
+
+
+    FILE *pfile;
+
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+	copy_to_host<Real>(F_device, F_host, 3*N);
+	copy_to_host<Real>(T_device, T_host, 3*N);
+	copy_to_host<Real>(V_device, V_host, 3*N);
+	copy_to_host<Real>(W_device, W_host, 3*N);
+    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    copy_to_host<int>(particle_index_device, particle_index_host, N);
+    pfile = fopen("sortbefore.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
+        particle_index_host[i],
+        particle_cellhash_host[i],
+        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
+        F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
+        T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
+        V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
+        W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
+    }
+    fprintf(pfile, "\n#");
+    fclose(pfile);
+
     sort_particle(0, N);
+
+    write_cell_list();
+
+    copy_to_device<int>(map_host, map_device, mapsize);
+
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+	copy_to_host<Real>(F_device, F_host, 3*N);
+	copy_to_host<Real>(T_device, T_host, 3*N);
+	copy_to_host<Real>(V_device, V_host, 3*N);
+	copy_to_host<Real>(W_device, W_host, 3*N);
+    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    copy_to_host<int>(particle_index_device, particle_index_host, N);
+    pfile = fopen("sortafter.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
+        particle_index_host[i],
+        particle_cellhash_host[i],
+        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
+        F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
+        T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
+        V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
+        W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
+    }
+    fprintf(pfile, "\n#");
+    fclose(pfile);
 
     spread();
 
+    copy_to_host<int>(map_device, map_host, mapsize);
+    printf("map_host[12] = %d\n", map_host[12]);
+
     fft_solve();
+
+    copy_to_host<int>(map_device, map_host, mapsize);
+    printf("map_host[12] = %d\n", map_host[12]);
 
     gather();
 
+    copy_to_host<int>(map_device, map_host, mapsize);
+    printf("map_host[12] = %d\n", map_host[12]);
+
     correction();
 
-    // check_nan();
-
     sortback(0, N);
+
+    copy_to_host<Real>(Y_device, Y_host, 3*N);
+	copy_to_host<Real>(F_device, F_host, 3*N);
+	copy_to_host<Real>(T_device, T_host, 3*N);
+	copy_to_host<Real>(V_device, V_host, 3*N);
+	copy_to_host<Real>(W_device, W_host, 3*N);
+    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    copy_to_host<int>(particle_index_device, particle_index_host, N);
+    pfile = fopen("sortback.dat", "w");
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
+        particle_index_host[i],
+        particle_cellhash_host[i],
+        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
+        F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
+        T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
+        V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
+        W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
+    }
+    fprintf(pfile, "\n#");
+    fclose(pfile);
+
 
     rept += 1;
 
@@ -849,7 +753,7 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
 
 __host__
 void FCM_solver::box_particle(){
-    box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+    box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, Lx, Ly, Lz);
 }
 
 __host__ 
@@ -867,7 +771,7 @@ void FCM_solver::spatial_hashing(){
     cudaDeviceSynchronize();	time_start = get_time();
 
     // Create Hash (i, j, k) -> Hash
-    create_hash_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
+    create_hash_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, Mx, My, Mz, Lx, Ly, Lz);
     particle_index_range<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, N);
 
     // DEBUG
@@ -875,10 +779,10 @@ void FCM_solver::spatial_hashing(){
     copy_to_host<Real>(Y_device, Y_host, 3*N);
     for(int i=0; i < N; i++){
         if(particle_cellhash_host[i] > (ncell-1) || particle_cellhash_host[i] < 0){
-            printf("cellL: %.6f cellL*M: %.6f boxsize: %.6f\n", cellL, cellL*Real(M), boxsize);
+            printf("cellL: %.6f cellL*M: %.6f boxsize: (%.6f %.6f %.6f)\n", cellL, cellL*Real(Mx), Lx, Ly, Lz);
             printf("particle %d with cellindex:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
             printf("xc yc zc (%d %d %d)\n", int(Y_host[3*i]/cellL), int(Y_host[3*i+1]/cellL), int(Y_host[3*i+2]/cellL));
-            printf("compute index %d\n", int(Y_host[3*i]/cellL) + (int(Y_host[3*i+1]/cellL) + int(Y_host[3*i+2]/cellL)*M)*M );
+            printf("compute index %d\n", int(Y_host[3*i]/cellL) + (int(Y_host[3*i+1]/cellL) + int(Y_host[3*i+2]/cellL)*My)*Mx );
             break;
         }
     }
@@ -991,7 +895,7 @@ void FCM_solver::fft_solve(){
     ///////////////////////////////////////////////////////////////////////////////
     cufcm_flow_solve<<<num_thread_blocks_FFTGRID, FCM_THREADS_PER_BLOCK>>>(fk_x_device, fk_y_device, fk_z_device,
                                                             uk_x_device, uk_y_device, uk_z_device,
-                                                            nx, ny, nz, boxsize);
+                                                            nx, ny, nz, Lx, Ly, Lz);
     ///////////////////////////////////////////////////////////////////////////////
     // IFFT
     ///////////////////////////////////////////////////////////////////////////////
@@ -1093,7 +997,7 @@ void FCM_solver::correction(){
         
         #elif CORRECTION_TYPE == 1
 
-            cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, boxsize,
+            cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
                                 particle_cellhash_device, cell_start_device, cell_end_device,
                                 map_device,
                                 ncell, Rcsq,
@@ -1102,7 +1006,7 @@ void FCM_solver::correction(){
                                 sigmaFCMdip);
         #endif
 
-            cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N, boxsize,
+            cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
                                     StokesMob, ModStokesMob,
                                     PDStokesMob, BiLapMob,
                                     WT1Mob, WT2Mob);
@@ -1133,7 +1037,6 @@ void FCM_solver::sortback(int start_index, int particle_number){
         copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(W_device, aux_device, 3*N);
         sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, W_device, aux_device, N);
         
-        // create_hash_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
     #endif
 }
 
@@ -1323,12 +1226,12 @@ __host__
 void FCM_solver::write_cell_list(){
     copy_to_host<int>(cell_start_device, cell_start_host, ncell);
     copy_to_host<int>(cell_end_device, cell_end_host, ncell);
-    write_celllist(cell_start_host, cell_end_host, ncell, "./data/simulation/celllist_data.dat");
+    write_celllist(cell_start_host, cell_end_host, map_host, ncell, Mx, My, Mz, "./data/simulation/celllist_data.dat");
 }
 
 __host__
 void FCM_solver::apply_repulsion(){
-    contact_force<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, boxsize,
+    contact_force<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, Lx, Ly, Lz,
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, 1.21*(2*rh)*(2*rh),
@@ -1337,13 +1240,13 @@ void FCM_solver::apply_repulsion(){
 
 __host__
 void FCM_solver::check_overlap(){
-    check_overlap_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, rh, N, boxsize,
+    check_overlap_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, rh, N, Lx, Ly, Lz,
                       particle_cellhash_device, cell_start_device, cell_end_device, 
                       map_device, ncell, Rcsq);
 }
 
 __global__
-void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
+void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rcsq,
@@ -1366,9 +1269,9 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij -= box_size * Real(int(xij/(Real(0.5)*box_size)));
-                yij -= box_size * Real(int(yij/(Real(0.5)*box_size)));
-                zij -= box_size * Real(int(zij/(Real(0.5)*box_size)));
+                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < 1.21*a_sum*a_sum){
@@ -1407,9 +1310,9 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - box_size * Real(int(xij/(Real(0.5)*box_size)));
-                yij = yij - box_size * Real(int(yij/(Real(0.5)*box_size)));
-                zij = zij - box_size * Real(int(zij/(Real(0.5)*box_size)));
+                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < 1.21*a_sum*a_sum){
@@ -1450,7 +1353,7 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
 }
 
 __global__
-void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
+void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rcsq){
@@ -1467,9 +1370,9 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - box_size * Real(int(xij/(Real(0.5)*box_size)));
-                yij = yij - box_size * Real(int(yij/(Real(0.5)*box_size)));
-                zij = zij - box_size * Real(int(zij/(Real(0.5)*box_size)));
+                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
@@ -1491,9 +1394,9 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
                     Real yij = yi - Y[3*j + 1];
                     Real zij = zi - Y[3*j + 2];
 
-                    xij = xij - box_size * Real(int(xij/(Real(0.5)*box_size)));
-                    yij = yij - box_size * Real(int(yij/(Real(0.5)*box_size)));
-                    zij = zij - box_size * Real(int(zij/(Real(0.5)*box_size)));
+                    xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                    yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                    zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
                     Real rijsq=xij*xij+yij*yij+zij*zij;
                     if(rijsq < Rcsq){
                         if (rijsq < 3.98*rad*rad){

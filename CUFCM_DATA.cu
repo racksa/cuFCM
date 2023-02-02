@@ -139,13 +139,23 @@ void write_error(Real Verror,
     fclose(pfile);
 }
 
-void write_celllist(int *cell_start_list, int *cell_end_list, int ncell, const char *file_name){
+void write_celllist(int *cell_start_list, int *cell_end_list, int *map_list, int ncell, int Mx, int My, int Mz, const char *file_name){
     FILE *pfile;
     pfile = fopen(file_name, "w");
     fprintf(pfile, "#\n");
     for(int i = 0; i < ncell; i++){
-        fprintf(pfile, "celli %d/%d [%d %d]\n", 
-        i, ncell, cell_start_list[i], cell_end_list[i]);
+
+        int nk = i/(Mx*My);
+        int nj = (i - nk*Mx*My)/Mx;
+        int ni = i - nk*Mx*My - nj*Mx;
+
+        fprintf(pfile, "celli %d/%d (%d %d %d) particle index [%d %d] with neighbors [%d %d %d %d %d %d %d %d %d %d %d %d %d]\n", 
+        i, ncell, ni, nj, nk, cell_start_list[i], cell_end_list[i],
+        map_list[13*i + 0], map_list[13*i + 1], map_list[13*i + 2],
+        map_list[13*i + 3], map_list[13*i + 4], map_list[13*i + 5],
+        map_list[13*i + 6], map_list[13*i + 7], map_list[13*i + 8],
+        map_list[13*i + 9], map_list[13*i + 10], map_list[13*i + 11],
+        map_list[13*i + 12]);
         }
     fprintf(pfile, "\n");
     fclose(pfile);
@@ -183,38 +193,22 @@ void read_config(Real *values, std::vector<std::string>& datafile_names, const c
 }
 
 __global__
-void init_pos_random_overlapping(Real *Y, int N, Real boxsize, curandState *states){
+void init_pos_lattice(Real *Y, int N, Real Lx, Real Ly, Real Lz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    int seed = index + clock64(); // different seed per thread
-    curand_init(seed, index, 0, &states[index]);
-    Real rnd1, rnd2, rnd3;
+    int b = Lx/Ly;
+    int c = Lx/Lz;
+    int Nx = ceil(cbrtf(N*b*c));
+    int Ny = Nx/b;
+    // int Nz = Nx/c;
+
+    Real dpx = Lx/(Real)Nx;
 
     for(int np = index; np < N; np += stride){
-        rnd1 = curand_uniform (&states[index]);
-        rnd2 = curand_uniform (&states[index]);
-        rnd3 = curand_uniform (&states[index]);
-        Y[3*np + 0] = boxsize*rnd1;
-        Y[3*np + 1] = boxsize*rnd2;
-        Y[3*np + 2] = boxsize*rnd3;
-    }
-    return;
-}
-
-
-__global__
-void init_pos_lattice(Real *Y, int N, Real boxsize){
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
-
-    int NP = ceil(cbrtf(N));
-    Real dpx = boxsize/(Real)NP;
-
-    for(int np = index; np < N; np += stride){
-        const int k = np/(NP*NP);
-        const int j = (np - k*NP*NP)/NP;
-        const int i = np - k*NP*NP - j*NP;
+        int k = np/(Nx*Ny);
+        int j = (np - k*Nx*Ny)/Nx;
+        int i = np - k*Nx*Ny - j*Nx;
 
         Y[3*np + 0] = 0.5*dpx + i*dpx;
         Y[3*np + 1] = 0.5*dpx + j*dpx;
@@ -293,22 +287,22 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states){
 }
 
 __global__
-void box(Real *Y, int N, Real box_size){
+void box(Real *Y, int N, Real Lx, Real Ly, Real Lz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
     for(int i = index; i < N; i += stride){
 
-        images(Y[3*i + 0], box_size);
-        images(Y[3*i + 1], box_size);
-        images(Y[3*i + 2], box_size);
+        images(Y[3*i + 0], Lx);
+        images(Y[3*i + 1], Ly);
+        images(Y[3*i + 2], Lz);
     }
 
 }
 
 __host__ __device__
-void images(Real &x, Real box_size){
-    x -= floor(x/box_size)*box_size;
+void images(Real &x, Real boxsize){
+    x -= floor(x/boxsize)*boxsize;
 }
 
 

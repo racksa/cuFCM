@@ -29,15 +29,12 @@ void write_error(Real Verror,
                  Real Werror,
                  const char *file_name);
 
-void write_celllist(int *cell_start_list, int *cell_end_list, int ncell, const char *file_name);
+void write_celllist(int *cell_start_list, int *cell_end_list, int *map_list, int ncell, int Mx, int My, int Mz, const char *file_name);
 
 void read_config(Real *values, std::vector<std::string>& datafile_names, const char *file_name);
 
 __global__
-void init_pos_random_overlapping(Real *Y, int N, Real boxsize, curandState *states);
-
-__global__
-void init_pos_lattice(Real *Y, int N, Real boxsize);
+void init_pos_lattice(Real *Y, int N, Real Lx, Real Ly, Real Lz);
 
 __global__
 void interleaved2separate(Real *F_device_interleave,
@@ -53,7 +50,7 @@ __global__
 void init_force_kernel(Real *F, Real rad, int N, curandState *states);
 
 __global__
-void box(Real *Y, int N, Real box_size);
+void box(Real *Y, int N, Real Lx, Real Ly, Real Lz);
 
 __host__ __device__
 void images(Real &x, Real box_size);

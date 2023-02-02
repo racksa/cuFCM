@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	Pars pars;
 	Real values[100];
 	std::vector<std::string> datafile_names{3};
-	read_config(values, datafile_names, "simulation_info_long");
+	read_config(values, datafile_names, "simulation_info");
 	pars.N = values[0];
 	pars.rh = values[1];
 	pars.alpha = values[2];
@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 	pars.repeat = values[8];
 	pars.prompt = values[9];
 	pars.boxsize = values[13];
-	pars.checkerror = values[16];
+	pars.checkerror = values[14];
 
 	Real* Y_host = malloc_host<Real>(3*pars.N);						Real* Y_device = malloc_device<Real>(3*pars.N);
 	Real* F_host = malloc_host<Real>(3*pars.N);						Real* F_device = malloc_device<Real>(3*pars.N);
@@ -47,17 +47,14 @@ int main(int argc, char** argv) {
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
 
-	Real Ffac = values[14];
-	Real Tfac = values[15];
-
 	read_init_data(Y_host, pars.N, datafile_names[0].c_str());
 	read_init_data(F_host, pars.N, datafile_names[1].c_str());
 	read_init_data(T_host, pars.N, datafile_names[2].c_str());
 
 	for(int i = 0; i<3*pars.N; i++){
-		Y_host[i] = Y_host[i] * pars.boxsize/PI2;
-		F_host[i] = F_host[i] * Ffac;
-		T_host[i] = T_host[i] * Tfac;
+		Y_host[i] = Y_host[i];
+		F_host[i] = F_host[i];
+		T_host[i] = T_host[i];
 	}
 
 	copy_to_device<Real>(Y_host, Y_device, 3*pars.N);

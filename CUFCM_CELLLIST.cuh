@@ -2,16 +2,17 @@
 #include "config.hpp"
 
 __device__ __host__
-int icell(int M, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int));
+int icell(int Mx, int My, int Mz, int x, int y, int z, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int));
 
 __host__ __device__
-uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int M);
+uint64_t linear_encode(unsigned int xi, unsigned int yi, unsigned int zi, int Mx, int My, int Mz);
 
 __device__ __host__
-void bulkmap_loop(int* map, int M, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int));
+void bulkmap_loop(int* map, int Mx, int My, int Mz, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int, int, int));
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int M, Real boxsize);
+void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int Mx, int My, int Mz,
+					Real Lx, Real Ly, Real Lz);
 
 __global__
 void particle_index_range(int *particle_index, int N);

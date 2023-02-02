@@ -2,14 +2,14 @@
 #include "config.hpp"
 
 __global__
-void contact_force(Real* Y, Real *F, Real rad, int N, Real box_size,
+void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,
                     Real Fref);
 
 __global__
-void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
+void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rcsq);
@@ -20,6 +20,7 @@ public:
     Pars pars;
 
     int N, nx, ny, nz, repeat, prompt, warmup, checkerror;
+    Real Lx, Ly, Lz;
     int num_seg, num_blob;
     Real rh, alpha, beta, eta;
     Real boxsize;
@@ -52,7 +53,7 @@ public:
         *sortback_index_host, *sortback_index_device;
     int *key_buf, *index_buf;
 
-    int M, ncell, mapsize;
+    int Mx, My, Mz, ncell, mapsize;
     
 	int *cell_start_host, *cell_start_device,
         *cell_end_host, *cell_end_device;

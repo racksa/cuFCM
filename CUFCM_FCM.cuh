@@ -87,7 +87,7 @@ void cufcm_particle_velocities_mono_selection(myCufftReal *ux, myCufftReal *uy, 
 __global__
 void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex* fk_z,
                       myCufftComplex* uk_x, myCufftComplex* uk_y, myCufftComplex* uk_z,
-                      int nx, int ny, int nz, Real boxsize);
+                      int nx, int ny, int nz, Real Lx, Real Ly, Real Lz);
 
 // __global__
 // void cufcm_particle_velocities_tpp_register(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz, int N,
