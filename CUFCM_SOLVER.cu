@@ -63,6 +63,8 @@ void FCM_solver::init_config(){
         fft_grid_size = (nx/2+1)*ny*nz;
         dx = boxsize/nx;
         ngd = round(alpha*beta);
+
+        printf("fft grid size = %d\n", fft_grid_size);
         
 
         /* Repeat number */
@@ -164,7 +166,6 @@ void FCM_solver::prompt_info() {
 		#elif SOLVER_MODE == 0
 			std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
 		#endif
-		std::cout << "Grid points:\t\t" << nx << "\n";
 		std::cout << "Grid support:\t\t" << ngd << "\n";
 		#if SOLVER_MODE == 1
 			std::cout << "Sigma/sigma:\t\t" << SigmaGRID/sigmaFCM << "\n";
@@ -179,6 +180,7 @@ void FCM_solver::prompt_info() {
 		#endif
 		std::cout << "dx:\t\t\t" << dx<< "\n";
         std::cout << "boxsize:\t\t" << "(" << Lx << " " << Ly << " " << Lz << ")\n";
+        std::cout << "Grid points:\t\t" << "(" << nx << " " << ny << " " << nz << ")\n";
 		std::cout << "Cell number:\t\t" << "(" << Mx << " " << My << " " << Mz << ")\n";
         std::cout << "Rc/a:\t\t\t" << Rc/rh << "\n";
 		std::cout << "Repeat number:\t\t" << repeat << "\n";
@@ -225,22 +227,18 @@ void FCM_solver::init_cuda(){
     cell_start_host = malloc_host<int>(ncell);						 cell_start_device = malloc_device<int>(ncell);
     cell_end_host = malloc_host<int>(ncell);						 cell_end_device = malloc_device<int>(ncell);
 
-	#if CORRECTION_TYPE == 0
-
-	#endif
-
-	map_host = malloc_host<int>(mapsize);							map_device = malloc_device<int>(mapsize);
+	map_host = malloc_host<int>(mapsize);							 map_device = malloc_device<int>(mapsize);
 
 	bulkmap_loop(map_host, Mx, My, Mz, linear_encode);
 	copy_to_device<int>(map_host, map_device, mapsize);
 
 	/* Create 3D FFT plans */
-	if (cufftPlan3d(&plan, nx, ny, nz, cufftReal2Complex) != CUFFT_SUCCESS){
+	if (cufftPlan3d(&plan, nz, ny, nx, cufftReal2Complex) != CUFFT_SUCCESS){
 		printf("CUFFT error: Plan creation failed");
 		return ;	
 	}
 
-	if (cufftPlan3d(&iplan, nx, ny, nz, cufftComplex2Real) != CUFFT_SUCCESS){
+	if (cufftPlan3d(&iplan, nz, ny, nx, cufftComplex2Real) != CUFFT_SUCCESS){
 		printf("CUFFT error: Plan creation failed");
 		return ;	
 	}
@@ -654,97 +652,107 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
 
     spatial_hashing();
 
+    // FILE *pfile;
 
-
-    FILE *pfile;
-
-    copy_to_host<Real>(Y_device, Y_host, 3*N);
-	copy_to_host<Real>(F_device, F_host, 3*N);
-	copy_to_host<Real>(T_device, T_host, 3*N);
-	copy_to_host<Real>(V_device, V_host, 3*N);
-	copy_to_host<Real>(W_device, W_host, 3*N);
-    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    copy_to_host<int>(particle_index_device, particle_index_host, N);
-    pfile = fopen("sortbefore.dat", "w");
-    for(int i = 0; i < N; i++){
-        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-        particle_index_host[i],
-        particle_cellhash_host[i],
-        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-        F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-        T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-        V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-        W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    }
-    fprintf(pfile, "\n#");
-    fclose(pfile);
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+	// copy_to_host<Real>(F_device, F_host, 3*N);
+	// copy_to_host<Real>(T_device, T_host, 3*N);
+	// copy_to_host<Real>(V_device, V_host, 3*N);
+	// copy_to_host<Real>(W_device, W_host, 3*N);
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // copy_to_host<int>(particle_index_device, particle_index_host, N);
+    // pfile = fopen("sortbefore.dat", "w");
+    // for(int i = 0; i < N; i++){
+    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
+    //     particle_index_host[i],
+    //     particle_cellhash_host[i],
+    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
+    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
+    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
+    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
+    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
+    // }
+    // fprintf(pfile, "\n#");
+    // fclose(pfile);
 
     sort_particle(0, N);
 
-    write_cell_list();
+    
 
-    copy_to_device<int>(map_host, map_device, mapsize);
+    // write_cell_list();
 
-    copy_to_host<Real>(Y_device, Y_host, 3*N);
-	copy_to_host<Real>(F_device, F_host, 3*N);
-	copy_to_host<Real>(T_device, T_host, 3*N);
-	copy_to_host<Real>(V_device, V_host, 3*N);
-	copy_to_host<Real>(W_device, W_host, 3*N);
-    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    copy_to_host<int>(particle_index_device, particle_index_host, N);
-    pfile = fopen("sortafter.dat", "w");
-    for(int i = 0; i < N; i++){
-        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-        particle_index_host[i],
-        particle_cellhash_host[i],
-        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-        F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-        T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-        V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-        W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    }
-    fprintf(pfile, "\n#");
-    fclose(pfile);
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+	// copy_to_host<Real>(F_device, F_host, 3*N);
+	// copy_to_host<Real>(T_device, T_host, 3*N);
+	// copy_to_host<Real>(V_device, V_host, 3*N);
+	// copy_to_host<Real>(W_device, W_host, 3*N);
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // copy_to_host<int>(particle_index_device, particle_index_host, N);
+    // pfile = fopen("sortafter.dat", "w");
+    // for(int i = 0; i < N; i++){
+    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
+    //     particle_index_host[i],
+    //     particle_cellhash_host[i],
+    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
+    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
+    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
+    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
+    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
+    // }
+    // fprintf(pfile, "\n#");
+    // fclose(pfile);
 
     spread();
 
-    copy_to_host<int>(map_device, map_host, mapsize);
-    printf("map_host[12] = %d\n", map_host[12]);
+    // copy_to_host<int>(map_device, map_host, mapsize);
+    // printf("before fft map_host[12] = %d\n", map_host[12]);
 
+    // copy_to_host<int>(cell_start_device, cell_start_host, ncell);
+    // printf("before fft cell start device[12] = %d\n", cell_start_host[12]);
+
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // printf("before fft particle[0] = %d\n", particle_cellhash_host[0]);
+    
     fft_solve();
 
-    copy_to_host<int>(map_device, map_host, mapsize);
-    printf("map_host[12] = %d\n", map_host[12]);
+    // copy_to_host<int>(map_device, map_host, mapsize);
+    // printf("after fft map_host[12] = %d\n", map_host[12]);
+
+    // copy_to_host<int>(cell_start_device, cell_start_host, ncell);
+    // printf("before fft cell start device[12] = %d\n", cell_start_host[12]);
+
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // printf("after fft particle[0] = %d\n", particle_cellhash_host[0]);
 
     gather();
 
-    copy_to_host<int>(map_device, map_host, mapsize);
-    printf("map_host[12] = %d\n", map_host[12]);
+    // copy_to_host<int>(map_device, map_host, mapsize);
+    // printf("after gather map_host[12] = %d\n", map_host[12]);
 
     correction();
 
     sortback(0, N);
 
-    copy_to_host<Real>(Y_device, Y_host, 3*N);
-	copy_to_host<Real>(F_device, F_host, 3*N);
-	copy_to_host<Real>(T_device, T_host, 3*N);
-	copy_to_host<Real>(V_device, V_host, 3*N);
-	copy_to_host<Real>(W_device, W_host, 3*N);
-    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    copy_to_host<int>(particle_index_device, particle_index_host, N);
-    pfile = fopen("sortback.dat", "w");
-    for(int i = 0; i < N; i++){
-        fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-        particle_index_host[i],
-        particle_cellhash_host[i],
-        Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-        F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-        T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-        V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-        W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    }
-    fprintf(pfile, "\n#");
-    fclose(pfile);
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+	// copy_to_host<Real>(F_device, F_host, 3*N);
+	// copy_to_host<Real>(T_device, T_host, 3*N);
+	// copy_to_host<Real>(V_device, V_host, 3*N);
+	// copy_to_host<Real>(W_device, W_host, 3*N);
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // copy_to_host<int>(particle_index_device, particle_index_host, N);
+    // pfile = fopen("sortback.dat", "w");
+    // for(int i = 0; i < N; i++){
+    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
+    //     particle_index_host[i],
+    //     particle_cellhash_host[i],
+    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
+    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
+    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
+    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
+    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
+    // }
+    // fprintf(pfile, "\n#");
+    // fclose(pfile);
 
 
     rept += 1;
@@ -900,17 +908,17 @@ void FCM_solver::fft_solve(){
     // IFFT
     ///////////////////////////////////////////////////////////////////////////////
     if (cufftExecComplex2Real(iplan, uk_x_device, hx_device) != CUFFT_SUCCESS){
-        printf("CUFFT error: ExecD2Z Backward failed (fx)\n");
+        printf("CUFFT error: ExecZ2D Backward failed (fx)\n");
         return ;	
     }
     if (cufftExecComplex2Real(iplan, uk_y_device, hy_device) != CUFFT_SUCCESS){
-        printf("CUFFT error: ExecD2Z Backward failed (fy)\n");
+        printf("CUFFT error: ExecZ2D Backward failed (fy)\n");
         return ;	
     }
     if (cufftExecComplex2Real(iplan, uk_z_device, hz_device) != CUFFT_SUCCESS){
         printf("CUFFT error: ExecZ2D Backward failed (fz)\n");
         return ;	
-    }		
+    }
 
     cudaDeviceSynchronize();	time_FFT_array[rept] = get_time() - time_start;
 }

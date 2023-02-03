@@ -241,15 +241,15 @@ class SIM:
         self.pars['beta']=       9.0
         self.pars['eta']=        18.0
 
-        npts = 100
+        npts = 128
 
         self.pars['nx']=         npts
-        self.pars['ny']=         npts/2
-        self.pars['nz']=         npts/2
+        self.pars['ny']=         npts
+        self.pars['nz']=         npts
         self.pars['Fref']=       1.0
         self.pars['repeat']=     1
         self.pars['prompt']=     11
-        self.pars['boxsize']=    100
+        self.pars['boxsize']=    1000
 
         util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
         
