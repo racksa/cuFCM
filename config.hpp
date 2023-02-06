@@ -54,7 +54,7 @@
 // 0 = Dont check error     **default
 // 1 = Check error from file
 
-#define USE_DOUBLE_PRECISION false
+#define USE_DOUBLE_PRECISION true
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;

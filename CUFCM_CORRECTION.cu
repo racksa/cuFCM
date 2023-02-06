@@ -212,12 +212,7 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
         /* inter-cell interactions */
         /* corrections apply to both parties in different cells */
         for(nabor = 0; nabor < 13; nabor++){
-
-            // printf("map[%d+%d]= \n", jcello, nabor);
-
             jcell = map[jcello + nabor];
-
-            // printf("map[%d+%d]= %d\n", jcello, nabor, map[jcello + nabor]);
             for(j = cell_start[jcell]; j < cell_end[jcell]; j++){
 
                 xij = xi - Y[3*j + 0];

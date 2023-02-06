@@ -723,13 +723,10 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
         const int indk = i/(ny*fft_nx);
         const int indj = (i - indk*(ny*fft_nx))/fft_nx;
         const int indi = i - (indj + indk*ny)*fft_nx;
-
-        int nptshx = nx/2;
-        int nptshy = ny/2;
-        int nptshz = nz/2;
-        Real q1 = ( (indi <= nptshx)? Real(indi) : Real(indi - nx) ) * (Real(PI2)/Lx);
-        Real q2 = ( (indj <= nptshy)? Real(indj) : Real(indj - ny) ) * (Real(PI2)/Ly);
-        Real q3 = ( (indk <= nptshz)? Real(indk) : Real(indk - nz) ) * (Real(PI2)/Lz);
+        
+        Real q1 = ( (indi <= nx/2)? Real(indi) : Real(indi - nx) ) * (Real(PI2)/Lx);
+        Real q2 = ( (indj <= ny/2)? Real(indj) : Real(indj - ny) ) * (Real(PI2)/Ly);
+        Real q3 = ( (indk <= nz/2)? Real(indk) : Real(indk - nz) ) * (Real(PI2)/Lz);
         Real qq = q1*q1 + q2*q2 + q3*q3;
         Real qq_inv = (Real)1.0/(qq);
 
