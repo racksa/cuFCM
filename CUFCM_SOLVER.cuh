@@ -118,6 +118,10 @@ public:
                              Real * V_device_input, Real *W_device_input);
 
     __host__
+    void pairwise_solver(Real *Y_device_input, Real * F_device_input, Real *T_device_input,
+                             Real * V_device_input, Real *W_device_input);
+
+    __host__
     void box_particle();
 
     /* Filament code start*/

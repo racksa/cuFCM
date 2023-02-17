@@ -720,3 +720,86 @@ void cufcm_self_correction_mono_selection(Real* V, Real* F, int N,
         V[3*np + 2] = V[3*np + 2] + F[3*np + 2]*(StokesMob - ModStokesMob + PDStokesMob - BiLapMob) ;
     }
 }
+
+
+
+
+__global__
+void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
+                    Real sigmaFCM,
+                    Real sigmaFCMdip,
+                    Real StokesMob,
+                    Real WT1Mob){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+    Real gammaVF_FCM = my_sqrt(Real(2.0))*sigmaFCM;
+    Real gammaVF_FCMsq = gammaVF_FCM*gammaVF_FCM;
+    Real gammaVTWF_FCM = my_sqrt(sigmaFCM*sigmaFCM + sigmaFCMdip*sigmaFCMdip);
+    Real gammaVTWF_FCMsq = gammaVTWF_FCM*gammaVTWF_FCM;
+    Real gammaWT_FCM = my_sqrt(Real(2.0))*sigmaFCMdip;
+    Real gammaWT_FCMsq = gammaWT_FCM*gammaWT_FCM;
+    Real vxi = (Real)0.0, vyi = (Real)0.0, vzi = (Real)0.0;
+    Real wxi = (Real)0.0, wyi = (Real)0.0, wzi = (Real)0.0;
+
+    for(int i = index; i < N; i += stride){
+        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
+        for(int j = 0; j < N; j++){
+            if(i != j){
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
+
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                Real rij = my_sqrt(rijsq);
+                // Real erfS_VF_FCM = erf(rij/(my_sqrt(Real(2.0))*gammaVF_FCM));
+                // Real expS_VF_FCM = exp(-rijsq/(Real(2.0)*gammaVF_FCMsq));
+                // Real erfS_VTWF_FCM = erf(rij/(sqrtf(Real(2.0))*gammaVTWF_FCM));
+                // Real expS_VTWF_FCM = exp(-rijsq/(Real(2.0)*gammaVTWF_FCMsq));
+                // Real erfS_WT_FCM = erf(rij/(sqrtf(Real(2.0))*gammaWT_FCM));
+                // Real expS_WT_FCM = exp(-rijsq/(Real(2.0)*gammaWT_FCMsq));
+
+                Real erfS_VF_FCM = erf(rij/(my_sqrt(Real(2.0))*gammaVF_FCM));
+                Real gaussgam_VF_FCM = exp(-Real(0.5)*rijsq/(gammaVF_FCMsq))/pow(Real(PI2)*gammaVF_FCMsq, Real(1.5));
+                Real erfS_VTWF_FCM = erf(rij/(my_sqrt(Real(2.0))*gammaVTWF_FCM));
+                Real gaussgam_VTWF_FCM = exp(-Real(0.5)*rijsq/(gammaVTWF_FCMsq))/pow(Real(PI2)*gammaVTWF_FCMsq, Real(1.5));
+                Real erfS_WT_FCM = erf(rij/(my_sqrt(Real(2.0))*gammaWT_FCM));
+                Real gaussgam_WT_FCM = exp(-Real(0.5)*rijsq/(gammaWT_FCMsq))/pow(Real(PI2)*gammaWT_FCMsq, Real(1.5));
+
+                // ------------VF------------
+                Real Fjdotx = xij*F[3*j + 0] + yij*F[3*j + 1] + zij*F[3*j + 2];
+                Real AFCMtemp = S_I(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, gaussgam_VF_FCM, erfS_VF_FCM);
+                Real BFCMtemp = S_xx(rij, rijsq, gammaVF_FCM, gammaVF_FCMsq, gaussgam_VF_FCM, erfS_VF_FCM);
+                Real temp1VF = (AFCMtemp);
+                Real temp2VF = (BFCMtemp);
+                // ------------WF+VT------------
+                Real fFCMtemp_VTWF = f(rij, rijsq, gammaVTWF_FCM, gammaVTWF_FCMsq, gaussgam_VTWF_FCM, erfS_VTWF_FCM);
+                Real tempVTWF = (fFCMtemp_VTWF);
+                // ------------WT------------
+                Real Tjdotx = (T[3*j + 0]*xij + T[3*j + 1]*yij + T[3*j + 2]*zij);
+
+                Real temp1WT = P_I(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, gaussgam_WT_FCM, erfS_WT_FCM);
+                Real temp2WT = P_xx(rij, rijsq, gammaWT_FCM, gammaWT_FCMsq, gaussgam_WT_FCM, erfS_WT_FCM);
+                // Summation
+                wxi += (Real)0.5*( T[3*j + 0]*temp1WT - xij*Tjdotx*temp2WT ) + tempVTWF*( zij*F[3*j + 1] - yij*F[3*j + 2] );
+                wyi += (Real)0.5*( T[3*j + 1]*temp1WT - yij*Tjdotx*temp2WT ) + tempVTWF*( xij*F[3*j + 2] - zij*F[3*j + 0] );
+                wzi += (Real)0.5*( T[3*j + 2]*temp1WT - zij*Tjdotx*temp2WT ) + tempVTWF*( yij*F[3*j + 0] - xij*F[3*j + 1] );
+                vxi += temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
+                vyi += temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
+                vzi += temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
+            }
+        }
+        vxi += F[3*i + 0]*(StokesMob);
+        vyi += F[3*i + 1]*(StokesMob);
+        vzi += F[3*i + 2]*(StokesMob);
+        wxi += T[3*i + 0]*(WT1Mob) ;
+        wyi += T[3*i + 1]*(WT1Mob) ;
+        wzi += T[3*i + 2]*(WT1Mob) ;
+        V[3*i + 0] = vxi;
+        V[3*i + 1] = vyi;
+        V[3*i + 2] = vzi;
+        W[3*i + 0] = wxi;
+        W[3*i + 1] = wyi;
+        W[3*i + 2] = wzi; 
+        return;
+    }
+}

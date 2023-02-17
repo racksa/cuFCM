@@ -46,6 +46,10 @@
 // 0 = Do not sort back
 // 1 = Sort back    **default
 
+#define PURE_PAIRWISE 0
+// 0 = Grid FCM (periodic)      **default
+// 1 = Pairwise FCM (open domain)
+
 #define OUTPUT_TO_FILE 1
 // 0 = Dont write to file
 // 1 = Write to file    **default
@@ -54,7 +58,7 @@
 // 0 = Dont check error     **default
 // 1 = Check error from file
 
-#define USE_DOUBLE_PRECISION true
+#define USE_DOUBLE_PRECISION false
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;

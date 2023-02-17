@@ -64,9 +64,6 @@ void FCM_solver::init_config(){
         dx = boxsize/nx;
         ngd = round(alpha*beta);
 
-        printf("fft grid size = %d\n", fft_grid_size);
-        
-
         /* Repeat number */
         warmup = 0.2*repeat;
 }
@@ -512,27 +509,6 @@ void FCM_solver::Msb(){
 
     sortback(0, N);
 
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sortback_sb.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
-
 }
 
 __host__
@@ -676,8 +652,6 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     // fclose(pfile);
 
     sort_particle(0, N);
-
-    
 
     // write_cell_list();
 

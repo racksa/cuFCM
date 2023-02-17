@@ -12,7 +12,7 @@
 #include "util/maths_util.hpp"
 
 __global__
-void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
+void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rcsq){
@@ -23,23 +23,21 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
         int icell = particle_cellindex[i];
         
         Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
-        Real xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0;
-        /* intra-cell interactions */
-        /* corrections only apply to particle i */
         for(int j = cell_start[icell]; j < cell_end[icell]; j++){
             if(i != j){
                 Real xij = xi - Y[3*j + 0];
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - box_size * (Real) ((int) (xij/(box_size/Real(2.0))));
-                yij = yij - box_size * (Real) ((int) (yij/(box_size/Real(2.0))));
-                zij = zij - box_size * (Real) ((int) (zij/(box_size/Real(2.0))));
+                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
-                    if (rijsq < 4*rad*rad){
-                        printf("ERROR: Overlap between %d and %d within same cell\n", i, j);
+                    if (rijsq < 3.98*rad*rad){
+                        printf("ERROR: Overlap between %d (%.4f %.4f %.4f) and %d (%.4f %.4f %.4f) within same cell. sep = %.6f 2rad = %.6f \n",
+                        i, xi, yi, zi, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], sqrt(rijsq), (2*rad));
                     }
                 }
             }
@@ -49,21 +47,21 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
         /* corrections apply to both parties in different cells */
         for(int nabor = 0; nabor < 13; nabor++){
             int jcell = map[jcello + nabor];
-            // if(i == 79){
-            //     printf("icell %d jcell(%d %d)\n",cell_start[icell], cell_end[icell], cell_start[jcell], cell_end[jcell]);
-            // }
-            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){                
-                xij = xi - Y[3*j + 0];
-                yij = yi - Y[3*j + 1];
-                zij = zi - Y[3*j + 2];
+            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){     
+                if(i != j){          
+                    Real xij = xi - Y[3*j + 0];
+                    Real yij = yi - Y[3*j + 1];
+                    Real zij = zi - Y[3*j + 2];
 
-                xij = xij - box_size * ((Real) ((int) (xij/(box_size/Real(2.0)))));
-                yij = yij - box_size * ((Real) ((int) (yij/(box_size/Real(2.0)))));
-                zij = zij - box_size * ((Real) ((int) (zij/(box_size/Real(2.0)))));
-                Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < Rcsq){
-                    if (rijsq < 4*rad*rad){
-                        printf("ERROR: Overlap between %d in %d and %d in %d \n", i, icell, j, jcell);
+                    xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                    yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                    zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
+                    Real rijsq=xij*xij+yij*yij+zij*zij;
+                    if(rijsq < Rcsq){
+                        if (rijsq < 3.98*rad*rad){
+                            printf("ERROR: Overlap between %d (%.4f %.4f %.4f) in %d and %d (%.4f %.4f %.4f) in %d. sep = %.6f 2rad = %.6f  \n", 
+                            i, xi, yi, zi, icell, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], jcell, sqrt(rijsq), (2*rad));
+                        }
                     }
                 }
             }
@@ -97,7 +95,7 @@ void init_drag(Real *F, Real rad, int N, Real Fref, curandState *states){
 
 
 __global__
-void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
+void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rcsq,
@@ -122,9 +120,9 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
                 Real yij = yi - Y[3*j + 1];
                 Real zij = zi - Y[3*j + 2];
 
-                xij = xij - box_size * Real(int(xij/(box_size/Real(2.0))));
-                yij = yij - box_size * Real(int(yij/(box_size/Real(2.0))));
-                zij = zij - box_size * Real(int(zij/(box_size/Real(2.0))));
+                xij = xij - Lx * Real(int(xij/(Lx/Real(2.0))));
+                yij = yij - Ly * Real(int(yij/(Ly/Real(2.0))));
+                zij = zij - Lz * Real(int(zij/(Lz/Real(2.0))));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
@@ -160,9 +158,9 @@ void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];
 
-                xij = xij - box_size * Real(int(xij/(box_size/Real(2.0))));
-                yij = yij - box_size * Real(int(yij/(box_size/Real(2.0))));
-                zij = zij - box_size * Real(int(zij/(box_size/Real(2.0))));
+                xij = xij - Lx * Real(int(xij/(Lx/Real(2.0))));
+                yij = yij - Ly * Real(int(yij/(Ly/Real(2.0))));
+                zij = zij - Lz * Real(int(zij/(Lz/Real(2.0))));
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
@@ -236,7 +234,7 @@ random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, Random_Pa
 
     init_cuda();
 
-    init_pos_lattice<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+    init_pos_lattice<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, Lx, Ly, Lz);
 
     spatial_hashing();
 
@@ -254,17 +252,38 @@ void random_packer::init_cuda(){
     dt = pars.dt;
     Fref = pars.Fref;
     boxsize = pars.boxsize;
+    nx = pars.nx;
+    ny = pars.ny;
+    nz = pars.nz;
 
     /* Neighbour list */
     Rc = 4*rh;
+
+    Lx = boxsize;
+    Ly = boxsize/Real(nx)*Real(ny);
+    Lz = boxsize/Real(nx)*Real(nz);
+    int Lmin = std::min(std::min(Lx, Ly), Lz);
+    
     Rcsq = Rc*Rc;
-    M = (int) (boxsize/Rc);
-    if(M < 3){
-        M = 3;
+    int Mmin = Lmin/Rc;
+
+    if(Mmin < 3){
+        Mmin = 3;
     }
-    cellL = boxsize / (Real)M;
-    ncell = M*M*M;
+
+    Mx = Mmin*int(Lx/Lmin);
+    My = Mmin*int(Ly/Lmin);
+    Mz = Mmin*int(Lz/Lmin);
+
+    if(Mx%Mmin!=0 || My%Mmin!=0 || Mz%Mmin!=0){
+        std::cout<< "Fatal ERROR : box dimension not divisible"<<std::endl;
+    }
+
+    cellL = Lmin / Real(Mmin);
+
+    ncell = Mx*My*Mz;
     mapsize = 13*ncell;
+
 
     aux_host = malloc_host<Real>(3*N);					    aux_device = malloc_device<Real>(3*N);
     F_host = malloc_host<Real>(3*N);						F_device = malloc_device<Real>(3*N);
@@ -284,7 +303,7 @@ void random_packer::init_cuda(){
 
 	map_host = malloc_host<int>(mapsize);							 map_device = malloc_device<int>(mapsize);
 
-	bulkmap_loop(map_host, M, linear_encode);
+	bulkmap_loop(map_host, Mx, My, Mz, linear_encode);
 	copy_to_device<int>(map_host, map_device, mapsize);
 
 	num_thread_blocks_N = (N + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
@@ -301,10 +320,9 @@ void random_packer::spatial_hashing(){
     ///////////////////////////////////////////////////////////////////////////////
 
     // Create Hash (i, j, k) -> Hash
-    create_hash_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, M, boxsize);
-
-    // Sort particle index by hash
+    create_hash_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, Mx, My, Mz, Lx, Ly, Lz);
     particle_index_range<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, N);
+    
     sort_index_by_key(particle_cellhash_device, particle_index_device, key_buf, index_buf, N);
 
     // Sort pos/force/torque by particle index
@@ -325,7 +343,7 @@ void random_packer::update(){
 
     copy_device<Real><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(init_F_device, F_device, 3*N);
 
-    apply_repulsion<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, boxsize,
+    apply_repulsion<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, Lx, Ly, Lz,
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, Rcsq,
@@ -335,15 +353,15 @@ void random_packer::update(){
 
     move_forward<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, dt, N);
 
-    box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+    box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, Lx, Ly, Lz);
 }
 
 __host__
 void random_packer::finish(){
 
-    box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, boxsize);
+    box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, Lx, Ly, Lz);
 
-    check_overlap_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, rh, N, boxsize,
+    check_overlap_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, rh, N, Lx, Ly, Lz,
                       particle_cellhash_device, cell_start_device, cell_end_device, 
                       map_device, ncell, Rcsq);
 

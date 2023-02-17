@@ -31,8 +31,8 @@ class SIM:
 
         self.search_grid_shape = (1, 1, 1, 25+1) # alpha, beta, eta, npts
 
-        self.nphi = 12
-        self.nn = 41
+        self.nphi = 1
+        self.nn = 6
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -57,8 +57,8 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                phi=                        0.01 + 0.005*j
-                self.pars['rh']=            0.025 + 0.006*i
+                phi=                        0.0001*4**j
+                self.pars['rh']=            0.025
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'])
 
                 # self.pars['N']=             int(1000*2**j)
@@ -188,6 +188,8 @@ class SIM:
         optimal_beta = beta_array[min_index][0]
         optimal_eta = eta_array[min_index][0]
         optimal_npts = npts_array[min_index][0]
+
+        print(Verror_array)
 
 
         print("Min compute time for error=" + str(tol) + " is " + str(min_time))

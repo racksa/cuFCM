@@ -74,7 +74,7 @@ void write_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *
 
 void write_pos(Real *Y, Real rh, int N, const char *file_name){
     FILE *pfile;
-    pfile = fopen(file_name, "a");
+    pfile = fopen(file_name, "w");
     fprintf(pfile, "#\n");
     for(int i = 0; i < N; i++){
         fprintf(pfile, "%.6f %.6f %.6f %.6f %.6f \n", 
@@ -197,8 +197,8 @@ void init_pos_lattice(Real *Y, int N, Real Lx, Real Ly, Real Lz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    int b = Lx/Ly;
-    int c = Lx/Lz;
+    int b = round(Lx/Ly);
+    int c = round(Lx/Lz);
     int Nx = ceil(cbrtf(N*b*c));
     int Ny = Nx/b;
     // int Nz = Nx/c;

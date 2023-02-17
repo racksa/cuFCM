@@ -102,3 +102,13 @@ void cufcm_self_correction_mono_selection(Real* V, Real* F, int N,
                                 Real StokesMob, Real ModStokesMob,
                                 Real PDStokesMob, Real BiLapMob,
                                 int *particle_index, int start, int end);
+
+
+
+
+__global__
+void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
+                    Real sigmaFCM, 
+                    Real sigmaFCMdip,
+                    Real StokesMob,
+                    Real WT1Mob);

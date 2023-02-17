@@ -13,7 +13,7 @@ __global__
 void apply_drag(Real *Y, Real *F, Real rad, int N, Real Fref, curandState *states);
 
 __global__
-void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real box_size,
+void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,
                     int ncell, Real Rrefsq,
@@ -28,9 +28,10 @@ public:
     
     Random_Pars pars;
 
-    int N;
+    int N, nx, ny, nz, Mx, My, Mz;
     Real rh;
     Real boxsize;
+    Real Lx, Ly, Lz;
     Real values[100];
     int *overlap_counter;
 
