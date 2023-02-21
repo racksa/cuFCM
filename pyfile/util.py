@@ -190,7 +190,8 @@ def plot_3Dheatmap(alpha_array, beta_array, eta_array, error_array, time_compute
     cmap_name = 'plasma'
 
     # setting error layer
-    layer = layer_array(error_array, option[1])
+    my_filter = filter_array(error_array, 1e-3)
+    layer = time_compute_array*my_filter
     markersize_array = layer*50
     if(option[0] == 2):
         time_compute_layer = time_compute_array*layer
@@ -374,11 +375,11 @@ def filter_array_1D(error_array, tol):
 def compute_rad(N, volume_frac):
     return (6*np.pi**2*volume_frac/N)**(1./3.)
 
-def compute_phi(N, rad):
-    return (4./3.*np.pi)*N*rad**3/(2.*np.pi)**3
+def compute_phi(N, rad, L):
+    return (4./3.*np.pi)*N*rad**3/(L)**3
 
-def compute_N(phi, rad):
-    return int(phi*(2*np.pi/rad)**3/(4./3.*np.pi))
+def compute_N(phi, rad, L):
+    return int(phi*(L/rad)**3/(4./3.*np.pi))
 
 
 def compute_fastfcm_npts(rad):

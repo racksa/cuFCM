@@ -347,6 +347,16 @@ void random_packer::spatial_hashing(){
     
 }
 
+__host__
+void random_packer::sort_back(){
+    particle_index_range<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, N);
+    sort_index_by_key(particle_index_device, sortback_index_device, key_buf, index_buf, N);
+    // particle cellhash is not sorted back!!!
+    // so need to re-compute.
+
+    copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+    sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
+}
 
 __host__
 void random_packer::update(){
@@ -368,6 +378,8 @@ void random_packer::update(){
     compute_stokes<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, V_device, rh, N);
 
     move_forward<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, dt, N);
+
+    sort_back();
 
     box<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, Lx, Ly, Lz);
 }

@@ -57,6 +57,9 @@ public:
     void spatial_hashing();
 
     __host__
+    void sort_back();
+
+    __host__
     void repulsive_force();
 
     __host__

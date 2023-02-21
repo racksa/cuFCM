@@ -23,16 +23,16 @@ class SIM:
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
         pardict['packrep']=    100
-        pardict['boxsize']=    np.pi*2
+        pardict['boxsize']=    400
 
         self.pars = pardict.copy()
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 25+1) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 48+1) # alpha, beta, eta, npts
 
         self.nphi = 1
-        self.nn = 6
+        self.nn = 5
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -57,13 +57,13 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                phi=                        0.0001*4**j
-                self.pars['rh']=            0.025
-                self.pars['N']=             util.compute_N(phi, self.pars['rh'])
+                phi=                        0.00018*4**j
+                self.pars['rh']=            1.0
+                self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
 
                 # self.pars['N']=             int(1000*2**j)
                 # self.pars['rh']=            0.024 * 2**i
-                phi=                        util.compute_phi(self.pars['N'], self.pars['rh'])
+                phi=                        util.compute_phi(self.pars['N'], self.pars['rh'], self.pars['boxsize'])
                 self.pars['Fref']=          self.pars['rh']
 
                 self.phi_array[i, j] = phi
@@ -102,11 +102,13 @@ class SIM:
     def get_reference(self):
         '''Generate reference data
         '''
+        print("Generating reference data")
         self.reference_pars=                self.pars.copy()
         self.reference_pars['alpha']        = 1.5
         self.reference_pars['beta']         = 15.0 / self.reference_pars['alpha']
         self.reference_pars['eta']          = round(8.0, 1)
-        npts                                = min( int(0.026/self.reference_pars['rh'] * 270 /2) * 2, 460)
+        # npts                                = min( int(0.026/self.reference_pars['rh'] * 270 /2) * 2, 460)
+        npts = 460
         self.reference_pars['nx']=          npts
         self.reference_pars['ny']=          npts
         self.reference_pars['nz']=          npts
@@ -120,6 +122,7 @@ class SIM:
 
     def find_optimal(self, tol):
         time_compute_array = np.zeros(self.search_grid_shape)
+        sigma_ratio_array = np.zeros(self.search_grid_shape)
         Verror_array = np.zeros(self.search_grid_shape)
         Werror_array = np.zeros(self.search_grid_shape)
         alpha_array = np.zeros(self.search_grid_shape)
@@ -137,7 +140,7 @@ class SIM:
                         self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
 
                         if(HIsolver==1):
-                            npts = min(60 + 14*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
+                            npts = min(60 + 10*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
                         if(HIsolver==0):
                             npts = 60 + 20*l
                         self.pars['nx']=         npts
@@ -158,6 +161,7 @@ class SIM:
                                 sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
 
                             time_compute_array[i, j, k, l] = sim_dict["time_compute"]
+                            sigma_ratio_array[i, j, k, l] = (self.pars['alpha']*self.pars['boxsize']/self.pars['nx'])/(self.pars['rh']/np.sqrt(np.pi))
                             Verror_array[i, j, k, l] = sim_dict["Verror"]
                             Werror_array[i, j, k, l] = sim_dict["Werror"]
                             alpha_array[i, j, k, l] = self.pars['alpha']
@@ -168,8 +172,10 @@ class SIM:
                             self.print_scalar(sim_dict)
                             util.write_scalar(self.pars, sim_dict)
 
+        ptps_array = self.pars['N']/time_compute_array
         my_filter = util.filter_array(Verror_array, tol)
         time_compute_layer = time_compute_array*my_filter
+        
         if(not len(time_compute_layer[time_compute_layer > 0]) == 0):
             # Tolerance reached by at least one value
             min_time = time_compute_layer[time_compute_layer > 0].min()
@@ -182,14 +188,16 @@ class SIM:
             min_time = time_compute_array[min_index][0]
             print('Tolerance not satisfied in optimal finding. Carry on with the smallest error.')
 
+        print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
+        print(np.array2string(ptps_array[0,0,0,:], separator=", "))
+        print('N=', self.pars['N'])
+
         optimal_Verror = Verror_array[min_index][0]
         optimal_Werror = Werror_array[min_index][0]
         optimal_alpha = alpha_array[min_index][0]
         optimal_beta = beta_array[min_index][0]
         optimal_eta = eta_array[min_index][0]
         optimal_npts = npts_array[min_index][0]
-
-        print(Verror_array)
 
 
         print("Min compute time for error=" + str(tol) + " is " + str(min_time))
