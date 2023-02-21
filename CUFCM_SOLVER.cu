@@ -109,28 +109,27 @@ void FCM_solver::init_fcm_var(){
     /* Neighbour list */
     Rc_fac = Real(eta*alpha);
     Rc = Rc_fac*dx;
+    Rcsq = Rc*Rc;
 
     Lx = boxsize;
     Ly = boxsize/Real(nx)*Real(ny);
     Lz = boxsize/Real(nx)*Real(nz);
     int Lmin = std::min(std::min(Lx, Ly), Lz);
-    
-    Rcsq = Rc*Rc;
-    int Mmin = Lmin/Rc;
+    int Lmax = std::max(std::max(Lx, Ly), Lz);
+    Mx = std::max((Lx/Rc), Real(3.0));
+    My = std::max((Ly/Rc), Real(3.0));
+    Mz = std::max((Lz/Rc), Real(3.0));
 
-    if(Mmin < 3){
-        Mmin = 3;
-    }
-
-    Mx = Mmin*int(Lx/Lmin);
-    My = Mmin*int(Ly/Lmin);
-    Mz = Mmin*int(Lz/Lmin);
-
-    if(Mx%Mmin!=0 || My%Mmin!=0 || Mz%Mmin!=0){
-        std::cout<< "Fatal ERROR : box dimension not divisible"<<std::endl;
-    }
-
-    cellL = Lmin / Real(Mmin);
+    // int Mmin = Lmin/Rc;
+    // if(Mmin < 3){
+    //     Mmin = 3;
+    // }
+    // Mx = Mmin*int(Lx/Lmin);
+    // My = Mmin*int(Ly/Lmin);
+    // Mz = Mmin*int(Lz/Lmin);
+    // if(Mx%Mmin!=0 || My%Mmin!=0 || Mz%Mmin!=0){
+    //     std::cout<< "Fatal ERROR : box dimension not divisible"<<std::endl;
+    // }
 
     ncell = Mx*My*Mz;
     mapsize = 13*ncell;
@@ -753,21 +752,21 @@ void FCM_solver::spatial_hashing(){
     cudaDeviceSynchronize();	time_start = get_time();
 
     // Create Hash (i, j, k) -> Hash
-    create_hash_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, cellL, Mx, My, Mz, Lx, Ly, Lz);
+    create_hash_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, Y_device, N, Mx, My, Mz, Lx, Ly, Lz);
     particle_index_range<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, N);
 
     // DEBUG
-    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    copy_to_host<Real>(Y_device, Y_host, 3*N);
-    for(int i=0; i < N; i++){
-        if(particle_cellhash_host[i] > (ncell-1) || particle_cellhash_host[i] < 0){
-            printf("cellL: %.6f cellL*M: %.6f boxsize: (%.6f %.6f %.6f)\n", cellL, cellL*Real(Mx), Lx, Ly, Lz);
-            printf("particle %d with cellindex:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
-            printf("xc yc zc (%d %d %d)\n", int(Y_host[3*i]/cellL), int(Y_host[3*i+1]/cellL), int(Y_host[3*i+2]/cellL));
-            printf("compute index %d\n", int(Y_host[3*i]/cellL) + (int(Y_host[3*i+1]/cellL) + int(Y_host[3*i+2]/cellL)*My)*Mx );
-            break;
-        }
-    }
+    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
+    // copy_to_host<Real>(Y_device, Y_host, 3*N);
+    // for(int i=0; i < N; i++){
+    //     if(particle_cellhash_host[i] > (ncell-1) || particle_cellhash_host[i] < 0){
+    //         printf("cellL: %.6f cellL*M: %.6f boxsize: (%.6f %.6f %.6f)\n", cellL, cellL*Real(Mx), Lx, Ly, Lz);
+    //         printf("particle %d with cellindex:%d at (%.6f %.6f %.6f)\n", i, particle_cellhash_host[i], Y_host[3*i], Y_host[3*i+1], Y_host[3*i+2]);
+    //         printf("xc yc zc (%d %d %d)\n", int(Y_host[3*i]/cellL), int(Y_host[3*i+1]/cellL), int(Y_host[3*i+2]/cellL));
+    //         printf("compute index %d\n", int(Y_host[3*i]/cellL) + (int(Y_host[3*i+1]/cellL) + int(Y_host[3*i+2]/cellL)*My)*Mx );
+    //         break;
+    //     }
+    // }
 
     cudaDeviceSynchronize();	time_hashing_array[rept] = get_time() - time_start;
 }
@@ -1227,169 +1226,3 @@ void FCM_solver::check_overlap(){
                       map_device, ncell, Rcsq);
 }
 
-__global__
-void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
-                    int *particle_cellindex, int *cell_start, int *cell_end,
-                    int *map,
-                    int ncell, Real Rcsq,
-                    Real Fref){
-
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
-    const Real a_sum = 2.0*rad;
-
-    for(int i = index; i < N; i += stride){
-        Real fxi = (Real)0.0, fyi = (Real)0.0, fzi = (Real)0.0;
-        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
-        int icell = particle_cellindex[i];
-        
-        /* intra-cell interactions */
-        /* corrections only apply to particle i */
-        for(int j = cell_start[icell]; j < cell_end[icell]; j++){
-            if(i != j){
-                Real xij = xi - Y[3*j + 0];
-                Real yij = yi - Y[3*j + 1];
-                Real zij = zi - Y[3*j + 2];
-
-                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
-                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
-                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
-
-                Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < 1.21*a_sum*a_sum){
-
-                    Real rij = sqrt(rijsq);
-                    Real chi_fac = Real(10.0)/a_sum;
-
-                    Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
-                    fac *= Fref*Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
-
-                    const double dm1 = 1.0/rij;
-
-                    Real fxij = fac*xij*dm1;
-                    Real fyij = fac*yij*dm1;
-                    Real fzij = fac*zij*dm1;
-
-                    // Real fxij = Fref*xij/rijsq;
-                    // Real fyij = Fref*yij/rijsq;
-                    // Real fzij = Fref*zij/rijsq;
-
-                    fxi += fxij;
-                    fyi += fyij;
-                    fzi += fzij;
-
-                }
-            }
-            
-        }
-        int jcello = 13*icell;
-        /* inter-cell interactions */
-        /* corrections apply to both parties in different cells */
-        for(int nabor = 0; nabor < 13; nabor++){
-            int jcell = map[jcello + nabor];
-            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
-                Real xij = xi - Y[3*j + 0];
-                Real yij = yi - Y[3*j + 1];
-                Real zij = zi - Y[3*j + 2];
-
-                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
-                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
-                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
-
-                Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < 1.21*a_sum*a_sum){
-
-                    Real rij = sqrt(rijsq);
-                    Real chi_fac = Real(10.0)/a_sum;
-
-                    Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
-                    fac *= Fref*Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
-
-                    const double dm1 = 1.0/rij;
-
-                    Real fxij = fac*xij*dm1;
-                    Real fyij = fac*yij*dm1;
-                    Real fzij = fac*zij*dm1;
-                    
-                    // Real fxij = Fref*xij/rijsq;
-                    // Real fyij = Fref*yij/rijsq;
-                    // Real fzij = Fref*zij/rijsq;
-
-                    fxi += fxij;
-                    fyi += fyij;
-                    fzi += fzij;
-
-                    atomicAdd(&F[3*j + 0], -fxij);
-                    atomicAdd(&F[3*j + 1], -fyij);
-                    atomicAdd(&F[3*j + 2], -fzij);
-                }
-            }
-        }
-
-        atomicAdd(&F[3*i + 0], fxi);
-        atomicAdd(&F[3*i + 1], fyi);
-        atomicAdd(&F[3*i + 2], fzi);
-
-        return;
-    }
-}
-
-__global__
-void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
-                    int *particle_cellindex, int *cell_start, int *cell_end,
-                    int *map,
-                    int ncell, Real Rcsq){
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
-
-    for(int i = index; i < N; i += stride){
-        int icell = particle_cellindex[i];
-        
-        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
-        for(int j = cell_start[icell]; j < cell_end[icell]; j++){
-            if(i != j){
-                Real xij = xi - Y[3*j + 0];
-                Real yij = yi - Y[3*j + 1];
-                Real zij = zi - Y[3*j + 2];
-
-                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
-                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
-                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
-
-                Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < Rcsq){
-                    if (rijsq < 3.98*rad*rad){
-                        printf("ERROR: Overlap between %d (%.4f %.4f %.4f) and %d (%.4f %.4f %.4f) within same cell. sep = %.6f 2rad = %.6f \n",
-                        i, xi, yi, zi, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], sqrt(rijsq), (2*rad));
-                    }
-                }
-            }
-        }
-        int jcello = 13*icell;
-        /* inter-cell interactions */
-        /* corrections apply to both parties in different cells */
-        for(int nabor = 0; nabor < 13; nabor++){
-            int jcell = map[jcello + nabor];
-            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){     
-                if(i != j){          
-                    Real xij = xi - Y[3*j + 0];
-                    Real yij = yi - Y[3*j + 1];
-                    Real zij = zi - Y[3*j + 2];
-
-                    xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
-                    yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
-                    zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
-                    Real rijsq=xij*xij+yij*yij+zij*zij;
-                    if(rijsq < Rcsq){
-                        if (rijsq < 3.98*rad*rad){
-                            printf("ERROR: Overlap between %d (%.4f %.4f %.4f) in %d and %d (%.4f %.4f %.4f) in %d. sep = %.6f 2rad = %.6f  \n", 
-                            i, xi, yi, zi, icell, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], jcell, sqrt(rijsq), (2*rad));
-                        }
-                    }
-                }
-            }
-        }
-
-        return;
-    }
-}

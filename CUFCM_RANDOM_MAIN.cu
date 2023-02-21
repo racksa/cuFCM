@@ -44,23 +44,19 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////	
 
 	/* Create random genertaor solver */
-	{
+	init_random_force(F_device, pars.rh, pars.N);
+	init_random_force(T_device, pars.rh, pars.N);
 
-		init_random_force(F_device, pars.rh, pars.N);
-		init_random_force(T_device, pars.rh, pars.N);
-
-		random_packer *packer = new random_packer(Y_host, Y_device, pars);
-		for(int t = 0; t < packrep; t++){
-			if(pars.prompt > 5){
-				std::cout << "\rGenerating random spheres iteration: " << t+1 << "/" << packrep;
-			}
-			packer->update();
-		}
-		packer->finish();
+	random_packer packer(Y_host, Y_device, pars);
+	for(int t = 0; t < packrep; t++){
 		if(pars.prompt > 5){
-			printf("\nFinished packing");
+			std::cout << "\rGenerating random spheres iteration: " << t+1 << "/" << packrep;
 		}
-		
+		packer.update();
+	}
+	packer.finish();
+	if(pars.prompt > 5){
+		printf("\nFinished packing");
 	}
 
 	if(pars.prompt > 5){

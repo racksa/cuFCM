@@ -1,18 +1,6 @@
 #pragma once
 #include "config.hpp"
 
-__global__
-void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
-                    int *particle_cellindex, int *cell_start, int *cell_end,
-                    int *map,
-                    int ncell, Real Rrefsq,
-                    Real Fref);
-
-__global__
-void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
-                    int *particle_cellindex, int *cell_start, int *cell_end,
-                    int *map,
-                    int ncell, Real Rcsq);
 
 class FCM_solver{
 

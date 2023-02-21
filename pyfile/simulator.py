@@ -235,23 +235,24 @@ class SIM:
         self.datafiles['$posfile'] = './data/init_data/artificial/artificial_pos.dat'
         self.datafiles['$forcefile'] = './data/init_data/artificial/artificial_force.dat'
         self.datafiles['$torquefile'] = './data/init_data/artificial/artificial_torque.dat'
+
+        self.datafiles['$posfile'] = './data/init_data/new/pos_data.dat'
+        self.datafiles['$forcefile'] = './data/init_data/new/force_data.dat'
+        self.datafiles['$torquefile'] = './data/init_data/new/torque_data.dat'
         self.pars['checkerror'] = 0
 
-        self.pars['N']=          1
+        self.pars['N']=          5000
         self.pars['rh']=         1.0
         self.pars['alpha']=      1.0
         self.pars['beta']=       9.0
-        self.pars['eta']=        18.0
-
-        npts = 128
-
-        self.pars['nx']=         npts
-        self.pars['ny']=         npts
-        self.pars['nz']=         npts
+        self.pars['eta']=        4.8
+        self.pars['nx']=         512
+        self.pars['ny']=         512
+        self.pars['nz']=         2
         self.pars['Fref']=       1.0
         self.pars['repeat']=     1
-        self.pars['prompt']=     11
-        self.pars['boxsize']=    1000
+        self.pars['prompt']=     10
+        self.pars['boxsize']=    512
 
         util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
         
@@ -365,7 +366,6 @@ class SIM:
         plt.savefig('img/ptps_vs_phi_optimal.eps', format='eps')
         plt.show()
 
-    
     def plot_sigfac(self):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)

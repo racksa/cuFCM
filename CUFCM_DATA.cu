@@ -316,5 +316,4 @@ void check_nan_in(Real* arr, int L, bool* result){
             *result = false;
         }
     }
-
 }

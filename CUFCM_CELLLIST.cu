@@ -54,7 +54,7 @@ void bulkmap_loop(int* map, int Mx, int My, int Mz, uint64_t (*f)(unsigned int, 
 }
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int Mx, int My, int Mz,
+void create_hash_gpu(int *hash, Real *Y, int N, int Mx, int My, int Mz,
 					Real Lx, Real Ly, Real Lz){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
 
@@ -157,4 +157,171 @@ void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_
     
     return;
     
+}
+
+__global__
+void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rcsq,
+                    Real Fref){
+
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+    const Real a_sum = 2.0*rad;
+
+    for(int i = index; i < N; i += stride){
+        Real fxi = (Real)0.0, fyi = (Real)0.0, fzi = (Real)0.0;
+        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
+        int icell = particle_cellindex[i];
+        
+        /* intra-cell interactions */
+        /* corrections only apply to particle i */
+        for(int j = cell_start[icell]; j < cell_end[icell]; j++){
+            if(i != j){
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
+
+                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
+
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < 1.21*a_sum*a_sum){
+                    Real rij = sqrt(rijsq);
+                    Real chi_fac = Real(10.0)/a_sum;
+
+                    Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
+                    fac *= Fref*Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
+
+                    const double dm1 = 1.0/rij;
+
+                    Real fxij = fac*xij*dm1;
+                    Real fyij = fac*yij*dm1;
+                    Real fzij = fac*zij*dm1;
+
+                    // Real fxij = Fref*xij/rijsq;
+                    // Real fyij = Fref*yij/rijsq;
+                    // Real fzij = Fref*zij/rijsq;
+
+                    fxi += fxij;
+                    fyi += fyij;
+                    fzi += fzij;
+
+                }
+            }
+            
+        }
+        int jcello = 13*icell;
+        /* inter-cell interactions */
+        /* corrections apply to both parties in different cells */
+        for(int nabor = 0; nabor < 13; nabor++){
+            int jcell = map[jcello + nabor];
+            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
+                
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
+
+                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
+
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < 1.21*a_sum*a_sum){
+                    
+                    Real rij = sqrt(rijsq);
+                    Real chi_fac = Real(10.0)/a_sum;
+
+                    Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
+                    fac *= Fref*Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
+
+                    const double dm1 = 1.0/rij;
+
+                    Real fxij = fac*xij*dm1;
+                    Real fyij = fac*yij*dm1;
+                    Real fzij = fac*zij*dm1;
+                    
+                    // Real fxij = Fref*xij/rijsq;
+                    // Real fyij = Fref*yij/rijsq;
+                    // Real fzij = Fref*zij/rijsq;
+
+                    fxi += fxij;
+                    fyi += fyij;
+                    fzi += fzij;
+
+                    atomicAdd(&F[3*j + 0], -fxij);
+                    atomicAdd(&F[3*j + 1], -fyij);
+                    atomicAdd(&F[3*j + 2], -fzij);
+                }
+            }
+        }
+
+        atomicAdd(&F[3*i + 0], fxi);
+        atomicAdd(&F[3*i + 1], fyi);
+        atomicAdd(&F[3*i + 2], fzi);
+
+        return;
+    }
+}
+
+__global__
+void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rcsq){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    for(int i = index; i < N; i += stride){
+        int icell = particle_cellindex[i];
+        
+        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
+        for(int j = cell_start[icell]; j < cell_end[icell]; j++){
+            if(i != j){
+                Real xij = xi - Y[3*j + 0];
+                Real yij = yi - Y[3*j + 1];
+                Real zij = zi - Y[3*j + 2];
+
+                xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
+
+                Real rijsq=xij*xij+yij*yij+zij*zij;
+                if(rijsq < Rcsq){
+                    if (rijsq < 3.98*rad*rad){
+                        printf("ERROR: Overlap between %d (%.4f %.4f %.4f) and %d (%.4f %.4f %.4f) within same cell. sep = %.6f 2rad = %.6f \n",
+                        i, xi, yi, zi, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], sqrt(rijsq), (2*rad));
+                    }
+                }
+            }
+        }
+        int jcello = 13*icell;
+        /* inter-cell interactions */
+        /* corrections apply to both parties in different cells */
+        for(int nabor = 0; nabor < 13; nabor++){
+            int jcell = map[jcello + nabor];
+            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){     
+                if(i != j){          
+                    Real xij = xi - Y[3*j + 0];
+                    Real yij = yi - Y[3*j + 1];
+                    Real zij = zi - Y[3*j + 2];
+
+                    xij = xij - Lx * Real(int(xij/(Real(0.5)*Lx)));
+                    yij = yij - Ly * Real(int(yij/(Real(0.5)*Ly)));
+                    zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
+                    Real rijsq=xij*xij+yij*yij+zij*zij;
+                    if(rijsq < Rcsq){
+                        if (rijsq < 3.98*rad*rad){
+                            printf("ERROR: Overlap between %d (%.4f %.4f %.4f) in %d and %d (%.4f %.4f %.4f) in %d. sep = %.6f 2rad = %.6f  \n", 
+                            i, xi, yi, zi, icell, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], jcell, sqrt(rijsq), (2*rad));
+                        }
+                    }
+                }
+            }
+        }
+
+        return;
+    }
 }

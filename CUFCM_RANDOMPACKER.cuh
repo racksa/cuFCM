@@ -2,14 +2,6 @@
 #include "config.hpp"
 
 __global__
-void check_overlap_gpu(Real *Y, Real rad, int N, Real box_size,
-                    int *particle_cellindex, int *cell_start, int *cell_end,
-                    int *map,
-                    int ncell, Real Rrefsq);
-
-
-
-__global__
 void apply_drag(Real *Y, Real *F, Real rad, int N, Real Fref, curandState *states);
 
 __global__
@@ -28,7 +20,7 @@ public:
     
     Random_Pars pars;
 
-    int N, nx, ny, nz, Mx, My, Mz;
+    int N, nx, ny, nz, Mx, My, Mz, prompt;
     Real rh;
     Real boxsize;
     Real Lx, Ly, Lz;
@@ -50,8 +42,6 @@ public:
         *cell_end_host, *cell_end_device;
 
     Real dt, Rc, Rcsq, Fref;
-
-    Real cellL;
 
     int num_thread_blocks_N;
     curandState *dev_random;

@@ -11,7 +11,7 @@ __device__ __host__
 void bulkmap_loop(int* map, int Mx, int My, int Mz, uint64_t (*f)(unsigned int, unsigned int, unsigned int, int, int, int));
 
 __global__
-void create_hash_gpu(int *hash, Real *Y, int N, Real dx, int Mx, int My, int Mz,
+void create_hash_gpu(int *hash, Real *Y, int N, int Mx, int My, int Mz,
 					Real Lx, Real Ly, Real Lz);
 
 __global__
@@ -51,3 +51,16 @@ void sort_index_by_key(int *key, int *index, int *key_buf, int *index_buf, int N
 
 __global__
 void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_end, int N);
+
+__global__
+void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rrefsq,
+                    Real Fref);
+
+__global__
+void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rcsq);
