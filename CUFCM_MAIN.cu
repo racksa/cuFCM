@@ -67,19 +67,19 @@ int main(int argc, char** argv) {
 
 	/* Create FCM solver */
 	cudaDeviceSynchronize();
-	FCM_solver *solver = new FCM_solver(pars);
-	solver->assign_host_array_pointers(Y_host, F_host, T_host, V_host, W_host);
+	FCM_solver solver(pars);
+	solver.assign_host_array_pointers(Y_host, F_host, T_host, V_host, W_host);
 
 	for(int t = 0; t < pars.repeat; t++){
 		if(pars.prompt > 5){
 			std::cout << "\r====Computing repeat " << t+1 << "/" << pars.repeat;
 		}
-		solver->hydrodynamic_solver(Y_device, F_device, T_device, V_device, W_device);
+		solver.hydrodynamic_solver(Y_device, F_device, T_device, V_device, W_device);
 	}
 	if(pars.prompt > 5){
 		printf("\nFinished loop:)\n");
 	}
-	solver->finish();
+	solver.finish();
 
 	return 0;
 }

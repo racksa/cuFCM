@@ -20,6 +20,10 @@
 // 0 = FCM
 // 1 = Fast FCM
 
+#define ROTATION 0
+// 0 = No rotation
+// 1 = Rotation     **default
+
 // #define INIT_FROM_FILE 1         **deprecated!! use random generator instread
 // 0 = Generate random packing
 // 1 = Read initial data from file

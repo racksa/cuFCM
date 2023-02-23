@@ -22,8 +22,8 @@ class SIM:
         pardict['prompt']=     -1
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
-        pardict['packrep']=    100
-        pardict['boxsize']=    400
+        pardict['packrep']=    1000
+        pardict['boxsize']=    200
 
         self.pars = pardict.copy()
         self.datafiles = filedict.copy()
@@ -57,12 +57,10 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                phi=                        0.00018*4**j
-                self.pars['rh']=            1.0
+                phi=                        0.0005*4**j
+                self.pars['rh']=            0.5
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
 
-                # self.pars['N']=             int(1000*2**j)
-                # self.pars['rh']=            0.024 * 2**i
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'], self.pars['boxsize'])
                 self.pars['Fref']=          self.pars['rh']
 
@@ -249,18 +247,18 @@ class SIM:
         self.datafiles['$torquefile'] = './data/init_data/new/torque_data.dat'
         self.pars['checkerror'] = 0
 
-        self.pars['N']=          5000
+        self.pars['N']=          2
         self.pars['rh']=         1.0
         self.pars['alpha']=      1.0
-        self.pars['beta']=       9.0
-        self.pars['eta']=        4.8
-        self.pars['nx']=         512
-        self.pars['ny']=         512
-        self.pars['nz']=         2
+        self.pars['beta']=       10.0
+        self.pars['eta']=        8.0
+        self.pars['nx']=         60
+        self.pars['ny']=         60
+        self.pars['nz']=         60
         self.pars['Fref']=       1.0
         self.pars['repeat']=     1
         self.pars['prompt']=     10
-        self.pars['boxsize']=    512
+        self.pars['boxsize']=    400
 
         util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
         

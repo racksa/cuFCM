@@ -193,17 +193,13 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     Real chi_fac = Real(10.0)/a_sum;
 
                     Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
-                    fac *= Fref*Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
+                    fac *= Fref*fac*fac*fac;
 
                     const double dm1 = 1.0/rij;
 
                     Real fxij = fac*xij*dm1;
                     Real fyij = fac*yij*dm1;
                     Real fzij = fac*zij*dm1;
-
-                    // Real fxij = Fref*xij/rijsq;
-                    // Real fyij = Fref*yij/rijsq;
-                    // Real fzij = Fref*zij/rijsq;
 
                     fxi += fxij;
                     fyi += fyij;
@@ -235,17 +231,13 @@ void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     Real chi_fac = Real(10.0)/a_sum;
 
                     Real fac = fmin(1.0, 1.0 - chi_fac*(rij - a_sum));
-                    fac *= Fref*Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))*fac*fac*fac;
+                    fac *= Fref*fac*fac*fac;
 
                     const double dm1 = 1.0/rij;
 
                     Real fxij = fac*xij*dm1;
                     Real fyij = fac*yij*dm1;
                     Real fzij = fac*zij*dm1;
-                    
-                    // Real fxij = Fref*xij/rijsq;
-                    // Real fyij = Fref*yij/rijsq;
-                    // Real fzij = Fref*zij/rijsq;
 
                     fxi += fxij;
                     fyi += fyij;

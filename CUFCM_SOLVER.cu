@@ -627,106 +627,17 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
 
     spatial_hashing();
 
-    // FILE *pfile;
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sortbefore.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
-
     sort_particle(0, N);
 
-    // write_cell_list();
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sortafter.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
-
     spread();
-
-    // copy_to_host<int>(map_device, map_host, mapsize);
-    // printf("before fft map_host[12] = %d\n", map_host[12]);
-
-    // copy_to_host<int>(cell_start_device, cell_start_host, ncell);
-    // printf("before fft cell start device[12] = %d\n", cell_start_host[12]);
-
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // printf("before fft particle[0] = %d\n", particle_cellhash_host[0]);
     
     fft_solve();
 
-    // copy_to_host<int>(map_device, map_host, mapsize);
-    // printf("after fft map_host[12] = %d\n", map_host[12]);
-
-    // copy_to_host<int>(cell_start_device, cell_start_host, ncell);
-    // printf("before fft cell start device[12] = %d\n", cell_start_host[12]);
-
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // printf("after fft particle[0] = %d\n", particle_cellhash_host[0]);
-
     gather();
-
-    // copy_to_host<int>(map_device, map_host, mapsize);
-    // printf("after gather map_host[12] = %d\n", map_host[12]);
 
     correction();
 
     sortback(0, N);
-
-    // copy_to_host<Real>(Y_device, Y_host, 3*N);
-	// copy_to_host<Real>(F_device, F_host, 3*N);
-	// copy_to_host<Real>(T_device, T_host, 3*N);
-	// copy_to_host<Real>(V_device, V_host, 3*N);
-	// copy_to_host<Real>(W_device, W_host, 3*N);
-    // copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    // copy_to_host<int>(particle_index_device, particle_index_host, N);
-    // pfile = fopen("sortback.dat", "w");
-    // for(int i = 0; i < N; i++){
-    //     fprintf(pfile, "index: %d in cell: %d (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f) (%.4f %.4f %.4f)\n", 
-    //     particle_index_host[i],
-    //     particle_cellhash_host[i],
-    //     Y_host[3*i + 0], Y_host[3*i + 1], Y_host[3*i + 2],
-    //     F_host[3*i + 0], F_host[3*i + 1], F_host[3*i + 2],
-    //     T_host[3*i + 0], T_host[3*i + 1], T_host[3*i + 2],
-    //     V_host[3*i + 0], V_host[3*i + 1], V_host[3*i + 2],
-    //     W_host[3*i + 0], W_host[3*i + 1], W_host[3*i + 2]);
-    // }
-    // fprintf(pfile, "\n#");
-    // fclose(pfile);
-
 
     rept += 1;
 
@@ -781,16 +692,41 @@ void FCM_solver::sort_particle(int start_index, int particle_number){
     sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, Y_device, aux_device, N);
     copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
     sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, F_device, aux_device, N);
-    copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
-    sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, T_device, aux_device, N);
     copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, aux_device, 3*N);
     sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, V_device, aux_device, N);
+    copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
+    sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, T_device, aux_device, N);
     copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(W_device, aux_device, 3*N);
     sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_index_device, W_device, aux_device, N);
+
     // Find cell starting/ending points
     reset_device<int>(cell_start_device, ncell);
     reset_device<int>(cell_end_device, ncell);
     create_cell_list<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(&particle_cellhash_device[start_index], cell_start_device, cell_end_device, particle_number);
+}
+
+__host__
+void FCM_solver::sortback(int start_index, int particle_number){
+     /* Sort back */
+    #if SORT_BACK == 1
+
+        particle_index_range<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, N);
+        sort_index_by_key(&particle_index_device[start_index], &sortback_index_device[start_index], &key_buf[start_index], &index_buf[start_index], particle_number);
+        // particle cellhash is not sorted back!!!
+        // so need to re-compute.
+
+        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
+        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
+        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
+        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, F_device, aux_device, N);
+        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, aux_device, 3*N);
+        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, V_device, aux_device, N);
+        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
+        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, T_device, aux_device, N);
+        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(W_device, aux_device, 3*N);
+        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, W_device, aux_device, N);
+
+    #endif
 }
 
 __host__
@@ -830,13 +766,21 @@ void FCM_solver::spread(){
                                             
         #elif SPREAD_TYPE == 4
 
-
-            cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
+            #if ROTATION==1
+                cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
+                                                    (hx_device, hy_device, hz_device, 
+                                                    Y_device, T_device, F_device,
+                                                    N, ngd,
+                                                    sigmaFCM, SigmaGRID,
+                                                    dx, nx, ny, nz);
+            #else
+                cufcm_mono_dipole_distribution_mono<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+6)*sizeof(Real)>>>
                                                 (hx_device, hy_device, hz_device, 
-                                                Y_device, T_device, F_device,
+                                                Y_device, F_device,
                                                 N, ngd,
                                                 sigmaFCM, SigmaGRID,
                                                 dx, nx, ny, nz);
+            #endif
 
         #endif
     
@@ -934,12 +878,21 @@ void FCM_solver::gather(){
 
         #elif GATHER_TYPE == 4
 
-            cufcm_particle_velocities_bpp_shared_dynamic<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
+            #if ROTATION ==1
+                cufcm_particle_velocities_bpp_shared_dynamic<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
+                                            (hx_device, hy_device, hz_device,
+                                            Y_device, V_device, W_device,
+                                            N, ngd,
+                                            sigmaFCM, SigmaGRID,
+                                            dx, nx, ny, nz);
+            #else
+                cufcm_particle_velocities_mono<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+3)*sizeof(Real)>>>
                                         (hx_device, hy_device, hz_device,
-                                        Y_device, V_device, W_device,
+                                        Y_device, V_device,
                                         N, ngd,
                                         sigmaFCM, SigmaGRID,
                                         dx, nx, ny, nz);
+            #endif
 
         #endif
 
@@ -977,48 +930,39 @@ void FCM_solver::correction(){
                                 sigmaFCMdip, sigmaFCMdipsq);
         
         #elif CORRECTION_TYPE == 1
-
-            cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
+            #if ROTATION ==1
+                cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
+                                    particle_cellhash_device, cell_start_device, cell_end_device,
+                                    map_device,
+                                    ncell, Rcsq,
+                                    SigmaGRID,
+                                    sigmaFCM,
+                                    sigmaFCMdip);
+            #else
+                cufcm_pair_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, F_device, N, Lx, Ly, Lz,
                                 particle_cellhash_device, cell_start_device, cell_end_device,
                                 map_device,
                                 ncell, Rcsq,
                                 SigmaGRID,
                                 sigmaFCM,
-                                sigmaFCMdip);
+                                particle_index_device, 0, N);
+            #endif
         #endif
-
-            cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
-                                    StokesMob, ModStokesMob,
-                                    PDStokesMob, BiLapMob,
-                                    WT1Mob, WT2Mob);
+            #if ROTATION ==1
+                cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
+                                        StokesMob, ModStokesMob,
+                                        PDStokesMob, BiLapMob,
+                                        WT1Mob, WT2Mob);
+            #else
+                cufcm_self_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, F_device, N,
+                                StokesMob, ModStokesMob,
+                                PDStokesMob, BiLapMob,
+                                particle_index_device, 0, N);
+            #endif
 
     #endif
 
     cudaDeviceSynchronize();	time_correction_array[rept] = get_time() - time_start;
-}
-
-__host__
-void FCM_solver::sortback(int start_index, int particle_number){
-     /* Sort back */
-    #if SORT_BACK == 1
-
-        particle_index_range<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, N);
-        sort_index_by_key(&particle_index_device[start_index], &sortback_index_device[start_index], &key_buf[start_index], &index_buf[start_index], particle_number);
-        // particle cellhash is not sorted back!!!
-        // so need to re-compute.
-
-        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
-        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
-        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
-        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, F_device, aux_device, N);
-        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(T_device, aux_device, 3*N);
-        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, T_device, aux_device, N);
-        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, aux_device, 3*N);
-        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, V_device, aux_device, N);
-        copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(W_device, aux_device, 3*N);
-        sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, W_device, aux_device, N);
-        
-    #endif
 }
 
 __host__
@@ -1216,7 +1160,7 @@ void FCM_solver::apply_repulsion(){
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, 1.21*(2*rh)*(2*rh),
-                    1.0);
+                    (Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))));
 }
 
 __host__

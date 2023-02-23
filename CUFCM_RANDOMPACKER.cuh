@@ -2,7 +2,10 @@
 #include "config.hpp"
 
 __global__
-void apply_drag(Real *Y, Real *F, Real rad, int N, Real Fref, curandState *states);
+void init_drag(Real *F, Real rad, int N, Real Fref, curandState *states);
+
+__global__
+void decrease_drag(Real *F, Real fac, int N);
 
 __global__
 void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
@@ -58,9 +61,6 @@ public:
 
     __host__
     void sort_back();
-
-    __host__
-    void repulsive_force();
 
     __host__
     void update();

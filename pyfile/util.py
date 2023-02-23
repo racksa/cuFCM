@@ -448,6 +448,8 @@ def execute_random_generator(pars):
     subprocess.call(cufcm_dir + "bin/RANDOM", shell=True)
 
 def percentage_error_magnitude(x, xref):
+    if (modulus(xref).any() == 0):
+        return 0
     return np.mean( modulus(x-xref) / modulus(xref) )
 
 def modulus(vec):
