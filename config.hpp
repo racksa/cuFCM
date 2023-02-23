@@ -20,7 +20,7 @@
 // 0 = FCM
 // 1 = Fast FCM
 
-#define ROTATION 0
+#define ROTATION 1
 // 0 = No rotation
 // 1 = Rotation     **default
 
@@ -62,7 +62,7 @@
 // 0 = Dont check error     **default
 // 1 = Check error from file
 
-#define USE_DOUBLE_PRECISION false
+#define USE_DOUBLE_PRECISION true
 
 #if USE_DOUBLE_PRECISION
     typedef double Real;

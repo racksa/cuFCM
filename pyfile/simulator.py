@@ -18,7 +18,7 @@ class SIM:
     def __init__(self):
         pardict, filedict = util.read_info(info_file_name)
         # Initialise parameters
-        pardict['repeat']=     40
+        pardict['repeat']=     1
         pardict['prompt']=     -1
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
@@ -29,10 +29,10 @@ class SIM:
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 1, 48+1) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 20, 25+1) # alpha, beta, eta, npts
 
         self.nphi = 1
-        self.nn = 5
+        self.nn = 1
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -58,6 +58,7 @@ class SIM:
         for i in range(self.nphi):
             for j in range(self.nn):
                 phi=                        0.0005*4**j
+                phi=                        0.032
                 self.pars['rh']=            0.5
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
 
@@ -103,10 +104,10 @@ class SIM:
         print("Generating reference data")
         self.reference_pars=                self.pars.copy()
         self.reference_pars['alpha']        = 1.5
-        self.reference_pars['beta']         = 15.0 / self.reference_pars['alpha']
+        self.reference_pars['beta']         = 12.0
         self.reference_pars['eta']          = round(8.0, 1)
         # npts                                = min( int(0.026/self.reference_pars['rh'] * 270 /2) * 2, 460)
-        npts = 460
+        npts = 580
         self.reference_pars['nx']=          npts
         self.reference_pars['ny']=          npts
         self.reference_pars['nz']=          npts
@@ -133,12 +134,14 @@ class SIM:
             for i in range(self.search_grid_shape[0]):
                 for j in range(self.search_grid_shape[1]):
                     for k in range(self.search_grid_shape[2]):
-                        self.pars['alpha']=      1.0 + 0.02*i
-                        self.pars['beta']=       (9. + j ) / self.pars['alpha']
+                        self.pars['alpha']=      1.5 + 0.02*i
+                        self.pars['beta']=       (12. + j )
                         self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
 
+
+
                         if(HIsolver==1):
-                            npts = min(60 + 10*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
+                            npts = min(60 + 20*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
                         if(HIsolver==0):
                             npts = 60 + 20*l
                         self.pars['nx']=         npts
@@ -149,6 +152,11 @@ class SIM:
                             dx = self.pars['boxsize']/npts
                             self.pars['alpha']= (self.pars['rh']/np.sqrt(np.pi))/dx
                             self.pars['eta']= self.pars['eta']/self.pars['alpha']
+
+                        # temporary #############################
+                        Sigma = (self.pars['alpha']*self.pars['boxsize']/self.pars['nx'])
+                        self.pars['eta']=        (1+1*k)/Sigma
+                        # temporary #############################
 
                         if(sys.argv[1] == 'run'):
                             util.execute([self.pars, self.datafiles], solver=HIsolver, mode=2)
@@ -186,9 +194,17 @@ class SIM:
             min_time = time_compute_array[min_index][0]
             print('Tolerance not satisfied in optimal finding. Carry on with the smallest error.')
 
-        print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
-        print(np.array2string(ptps_array[0,0,0,:], separator=", "))
         print('N=', self.pars['N'])
+        print(np.array2string(sigma_ratio_array[0,0,:,:], separator=", "))
+        print(np.array2string(eta_array[0,0,:,:], separator=", "))
+
+        # print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
+        # print(np.array2string(ptps_array[0,0,0,:], separator=", "))
+        
+        # print(np.array2string(alpha_array[:,:,0,0], separator=", "))
+        # print(np.array2string(beta_array[:,:,0,0], separator=", "))
+
+        print(np.array2string(Verror_array[0,0,:,:], separator=", "))
 
         optimal_Verror = Verror_array[min_index][0]
         optimal_Werror = Werror_array[min_index][0]
