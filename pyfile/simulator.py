@@ -23,13 +23,14 @@ class SIM:
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
         pardict['packrep']=    1000
-        pardict['boxsize']=    200
+        pardict['boxsize']=    150
 
         self.pars = pardict.copy()
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
-        self.search_grid_shape = (1, 1, 20, 25+1) # alpha, beta, eta, npts
+        # self.search_grid_shape = (17, 10, 1, 1) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 20, 21) # alpha, beta, eta, npts
 
         self.nphi = 1
         self.nn = 1
@@ -103,11 +104,11 @@ class SIM:
         '''
         print("Generating reference data")
         self.reference_pars=                self.pars.copy()
-        self.reference_pars['alpha']        = 1.5
-        self.reference_pars['beta']         = 12.0
-        self.reference_pars['eta']          = round(8.0, 1)
+        self.reference_pars['alpha']        = 2.0
+        self.reference_pars['beta']         = 16.0
+        self.reference_pars['eta']          = round(24.0, 1)
         # npts                                = min( int(0.026/self.reference_pars['rh'] * 270 /2) * 2, 460)
-        npts = 580
+        npts = 500
         self.reference_pars['nx']=          npts
         self.reference_pars['ny']=          npts
         self.reference_pars['nz']=          npts
@@ -134,8 +135,8 @@ class SIM:
             for i in range(self.search_grid_shape[0]):
                 for j in range(self.search_grid_shape[1]):
                     for k in range(self.search_grid_shape[2]):
-                        self.pars['alpha']=      1.5 + 0.02*i
-                        self.pars['beta']=       (12. + j )
+                        self.pars['alpha']=      2.0 + 0.1*i
+                        self.pars['beta']=       (15. + j )
                         self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
 
 
@@ -197,14 +198,14 @@ class SIM:
         print('N=', self.pars['N'])
         print(np.array2string(sigma_ratio_array[0,0,:,:], separator=", "))
         print(np.array2string(eta_array[0,0,:,:], separator=", "))
+        print(np.array2string(Verror_array[0,0,:,:], separator=", "))
 
         # print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
         # print(np.array2string(ptps_array[0,0,0,:], separator=", "))
         
         # print(np.array2string(alpha_array[:,:,0,0], separator=", "))
         # print(np.array2string(beta_array[:,:,0,0], separator=", "))
-
-        print(np.array2string(Verror_array[0,0,:,:], separator=", "))
+        # print(np.array2string(Verror_array[:,:,0,0], separator=", "))
 
         optimal_Verror = Verror_array[min_index][0]
         optimal_Werror = Werror_array[min_index][0]

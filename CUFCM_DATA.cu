@@ -61,7 +61,7 @@ void write_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *
     FILE *pfile;
     pfile = fopen(file_name, mode);
     for(int i = 0; i < N; i++){
-        fprintf(pfile, "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
+        fprintf(pfile, "%.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f\n", 
         Y[3*i + 0], Y[3*i + 1], Y[3*i + 2], 
         F[3*i + 0], F[3*i + 1], F[3*i + 2], 
         T[3*i + 0], T[3*i + 1], T[3*i + 2],
@@ -89,19 +89,19 @@ void write_init_data(Real *Y, Real *F, Real *T, int N){
     // printf("Writing position data...\n");
     pfile = fopen("./data/init_data/new/pos_data.dat", "w");
     for(int i = 0; i < N; i++){
-        fprintf(pfile, "%.8f %.8f %.8f\n", Y[3*i + 0], Y[3*i + 1], Y[3*i + 2]);
+        fprintf(pfile, "%.16f %.16f %.16f\n", Y[3*i + 0], Y[3*i + 1], Y[3*i + 2]);
     }
     fclose(pfile);
     // printf("Writing force data...\n");
     pfile = fopen("./data/init_data/new/force_data.dat", "w");
     for(int i = 0; i < N; i++){
-        fprintf(pfile, "%.8f %.8f %.8f\n", F[3*i + 0], F[3*i + 1], F[3*i + 2]);
+        fprintf(pfile, "%.16f %.16f %.16f\n", F[3*i + 0], F[3*i + 1], F[3*i + 2]);
     }
     fclose(pfile);
     // printf("Writing torque data...\n");
     pfile = fopen("./data/init_data/new/torque_data.dat", "w");
     for(int i = 0; i < N; i++){
-        fprintf(pfile, "%.8f %.8f %.8f\n", T[3*i + 0], T[3*i + 1], T[3*i + 2]);
+        fprintf(pfile, "%.16f %.16f %.16f\n", T[3*i + 0], T[3*i + 1], T[3*i + 2]);
     }
     fclose(pfile);
     // printf("Finished writing...\n");
