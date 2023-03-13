@@ -6,6 +6,7 @@ import numpy as np
 boxsize=150
 phi_array = np.array([0.0005*4**j for j in range(5)])
 N_array = phi_array*(boxsize/0.5)**3/(4./3.*np.pi)
+print(phi_array, N_array)
 
 alpha_array = np.array(
 [[0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],

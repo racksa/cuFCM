@@ -29,6 +29,9 @@ if(sys.argv[1] == 'test'):
 if(sys.argv[1] == 'single'):
     sim.run_single()
 
+if(sys.argv[1] == 'two_particle'):
+    sim.run_two_particle()
+
 if(sys.argv[1] == 'read_npy'):
     sim.analyse()
     sim.plot_ptps_vs_phi()
@@ -40,6 +43,9 @@ if(sys.argv[1] == 'plot_combine'):
 if(sys.argv[1] == 'plot_piechart'):
     sim.analyse()
     sim.plot_pie_chart_of_time()
+
+if(sys.argv[1] == 'flow_field'):
+    sim.evaluate_flow_field()
 
 
 # Parameter explanation:

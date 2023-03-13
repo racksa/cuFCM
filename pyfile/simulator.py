@@ -30,7 +30,7 @@ class SIM:
         self.reference_pars = pardict.copy()
 
         # self.search_grid_shape = (17, 10, 1, 1) # alpha, beta, eta, npts
-        self.search_grid_shape = (1, 1, 20, 21) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 8) # alpha, beta, eta, npts
 
         self.nphi = 1
         self.nn = 1
@@ -59,9 +59,12 @@ class SIM:
         for i in range(self.nphi):
             for j in range(self.nn):
                 phi=                        0.0005*4**j
-                phi=                        0.032
                 self.pars['rh']=            0.5
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
+
+                ###### temporary ######
+                self.pars['N']=2
+                ###### temporary ######
 
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'], self.pars['boxsize'])
                 self.pars['Fref']=          self.pars['rh']
@@ -108,7 +111,7 @@ class SIM:
         self.reference_pars['beta']         = 16.0
         self.reference_pars['eta']          = round(24.0, 1)
         # npts                                = min( int(0.026/self.reference_pars['rh'] * 270 /2) * 2, 460)
-        npts = 500
+        npts = 400
         self.reference_pars['nx']=          npts
         self.reference_pars['ny']=          npts
         self.reference_pars['nz']=          npts
@@ -139,8 +142,6 @@ class SIM:
                         self.pars['beta']=       (15. + j )
                         self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
 
-
-
                         if(HIsolver==1):
                             npts = min(60 + 20*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
                         if(HIsolver==0):
@@ -156,7 +157,8 @@ class SIM:
 
                         # temporary #############################
                         Sigma = (self.pars['alpha']*self.pars['boxsize']/self.pars['nx'])
-                        self.pars['eta']=        (1+1*k)/Sigma
+                        # self.pars['eta']=        (1+1*k)/Sigma
+                        self.pars['eta']=       0.1/Sigma
                         # temporary #############################
 
                         if(sys.argv[1] == 'run'):
@@ -196,9 +198,9 @@ class SIM:
             print('Tolerance not satisfied in optimal finding. Carry on with the smallest error.')
 
         print('N=', self.pars['N'])
-        print(np.array2string(sigma_ratio_array[0,0,:,:], separator=", "))
-        print(np.array2string(eta_array[0,0,:,:], separator=", "))
-        print(np.array2string(Verror_array[0,0,:,:], separator=", "))
+        # print(np.array2string(sigma_ratio_array[0,0,:,:], separator=", "))
+        # print(np.array2string(eta_array[0,0,:,:], separator=", "))
+        # print(np.array2string(Verror_array[0,0,:,:], separator=", "))
 
         # print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
         # print(np.array2string(ptps_array[0,0,0,:], separator=", "))
@@ -206,6 +208,9 @@ class SIM:
         # print(np.array2string(alpha_array[:,:,0,0], separator=", "))
         # print(np.array2string(beta_array[:,:,0,0], separator=", "))
         # print(np.array2string(Verror_array[:,:,0,0], separator=", "))
+
+        print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
+        print(np.array2string(Verror_array[0,0,0,:], separator=", "))
 
         optimal_Verror = Verror_array[min_index][0]
         optimal_Werror = Werror_array[min_index][0]
@@ -279,6 +284,107 @@ class SIM:
 
         util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
         
+    def run_two_particle(self):
+        self.datafiles['$posfile'] = './data/init_data/new/pos_data.dat'
+        self.datafiles['$forcefile'] = './data/init_data/new/force_data.dat'
+        self.datafiles['$torquefile'] = './data/init_data/new/torque_data.dat'
+        self.pars['checkerror'] = 0
+
+        r_list = 1e-1 + np.linspace(1, 10, 11)
+        npts_list = np.arange(60, 480, 20)
+        for r in r_list:
+            for npts in npts_list:
+                self.pars['alpha']=      2.0
+                self.pars['beta']=       (15.)
+
+                # npts = min(60 + 20*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
+                self.pars['nx']=         npts
+                self.pars['ny']=         npts
+                self.pars['nz']=         npts
+
+                if HIsolver == 0:
+                    dx = self.pars['boxsize']/npts
+                    self.pars['alpha']= (self.pars['rh']/np.sqrt(np.pi))/dx
+                    self.pars['eta']= self.pars['eta']/self.pars['alpha']
+
+                # temporary #############################
+                Sigma = (self.pars['alpha']*self.pars['boxsize']/self.pars['nx'])
+                # self.pars['eta']=        (1+1*k)/Sigma
+                self.pars['eta']=       0.1/Sigma
+                # temporary #############################
+
+                util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
+
+                sim_dict = util.read_scalar(self.pars)
+                if(sim_dict):
+                    if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run'):
+                        sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
+
+    def evaluate_flow_field(self):
+        dir = './data/flow_data/'
+        for file in os.listdir(dir):
+            if file.endswith('flow_pos.dat'):
+                self.datafiles['$posfile'] = dir + file
+            if file.endswith('flow_force.dat'):
+                self.datafiles['$forcefile'] = dir + file
+            if file.endswith('flow_torque.dat'):
+                self.datafiles['$torquefile'] = dir + file
+
+        self.pars['checkerror'] = 0
+
+        self.pars['N']=          64*22
+        self.pars['rh']=         1.0
+        self.pars['nx']=         256
+        self.pars['ny']=         256
+        self.pars['nz']=         48
+        self.pars['repeat']=     1
+        self.pars['prompt']=     10
+        self.pars['boxsize']=    160
+
+        util.execute([self.pars, self.datafiles], solver=2, mode=3)
+
+        flow_x_f = open('./data/simulation/flow_x.dat', "r")
+        flow_y_f = open('./data/simulation/flow_y.dat', "r")
+        flow_z_f = open('./data/simulation/flow_z.dat', "r")
+        pos_f = open(self.datafiles['$posfile'], "r")
+        pos = np.zeros((self.pars['N'], 3))
+
+        for i in range(self.pars['N']):
+            pos[i] = np.array(pos_f.readline().split(), dtype=float)
+    
+        flow_x = np.array(flow_x_f.readline().split(), dtype=float)
+        flow_y = np.array(flow_y_f.readline().split(), dtype=float)
+        flow_z = np.array(flow_z_f.readline().split(), dtype=float)
+        
+        Lx = self.pars['boxsize']
+        Ly = Lx/self.pars['nx']*self.pars['ny']
+        Lz = Lx/self.pars['nx']*self.pars['nz']
+
+        def reshape_func(flow):
+            return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx'])).transpose()
+
+        flow_x = reshape_func(flow_x)
+        flow_y = reshape_func(flow_y)
+        flow_z = reshape_func(flow_z)
+
+        X = np.linspace(0, Lx, self.pars['nx'])
+        Y = np.linspace(0, Ly, self.pars['ny'])
+
+        z = 6
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        ax.scatter(pos[:,0], pos[:,1], c='r')
+        ax.streamplot(X, Y, flow_x[:,:,z], flow_y[:,:,z])
+        ax.quiver(X, Y, flow_x[:,:,z], flow_y[:,:,z])
+        ax.set_aspect('equal')
+        
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        plt.savefig('img/flow_field.eps', format='eps')
+        plt.show()
+
+
 
     def print_scalar(self, sim_dict):
         if(self.siminfo):

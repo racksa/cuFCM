@@ -31,6 +31,8 @@ void write_error(Real Verror,
 
 void write_celllist(int *cell_start_list, int *cell_end_list, int *map_list, int ncell, int Mx, int My, int Mz, const char *file_name);
 
+void write_flow_field(Real *h, int Ngrid, const char *file_name);
+
 void read_config(Real *values, std::vector<std::string>& datafile_names, const char *file_name);
 
 __global__

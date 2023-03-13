@@ -161,6 +161,16 @@ void write_celllist(int *cell_start_list, int *cell_end_list, int *map_list, int
     fclose(pfile);
 }
 
+void write_flow_field(Real *h, int grid_size, const char *file_name){
+    FILE *pfile;
+    pfile = fopen(file_name, "w");
+    for(int i = 0; i < grid_size; i++){
+        fprintf(pfile, "%.6f ", h[i]);
+        }
+    fprintf(pfile, "\n");
+    fclose(pfile);
+}
+
 void read_config(Real *values, std::vector<std::string>& datafile_names, const char *file_name){
     std::ifstream cFile (file_name);
     if (cFile.is_open()){

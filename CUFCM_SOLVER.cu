@@ -104,6 +104,8 @@ void FCM_solver::init_fcm_var(){
         sigmaFCM = rh/sqrt(PI);
         sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
 
+        SigmaGRID = sigmaFCM;
+
     #endif
 
     /* Neighbour list */
@@ -352,17 +354,32 @@ void FCM_solver::Mss(){
 
     gather_seg_velocity();
 
-    copy_to_host<Real>(Y_device, Y_host, 3*N);
-	copy_to_host<Real>(F_device, F_host, 3*N);
-	copy_to_host<Real>(T_device, T_host, 3*N);
-	copy_to_host<Real>(V_device, V_host, 3*N);
-	copy_to_host<Real>(W_device, W_host, 3*N);
-    copy_to_host<int>(particle_cellhash_device, particle_cellhash_host, N);
-    copy_to_host<int>(particle_index_device, particle_index_host, N);
-
     correction_seg();
 
     sortback(0, N);
+
+
+	// copy_to_host<Real>(F_device, F_host, 3*N);
+	// copy_to_host<Real>(V_device, V_host, 3*N);
+    // int threashold = 500;
+    // int trigger = 0;
+    // Real maxV = 0;
+    // Real maxF = 0;
+    // for(int i = 0; i<N; i++){
+    //     trigger = 0;
+    //     if(abs(F_host[3*i]) > threashold || abs(F_host[3*i+1]) > threashold || abs(F_host[3*i+2]) > threashold){
+    //         // printf(" F TOO LARGE %d (%.4f %.4f %.4f) \n", i, F_host[3*i], F_host[3*i+1], F_host[3*i+2]);
+    //         trigger=1;
+    //     }
+    //     if(abs(V_host[3*i]) > threashold*0.05 || abs(V_host[3*i+1]) > threashold*0.05 || abs(V_host[3*i+2]) > threashold*0.05){
+    //         // printf(" V TOO LARGE %d (%.4f %.4f %.4f) \n", i, V_host[3*i], V_host[3*i+1], V_host[3*i+2]);
+    //         trigger=1;
+    //     }
+    //     maxV = std::max(maxV, std::max(V_host[3*i+2], std::max(V_host[3*i+1], V_host[3*i])));
+    //     maxF = std::max(maxF, std::max(F_host[3*i+2], std::max(F_host[3*i+1], F_host[3*i])));
+    // }
+    // printf("maxV = %.8f, maxF = %.8f\n", maxV, maxF);
+
 
     // copy_to_host<Real>(Y_device, Y_host, 3*N);
 	// copy_to_host<Real>(F_device, F_host, 3*N);
@@ -536,20 +553,6 @@ void FCM_solver::spread_seg_force(){
                                                 sigmaFCM, SigmaGRID,
                                                 dx, nx, ny, nz,
                                                 particle_index_device, 0, num_seg);
-    
-
-}
-
-__host__
-void FCM_solver::spread_blob_force(){
-    
-    cufcm_mono_dipole_distribution_mono_selection<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+6)*sizeof(Real)>>>
-                                                (hx_device, hy_device, hz_device, 
-                                                Y_device, F_device,
-                                                N, ngd,
-                                                sigmaFCM, SigmaGRID,
-                                                dx, nx, ny, nz,
-                                                particle_index_device, num_seg, N);
 }
 
 __host__
@@ -562,6 +565,18 @@ void FCM_solver::gather_seg_velocity(){
                                         sigmaFCM, SigmaGRID,
                                         dx, nx, ny, nz,
                                         particle_index_device, 0, num_seg);
+}
+
+__host__
+void FCM_solver::spread_blob_force(){
+    
+    cufcm_mono_dipole_distribution_mono_selection<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+6)*sizeof(Real)>>>
+                                                (hx_device, hy_device, hz_device, 
+                                                Y_device, F_device,
+                                                N, ngd,
+                                                sigmaFCM, SigmaGRID,
+                                                dx, nx, ny, nz,
+                                                particle_index_device, num_seg, N);
 }
 
 __host__
@@ -632,6 +647,8 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     spread();
     
     fft_solve();
+    
+    // write_flowfield_call();
 
     gather();
 
@@ -1131,9 +1148,8 @@ void FCM_solver::write_data_call(){
 	copy_to_host<Real>(T_device, T_host, 3*N);
 	copy_to_host<Real>(V_device, V_host, 3*N);
 	copy_to_host<Real>(W_device, W_host, 3*N);
-    printf("\n\nWriting to file\n\n");
     write_data(Y_host, F_host, T_host, V_host, W_host, N, 
-                   "simulation_data.dat", "w");
+                   "simulation_data.dat", "a");
     // for(int i = 0; i<N; i++){
     //     if(abs(F_host[3*i]) > 1000 || abs(F_host[3*i+1]) > 1000 || abs(F_host[3*i+2]) > 1000){
     //         printf("V TOO LARGE %d (%.4f %.4f %.4f) \n", i, F_host[3*i], F_host[3*i+1], F_host[3*i+2]);
@@ -1145,6 +1161,16 @@ void FCM_solver::write_data_call(){
     //         printf("V TOO LARGE %d (%.4f %.4f %.4f) \n", i, W_host[3*i], W_host[3*i+1], W_host[3*i+2]);
     //     }
     // }
+}
+
+__host__
+void FCM_solver::write_flowfield_call(){
+    copy_to_host<Real>(hx_device, hx_host, grid_size);
+    copy_to_host<Real>(hy_device, hy_host, grid_size);
+    copy_to_host<Real>(hz_device, hz_host, grid_size);
+    write_flow_field(hx_host, grid_size, "./data/simulation/flow_x.dat");
+    write_flow_field(hy_host, grid_size, "./data/simulation/flow_y.dat");
+    write_flow_field(hz_host, grid_size, "./data/simulation/flow_z.dat");
 }
 
 __host__
@@ -1160,7 +1186,7 @@ void FCM_solver::apply_repulsion(){
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, 1.21*(2*rh)*(2*rh),
-                    (Real(1.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))));
+                    (Real(2.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))));
 }
 
 __host__

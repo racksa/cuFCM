@@ -70,15 +70,12 @@ public:
 	int num_thread_blocks_NX;
 	curandState *dev_random;
 
-    #if SOLVER_MODE == 1
-        Real sigmaFCM, SigmaGRID, 
-            gammaGRID, pdmag,
-            sigmaFCMdip, sigmaGRIDdip,
-            StokesMob, ModStokesMob, PDStokesMob, BiLapMob, WT1Mob, WT2Mob;
-    #elif SOLVER_MODE == 0
-        Real sigmaFCM,
-            sigmaFCMdip;
-    #endif
+    Real sigmaFCM, SigmaGRID, 
+        gammaGRID, pdmag,
+        sigmaFCMdip, sigmaGRIDdip,
+        StokesMob, ModStokesMob, PDStokesMob, BiLapMob, WT1Mob, WT2Mob;
+    // Real sigmaFCM,
+    //     sigmaFCMdip;
 
     __host__
     FCM_solver(Pars);
@@ -144,6 +141,9 @@ public:
 
     __host__
     void write_data_call();
+
+    __host__
+    void write_flowfield_call();
 
     __host__
     void Mss();

@@ -764,41 +764,6 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
             uk_z[0].x = (Real)0.0;
             uk_z[0].y = (Real)0.0;
         }
-
-        // myCufftComplex fkx = fk_x[i];
-        // myCufftComplex fky = fk_y[i];
-        // myCufftComplex fkz = fk_z[i];
-
-        // if(i==0){
-        //     fkx.x = Real(0.0);
-        //     fkx.y = Real(0.0);
-        //     fky.x = Real(0.0);
-        //     fky.y = Real(0.0);
-        //     fkz.x = Real(0.0);
-        //     fkz.y = Real(0.0);
-        // }
-
-        // myCufftComplex kdotf;
-        // kdotf.x = (q1*fkx.x + q2*fky.x + q3*fkz.x)*qq_inv;
-        // kdotf.y = (q1*fkx.y + q2*fky.y + q3*fkz.y)*qq_inv;
-
-        // Real norm = qq_inv / grid_size;
-
-        // uk_x[i].x = norm*(fkx.x-q1*(kdotf.x));
-        // uk_x[i].y = norm*(fkx.y-q1*(kdotf.y));
-        // uk_y[i].x = norm*(fky.x-q2*(kdotf.x));
-        // uk_y[i].y = norm*(fky.y-q2*(kdotf.y));
-        // uk_z[i].x = norm*(fkz.x-q3*(kdotf.x));
-        // uk_z[i].y = norm*(fkz.y-q3*(kdotf.y));
-
-        // if(i==0){
-        //     uk_x[0].x = (Real)0.0;
-        //     uk_x[0].y = (Real)0.0;
-        //     uk_y[0].x = (Real)0.0;
-        //     uk_y[0].y = (Real)0.0;
-        //     uk_z[0].x = (Real)0.0;
-        //     uk_z[0].y = (Real)0.0;
-        // }
     }
     return;
 }
@@ -1354,7 +1319,7 @@ void cufcm_particle_velocities_selection(myCufftReal *ux, myCufftReal *uy, myCuf
         Real total_Wz = BlockReduce(temp_storage).Sum(Wz);
     
         if(threadIdx.x==0){
-            VTEMP[3*np + 0] += total_Vx;  
+            VTEMP[3*np + 0] += total_Vx;
             VTEMP[3*np + 1] += total_Vy;
             VTEMP[3*np + 2] += total_Vz;
             WTEMP[3*np + 0] += total_Wx;

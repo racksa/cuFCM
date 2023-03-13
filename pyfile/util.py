@@ -440,6 +440,9 @@ def execute(dicts, solver=1, mode=2):
         if(solver == 1):
             subprocess.call(cufcm_dir + "bin/CUFCM", shell=True)
             return savefile(pars, save_directory, mode)
+        if(solver == 2):
+            subprocess.call(cufcm_dir + "bin/FLOWFIELD", shell=True)
+            return savefile(pars, save_directory, mode)
         
 
 def execute_random_generator(pars):

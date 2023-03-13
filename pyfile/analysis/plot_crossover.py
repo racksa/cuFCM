@@ -14,10 +14,11 @@ crossover_array = np.array([0.180, 0.183, 0.160, 0.155, 0.139, 0.120, 0.131, 0.1
 
 aL_domain, phic_domain = np.meshgrid(np.linspace(5e-4, 0.014, 100), np.linspace(0.001, 0.25, 100) )
 N_domain = N_from_al_and_phi(aL_domain, phic_domain)
-print(aL_domain)
-print(N_domain)
+# print(aL_domain)
+# print(N_domain)
 
 p0 = curve_fit(inv_f, aL_array, crossover_array)
+print(p0)
 theory_x = list()
 theory_y = list()
 for sec in range(2):
