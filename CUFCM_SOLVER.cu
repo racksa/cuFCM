@@ -648,7 +648,7 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     
     fft_solve();
     
-    // write_flowfield_call();
+    write_flowfield_call();
 
     gather();
 

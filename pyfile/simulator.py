@@ -329,17 +329,19 @@ class SIM:
                 self.datafiles['$forcefile'] = dir + file
             if file.endswith('flow_torque.dat'):
                 self.datafiles['$torquefile'] = dir + file
-
         self.pars['checkerror'] = 0
 
-        self.pars['N']=          64*22
-        self.pars['rh']=         1.0
-        self.pars['nx']=         256
-        self.pars['ny']=         256
-        self.pars['nz']=         48
+        self.pars['N']=          22*1024
+        self.pars['rh']=         1
+        self.pars['beta']=       10
+
+        self.pars['nx']=         1024
+        self.pars['ny']=         1024
+        self.pars['nz']=         32
+        
         self.pars['repeat']=     1
         self.pars['prompt']=     10
-        self.pars['boxsize']=    160
+        self.pars['boxsize']=    1280
 
         util.execute([self.pars, self.datafiles], solver=2, mode=3)
 
@@ -355,30 +357,58 @@ class SIM:
         flow_x = np.array(flow_x_f.readline().split(), dtype=float)
         flow_y = np.array(flow_y_f.readline().split(), dtype=float)
         flow_z = np.array(flow_z_f.readline().split(), dtype=float)
+
+        print('sum', np.sum(flow_x))
         
         Lx = self.pars['boxsize']
         Ly = Lx/self.pars['nx']*self.pars['ny']
         Lz = Lx/self.pars['nx']*self.pars['nz']
 
         def reshape_func(flow):
-            return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx'])).transpose()
+            return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx']))
+            # return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx'])).transpose()
 
         flow_x = reshape_func(flow_x)
         flow_y = reshape_func(flow_y)
         flow_z = reshape_func(flow_z)
 
+        V = 0.2770837682984185
+        W = 0.0500428792220778
+        # print('V/W', V/W)
+
+        # nx, ny, nz = 3,4,5
+        # otest = np.arange(nx*ny*nz)
+        # test = np.reshape(otest, (nz, ny, nx))
+        # print('reshape', test)
+        # print(test[0][1])
+        # indx = 2
+        # indy = 1
+        # indz = 4
+        # ind = indx + indy*nx + indz*nx*ny
+        # print(otest[ind])
+        # print(test[indz][indy][indx])
+        
+
         X = np.linspace(0, Lx, self.pars['nx'])
         Y = np.linspace(0, Ly, self.pars['ny'])
 
-        z = 6
+        z = int(0.5*self.pars['nz'])
+        print('z=',z)
+
+        qfac = 10
 
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
         ax.scatter(pos[:,0], pos[:,1], c='r')
-        ax.streamplot(X, Y, flow_x[:,:,z], flow_y[:,:,z])
-        ax.quiver(X, Y, flow_x[:,:,z], flow_y[:,:,z])
+
+        # circle = plt.Circle((pos[:,0], pos[:,1]), self.pars['rh'])
+        # ax.add_patch(circle)
+        # ax.set_xlim((0, self.pars['boxsize']))
+        # ax.set_ylim((0, self.pars['boxsize']))
+
+        ax.streamplot(X, Y, flow_x[z,:,:], flow_y[z,:,:])
+        ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac], flow_y[z,::qfac,::qfac])
         ax.set_aspect('equal')
-        
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         plt.savefig('img/flow_field.eps', format='eps')
