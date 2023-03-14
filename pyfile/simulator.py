@@ -5,7 +5,6 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.special import erf
 import sys
 import subprocess
-
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -330,18 +329,24 @@ class SIM:
             if file.endswith('flow_torque.dat'):
                 self.datafiles['$torquefile'] = dir + file
         self.pars['checkerror'] = 0
-
-        self.pars['N']=          22*1024
-        self.pars['rh']=         1
-        self.pars['beta']=       10
-
-        self.pars['nx']=         1024
-        self.pars['ny']=         1024
-        self.pars['nz']=         32
-        
         self.pars['repeat']=     1
         self.pars['prompt']=     10
-        self.pars['boxsize']=    1280
+
+        self.pars['rh']=         1
+
+        # self.pars['N']=          22*1024
+        # self.pars['beta']=       10
+        # self.pars['nx']=         1280
+        # self.pars['ny']=         1280
+        # self.pars['nz']=         40     
+        # self.pars['boxsize']=    1280
+
+        self.pars['N']=          1
+        self.pars['beta']=       200
+        self.pars['nx']=         256
+        self.pars['ny']=         256
+        self.pars['nz']=         256
+        self.pars['boxsize']=    80
 
         util.execute([self.pars, self.datafiles], solver=2, mode=3)
 
@@ -365,49 +370,72 @@ class SIM:
         Lz = Lx/self.pars['nx']*self.pars['nz']
 
         def reshape_func(flow):
-            return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx']))
-            # return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx'])).transpose()
+            return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx'])) # z-major
+        
+        sigma = float(self.pars['rh'])/np.pi**.5
+        def B(r):
+            return 1./(8*np.pi*r**3)*( (1-3*sigma**2/r**2)*erf(r/(sigma*2**.5)) + (6*sigma/r)*(2*np.pi)**(-0.5)*np.exp(-r**2/(2*sigma**2)) )
+
+        def A(r):
+            return 1./(8*np.pi*r)*( (1+sigma**2/r**2)*erf(r/(sigma*2**.5)) - (2*sigma/r)*(2*np.pi)**(-0.5)*np.exp(-r**2/(2*sigma**2)) )
+
+        def u(x):
+            x = np.array([x])
+            r = np.linalg.norm(x)
+            # return np.matmul( np.identity(3)/r + (x.transpose()@x)/r**3, np.array([1, 0, 0]))/(8*np.pi)
+            return np.matmul( A(r)*np.identity(3) + B(r)*(x.transpose()@x), np.array([1, 0, 0]))
 
         flow_x = reshape_func(flow_x)
         flow_y = reshape_func(flow_y)
         flow_z = reshape_func(flow_z)
 
-        V = 0.2770837682984185
-        W = 0.0500428792220778
-        # print('V/W', V/W)
-
-        # nx, ny, nz = 3,4,5
-        # otest = np.arange(nx*ny*nz)
-        # test = np.reshape(otest, (nz, ny, nx))
-        # print('reshape', test)
-        # print(test[0][1])
-        # indx = 2
-        # indy = 1
-        # indz = 4
-        # ind = indx + indy*nx + indz*nx*ny
-        # print(otest[ind])
-        # print(test[indz][indy][indx])
-        
-
         X = np.linspace(0, Lx, self.pars['nx'])
         Y = np.linspace(0, Ly, self.pars['ny'])
+        Z = np.linspace(0, Lz, self.pars['nz'])
 
         z = int(0.5*self.pars['nz'])
         print('z=',z)
 
+        
+        flow_expression_x = np.zeros((self.pars['ny'], self.pars['nx']))
+        flow_expression_y = np.zeros((self.pars['ny'], self.pars['nx']))
+        dx = Lx/self.pars['nx']
+        for i in range(self.pars['nx']):
+            for j in range(self.pars['ny']):
+                rx = dx*i
+                ry = dx*j
+                rz = pos[0][2]
+                
+                flow_expression_x[j][i], flow_expression_y[j][i], vz = u(np.array([rx, ry, rz])-pos[0])
+
         qfac = 10
+        print(np.shape(flow_expression_x - flow_x[z]), np.shape(flow_x[z]))
+
+        nxh = int(self.pars['nx']/2)
+        nyh = int(self.pars['ny']/2)
+        print(flow_expression_x[nyh])
+        print(flow_x[z][nyh])
+        
+        with np.errstate(divide='ignore', invalid='ignore'):
+            diff = np.abs((flow_expression_x - flow_x[z]))
+            # diff = np.abs((flow_expression_x[int(0.8*nyh):int(1.2*nyh), int(0.8*nxh):int(1.2*nxh)] - flow_x[z][int(0.8*nyh):int(1.2*nyh), int(0.8*nxh):int(1.2*nxh)]))
+        diff[np.isnan(diff)] = 0
+        diff[np.isinf(diff)] = 0
+
+        print('mean diff=', np.mean(diff))
 
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        ax.scatter(pos[:,0], pos[:,1], c='r')
+        # ax.scatter(pos[:,0], pos[:,1], c='r')
 
         # circle = plt.Circle((pos[:,0], pos[:,1]), self.pars['rh'])
         # ax.add_patch(circle)
         # ax.set_xlim((0, self.pars['boxsize']))
         # ax.set_ylim((0, self.pars['boxsize']))
 
-        ax.streamplot(X, Y, flow_x[z,:,:], flow_y[z,:,:])
-        ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac], flow_y[z,::qfac,::qfac])
+        ax.streamplot(X, Y, flow_x[z], flow_y[z])
+        ax.streamplot(X, Y, flow_expression_x, flow_expression_y)
+        # ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac], flow_y[z,::qfac,::qfac])
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')

@@ -648,7 +648,7 @@ void FCM_solver::hydrodynamic_solver(Real *Y_device_input, Real *F_device_input,
     
     fft_solve();
     
-    write_flowfield_call();
+    // write_flowfield_call();
 
     gather();
 
@@ -1186,7 +1186,7 @@ void FCM_solver::apply_repulsion(){
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, 1.21*(2*rh)*(2*rh),
-                    (Real(2.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(40.0)*Real(40.0)))));
+                    (Real(2.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(20.0)*Real(20.0)))));
 }
 
 __host__
