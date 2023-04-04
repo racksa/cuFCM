@@ -341,12 +341,16 @@ class SIM:
         # self.pars['nz']=         40     
         # self.pars['boxsize']=    1280
 
-        self.pars['N']=          1
-        self.pars['beta']=       200
-        self.pars['nx']=         256
-        self.pars['ny']=         256
-        self.pars['nz']=         256
-        self.pars['boxsize']=    80
+        self.pars['N']=          20*64
+        self.pars['beta']=       20
+        self.pars['nx']=         480
+        self.pars['ny']=         480
+        self.pars['nz']=         60
+        self.pars['boxsize']=    640
+
+        Lx = self.pars['boxsize']
+        Ly = Lx/self.pars['nx']*self.pars['ny']
+        Lz = Lx/self.pars['nx']*self.pars['nz']
 
         util.execute([self.pars, self.datafiles], solver=2, mode=3)
 
@@ -355,20 +359,12 @@ class SIM:
         flow_z_f = open('./data/simulation/flow_z.dat', "r")
         pos_f = open(self.datafiles['$posfile'], "r")
         pos = np.zeros((self.pars['N'], 3))
-
         for i in range(self.pars['N']):
             pos[i] = np.array(pos_f.readline().split(), dtype=float)
-    
         flow_x = np.array(flow_x_f.readline().split(), dtype=float)
         flow_y = np.array(flow_y_f.readline().split(), dtype=float)
         flow_z = np.array(flow_z_f.readline().split(), dtype=float)
-
-        print('sum', np.sum(flow_x))
         
-        Lx = self.pars['boxsize']
-        Ly = Lx/self.pars['nx']*self.pars['ny']
-        Lz = Lx/self.pars['nx']*self.pars['nz']
-
         def reshape_func(flow):
             return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx'])) # z-major
         
@@ -393,49 +389,44 @@ class SIM:
         Y = np.linspace(0, Ly, self.pars['ny'])
         Z = np.linspace(0, Lz, self.pars['nz'])
 
-        z = int(0.5*self.pars['nz'])
-        print('z=',z)
-
-        
-        flow_expression_x = np.zeros((self.pars['ny'], self.pars['nx']))
-        flow_expression_y = np.zeros((self.pars['ny'], self.pars['nx']))
+        W = 0.0
         dx = Lx/self.pars['nx']
-        for i in range(self.pars['nx']):
-            for j in range(self.pars['ny']):
-                rx = dx*i
-                ry = dx*j
-                rz = pos[0][2]
-                
-                flow_expression_x[j][i], flow_expression_y[j][i], vz = u(np.array([rx, ry, rz])-pos[0])
-
-        qfac = 10
-        print(np.shape(flow_expression_x - flow_x[z]), np.shape(flow_x[z]))
-
         nxh = int(self.pars['nx']/2)
         nyh = int(self.pars['ny']/2)
-        print(flow_expression_x[nyh])
-        print(flow_x[z][nyh])
-        
-        with np.errstate(divide='ignore', invalid='ignore'):
-            diff = np.abs((flow_expression_x - flow_x[z]))
-            # diff = np.abs((flow_expression_x[int(0.8*nyh):int(1.2*nyh), int(0.8*nxh):int(1.2*nxh)] - flow_x[z][int(0.8*nyh):int(1.2*nyh), int(0.8*nxh):int(1.2*nxh)]))
-        diff[np.isnan(diff)] = 0
-        diff[np.isinf(diff)] = 0
+        nzh = int(self.pars['nz']/2)
 
-        print('mean diff=', np.mean(diff))
+        z = nzh + int(np.floor(20/dx))
+        
+        # flow_expression_x = np.zeros((self.pars['ny'], self.pars['nx']))
+        # flow_expression_y = np.zeros((self.pars['ny'], self.pars['nx']))
+        # for i in range(self.pars['nx']):
+        #     for j in range(self.pars['ny']):
+        #         rx = dx*i
+        #         ry = dx*j
+        #         rz = pos[0][2]
+        #         flow_expression_x[j][i], flow_expression_y[j][i], vz = u(np.array([rx, ry, rz])-pos[0])
+        # print(flow_expression_x[nyh])
+        # print(flow_x[z][nyh])
+        # with np.errstate(divide='ignore', invalid='ignore'):
+        #     diff = np.abs((flow_expression_x - flow_x[nzh]))
+        # diff[np.isnan(diff)] = 0
+        # diff[np.isinf(diff)] = 0
+        # print('mean diff=', np.mean(diff))
+
 
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        # ax.scatter(pos[:,0], pos[:,1], c='r')
+        ax.scatter(pos[:,0], pos[:,1], c='r')
 
-        # circle = plt.Circle((pos[:,0], pos[:,1]), self.pars['rh'])
+        # circle = plt.Circle((pos[:,0], pos[:,1]), self.pars['rh'], color='r')
         # ax.add_patch(circle)
-        # ax.set_xlim((0, self.pars['boxsize']))
-        # ax.set_ylim((0, self.pars['boxsize']))
+        # ax.set_ylim((0,100))
 
-        ax.streamplot(X, Y, flow_x[z], flow_y[z])
-        ax.streamplot(X, Y, flow_expression_x, flow_expression_y)
-        # ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac], flow_y[z,::qfac,::qfac])
+        ax.streamplot(X, Y, flow_x[z]-W, flow_y[z])
+        # ax.streamplot(X, Y, flow_expression_x-W, flow_expression_y)
+
+        qfac = 10
+        ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac]-W, flow_y[z,::qfac,::qfac])
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
