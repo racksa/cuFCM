@@ -501,12 +501,12 @@ class SIM:
                 ax.plot(self.phi_array[i], ptps_array, marker=marker, linestyle=linestyle, c=util.color_codex[i], label=label)
         
         # adding title and labels
-        ax.set_title(r"PTPS vs. $\phi$")
+        # ax.set_title(r"PTPS vs. $\phi$")
         ax.set_xlabel(r'$\phi$')
         ax.set_ylabel('PTPS')
         ax.legend()
         # ax.set_xscale('log')
-        plt.savefig('img/ptps_combined.eps', format='eps')
+        plt.savefig('img/ptps_combined.eps', bbox_inches = 'tight', format='eps')
         plt.show()
 
     

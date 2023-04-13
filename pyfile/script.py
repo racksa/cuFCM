@@ -38,6 +38,7 @@ if(sys.argv[1] == 'read_npy'):
     sim.plot_sigfac()
 
 if(sys.argv[1] == 'plot_combine'):
+    # date = "20221125"
     sim.analyse_and_plot_both()
     
 if(sys.argv[1] == 'plot_piechart'):

@@ -45,14 +45,14 @@ ax.scatter(aL_array, crossover_array, marker = '+', s=100, color='red', label='D
 # ax.clabel(CS, inline=True, fontsize=10)
 ax.set_xlabel('a/L')
 ax.set_ylabel(r'$\phi_c$')
-ax.set_title(r"Crossover volume fraction vs. aspect ratio")
+# ax.set_title(r"Crossover volume fraction vs. aspect ratio")
 ax.set_xlim((0, 0.015))
 ax.set_ylim((0, 0.25))
 ax.legend()
 ax.annotate('FCM region', (0.004, 0.22), weight='bold', size=25)
 ax.annotate('FFCM region', (0.0015, 0.06), weight='bold', size=25)
 
-plt.savefig('img/r_crossover.eps', format='eps')
+plt.savefig('img/r_crossover.eps', bbox_inches = 'tight', format='eps')
 plt.show()
 
 # delta = 0.025
