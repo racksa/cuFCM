@@ -7,6 +7,8 @@ class FCM_solver{
 public:
     Pars pars;
 
+    int Nf, Nv;
+    
     int N, nx, ny, nz, repeat, prompt, warmup, checkerror;
     Real Lx, Ly, Lz;
     int num_seg, num_blob;
@@ -26,8 +28,8 @@ public:
 
     cufftHandle plan, iplan;
     /* source */
-    Real *aux_host, *aux_device, *Y_host, *Y_device, *F_host, *F_device,
-	     *T_host, *T_device, *V_host, *V_device, *W_host, *W_device;
+    Real *aux_host, *aux_device, *Yf_host, *Yf_device, *Yv_host, *Yv_device;
+    Real *F_host, *F_device, *T_host, *T_device, *V_host, *V_device, *W_host, *W_device;
         
     /* grid */
     myCufftReal *hx_host, *hy_host, *hz_host, *hx_device, *hy_device, *hz_device;
@@ -99,8 +101,8 @@ public:
     void init_cuda();
 
     __host__
-    void hydrodynamic_solver(Real *Y_device_input, Real * F_device_input, Real *T_device_input,
-                             Real * V_device_input, Real *W_device_input);
+    void hydrodynamic_solver(Real *Yf_device_input, Real * F_device_input, Real *T_device_input,
+                             Real *Yv_device_input, Real * V_device_input, Real *W_device_input);
 
     __host__
     void pairwise_solver(Real *Y_device_input, Real * F_device_input, Real *T_device_input,
@@ -214,7 +216,7 @@ public:
     void finish();
 
     __host__
-    void assign_host_array_pointers(Real *Y_host_o, 
+    void assign_host_array_pointers(Real *Yf_host_o, Real *Yv_host_o, 
                                     Real *F_host_o, Real *T_host_o, 
                                     Real *V_host_o, Real *W_host_o);
 

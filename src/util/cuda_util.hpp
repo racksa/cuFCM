@@ -6,22 +6,8 @@
 #include <mutex>
 
 #ifndef NO_CUDA
-#include <cublas_v2.h>
 #include <cuda_profiler_api.h>
 #include "../config.hpp"
-
-// helper for initializing cublas
-// use only for demos: not threadsafe
-static cublasHandle_t get_cublas_handle() {
-    static bool is_initialized = false;
-    static cublasHandle_t cublas_handle;
-
-    if(!is_initialized) {
-        cublasCreate(&cublas_handle);
-        is_initialized = true;
-    }
-    return cublas_handle;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // CUDA error checking
@@ -30,13 +16,6 @@ static void cuda_check_status(cudaError_t status) {
     if(status != cudaSuccess) {
         std::cerr << "error: CUDA API call : "
                   << cudaGetErrorString(status) << std::endl;
-        exit(1);
-    }
-}
-
-static void cublas_check_status(cublasStatus_t status) {
-    if(status != CUBLAS_STATUS_SUCCESS) {
-        std::cerr << "error: CUDABLAS API call\n";
         exit(1);
     }
 }

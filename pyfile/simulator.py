@@ -239,13 +239,13 @@ class SIM:
         self.pars['beta']=       9.0
         self.pars['eta']=        4.8
         npts = 320  # Fast FCM
-        # npts = 480  # Regular FCM
+        npts = 480  # Regular FCM
 
         self.pars['nx']=         npts
         self.pars['ny']=         npts
         self.pars['nz']=         npts
         self.pars['Fref']=       1.0
-        self.pars['repeat']=     50
+        self.pars['repeat']=     1
         self.pars['prompt']=     10
         self.pars['boxsize']=    np.pi*2
 

@@ -16,17 +16,13 @@
 
 #define FCM_THREADS_PER_BLOCK 32
 
-#define SOLVER_MODE 1
+#define SOLVER_MODE 0
 // 0 = FCM
 // 1 = Fast FCM
 
 #define ROTATION 1
 // 0 = No rotation
 // 1 = Rotation     **default
-
-// #define INIT_FROM_FILE 1         **deprecated!! use random generator instread
-// 0 = Generate random packing
-// 1 = Read initial data from file
 
 #define SPREAD_TYPE 4
 // 0 = Thread per particle (TPP) register   **deprecated
@@ -39,7 +35,7 @@
 // 0 = Thread per particle (TPP) register   **deprecated
 // 1 = Thread per particle (TPP) recompute  **deprecated
 // 2 = Block per particle (BPP) shared      **deprecated
-// 3 = Block per particle (BPP) recompute
+// 3 = Block per particle (BPP) recompute   **deprecated
 // 4 = Block per particle (BPP) shared dynamic  **default
 
 #define CORRECTION_TYPE 1
@@ -58,13 +54,7 @@
 // 0 = Dont write to file
 // 1 = Write to file    **default
 
-// #define CHECK_ERROR 1        ** moved to run time check
-// 0 = Dont check error     **default
-// 1 = Check error from file
-
-#define USE_DOUBLE_PRECISION true
-
-#if USE_DOUBLE_PRECISION
+#ifdef USE_DOUBLE_PRECISION
     typedef double Real;
     typedef long Integer;
     typedef cufftDoubleReal myCufftReal;

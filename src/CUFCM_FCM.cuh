@@ -108,13 +108,13 @@ void cufcm_flow_solve(myCufftComplex* fk_x, myCufftComplex* fk_y, myCufftComplex
 //                                 Real anorm, Real anorm2,
 //                                 Real dx, Real nx, Real ny, Real nz);
 
-__global__
-void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
-                                Real *Y,
-                                Real *VTEMP, Real *WTEMP,
-                                int N, int ngd, 
-                                Real sigma, Real Sigma,
-                                Real dx, Real nx, Real ny, Real nz);
+// __global__
+// void cufcm_particle_velocities_bpp_recompute(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+//                                 Real *Y,
+//                                 Real *VTEMP, Real *WTEMP,
+//                                 int N, int ngd, 
+//                                 Real sigma, Real Sigma,
+//                                 Real dx, Real nx, Real ny, Real nz);
 
 __global__
 void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
