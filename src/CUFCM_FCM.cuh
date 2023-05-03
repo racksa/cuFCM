@@ -38,26 +38,26 @@
 //               Real anorm, Real anorm2,
 //               Real dx, Real nx, Real ny, Real nz);
 
-__global__
-void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
-              Real *Y, Real *T, Real *F,
-              int N, int ngd, 
-              Real sigma, Real Sigma,
-              Real dx, Real nx, Real ny, Real nz);
+// __global__
+// void cufcm_mono_dipole_distribution_bpp_recompute(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
+//               Real *Y, Real *T, Real *F,
+//               int N, int ngd, 
+//               Real sigma, Real Sigma,
+//               Real dx, Real nx, Real ny, Real nz);
 
 __global__
 void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
               Real *Y, Real *T, Real *F,
               int N, int ngd, 
-              Real sigma, Real Sigma,
+              Real sigma, Real sigmadip, Real Sigma,
               Real dx, double nx, double ny, double nz);
 
-__global__
-void cufcm_mono_dipole_distribution_selection(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *T, Real *F, int N, int ngd, 
-              Real sigma, Real Sigma,
-              Real dx, double nx, double ny, double nz,
-              int *particle_index, int start, int end);
+// __global__
+// void cufcm_mono_dipole_distribution_selection(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
+//               Real *T, Real *F, int N, int ngd, 
+//               Real sigma, Real Sigma,
+//               Real dx, double nx, double ny, double nz,
+//               int *particle_index, int start, int end);
 
 __global__
 void cufcm_mono_dipole_distribution_mono(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
@@ -66,13 +66,13 @@ void cufcm_mono_dipole_distribution_mono(myCufftReal *fx, myCufftReal *fy, myCuf
               Real sigma, Real Sigma,
               Real dx, double nx, double ny, double nz);
 
-__global__
-void cufcm_mono_dipole_distribution_mono_selection(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
-              Real *Y, Real *F,
-              int N, int ngd, 
-              Real sigma, Real Sigma,
-              Real dx, double nx, double ny, double nz,
-              int *particle_index, int start, int end);
+// __global__
+// void cufcm_mono_dipole_distribution_mono_selection(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
+//               Real *Y, Real *F,
+//               int N, int ngd, 
+//               Real sigma, Real Sigma,
+//               Real dx, double nx, double ny, double nz,
+//               int *particle_index, int start, int end);
     
 
 __global__
@@ -121,16 +121,16 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
                                 Real *Y,
                                 Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
-                                Real sigma, Real Sigma,
+                                Real sigma, Real sigmadip, Real Sigma,
                                 Real dx, Real nx, Real ny, Real nz);
 
-__global__
-void cufcm_particle_velocities_selection(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
-                                Real *Y, Real *VTEMP, Real *WTEMP,
-                                int N, int ngd, 
-                                Real sigma, Real Sigma,
-                                Real dx, Real nx, Real ny, Real nz, 
-                                int *particle_index, int start, int end);
+// __global__
+// void cufcm_particle_velocities_selection(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+//                                 Real *Y, Real *VTEMP, Real *WTEMP,
+//                                 int N, int ngd, 
+//                                 Real sigma, Real Sigma,
+//                                 Real dx, Real nx, Real ny, Real nz, 
+//                                 int *particle_index, int start, int end);
 
 __global__
 void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
@@ -140,27 +140,28 @@ void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftRea
                                 Real sigma, Real Sigma,
                                 Real dx, Real nx, Real ny, Real nz);
 
-__global__
-void cufcm_particle_velocities_mono_selection(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
-                                Real *Y,
-                                Real *VTEMP,
-                                int N, int ngd, 
-                                Real sigma, Real Sigma,
-                                Real dx, Real nx, Real ny, Real nz,
-                                int *particle_index, int start, int end);
+// __global__
+// void cufcm_particle_velocities_mono_selection(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+//                                 Real *Y,
+//                                 Real *VTEMP,
+//                                 int N, int ngd, 
+//                                 Real sigma, Real Sigma,
+//                                 Real dx, Real nx, Real ny, Real nz,
+//                                 int *particle_index, int start, int end);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Regular FCM
 ///////////////////////////////////////////////////////////////////////////////
-__global__
-void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-              Real *T, Real *F, int N, int ngd, 
-              Real sigmasq, Real sigmadipsq,
-              Real dx, Real nx, Real ny, Real nz);
-__global__
-void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
-                                Real *Y,
-                                Real *VTEMP, Real *WTEMP,
-                                int N, int ngd, 
-                                Real sigmasq, Real sigmadipsq,
-                                Real dx, Real nx, Real ny, Real nz);
+// __global__
+// void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
+//               Real *T, Real *F, int N, int ngd, 
+//               Real sigma, Real sigmadip,
+//               Real dx, Real nx, Real ny, Real nz);
+
+// __global__
+// void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
+//                                 Real *Y,
+//                                 Real *VTEMP, Real *WTEMP,
+//                                 int N, int ngd, 
+//                                 Real sigma, Real sigmadip,
+//                                 Real dx, Real nx, Real ny, Real nz);

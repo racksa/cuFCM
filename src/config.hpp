@@ -24,21 +24,21 @@
 // 0 = No rotation
 // 1 = Rotation     **default
 
-#define SPREAD_TYPE 4
+#define SPREAD_TYPE 4   // Deprecated option
 // 0 = Thread per particle (TPP) register   **deprecated
 // 1 = Thread per particle (TPP) recompute  **deprecated
 // 2 = Block per particle (BPP) shared      **deprecated
 // 3 = Block per particle (BPP) recompute
 // 4 = Block per particle (BPP) shared dynamic  **default
 
-#define GATHER_TYPE 4
+#define GATHER_TYPE 4   // Deprecated option
 // 0 = Thread per particle (TPP) register   **deprecated
 // 1 = Thread per particle (TPP) recompute  **deprecated
 // 2 = Block per particle (BPP) shared      **deprecated
 // 3 = Block per particle (BPP) recompute   **deprecated
 // 4 = Block per particle (BPP) shared dynamic  **default
 
-#define CORRECTION_TYPE 1
+#define CORRECTION_TYPE 1   // Deprecated option
 // 0 = Linklist     **deprecated
 // 1 = Spatial hashing (TPP)   **default
 
