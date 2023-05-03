@@ -31,21 +31,19 @@ void read_validate_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, cons
     ifile = fopen(file_name, "r");
     for(int np = 0; np < N; np++){
         #if USE_DOUBLE_PRECISION == true
-            if(fscanf(ifile, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-            &Y[3*np + 0],
+            if(fscanf(ifile, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
             &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2],
             &F[3*np + 0], &F[3*np + 1], &F[3*np + 2],
-            //&T[3*np + 0], &T[3*np + 1], &T[3*np + 2],
+            &T[3*np + 0], &T[3*np + 1], &T[3*np + 2],
             &V[3*np + 0], &V[3*np + 1], &V[3*np + 2],
             &W[3*np + 0], &W[3*np + 1], &W[3*np + 2]) == 0){
                 printf("fscanf error: Unable to read data");
             }
         #else
-            if(fscanf(ifile, "%f %f %f %f %f %f %f %f %f %f %f %f %f",
-            &Y[3*np + 0],
+            if(fscanf(ifile, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
             &Y[3*np + 0], &Y[3*np + 1], &Y[3*np + 2],
             &F[3*np + 0], &F[3*np + 1], &F[3*np + 2],
-            //&T[3*np + 0], &T[3*np + 1], &T[3*np + 2],
+            &T[3*np + 0], &T[3*np + 1], &T[3*np + 2],
             &V[3*np + 0], &V[3*np + 1], &V[3*np + 2],
             &W[3*np + 0], &W[3*np + 1], &W[3*np + 2]) == 0){
                 printf("fscanf error: Unable to read data");
@@ -201,6 +199,21 @@ void read_config(Real *values, std::vector<std::string>& datafile_names, const c
     else{
         std::cerr << "Couldn't open config file for reading.\n";
     }
+}
+
+void parser_config(Real *values, Pars& pars){
+    pars.N = values[0];
+	pars.rh = values[1];
+	pars.alpha = values[2];
+	pars.beta = values[3];
+	pars.eta = values[4];
+	pars.nx = values[5];
+	pars.ny = values[6];
+	pars.nz = values[7];
+	pars.repeat = values[8];
+	pars.prompt = values[9];
+	pars.boxsize = values[13];
+	pars.checkerror = values[14];
 }
 
 __global__

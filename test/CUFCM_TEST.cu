@@ -23,18 +23,7 @@ int main(int argc, char** argv) {
 	Real values[100];
 	std::vector<std::string> datafile_names{3};
 	read_config(values, datafile_names, "./test/test_info/test_fastfcm_info");
-	pars.N = values[0];
-	pars.rh = values[1];
-	pars.alpha = values[2];
-	pars.beta = values[3];
-	pars.eta = values[4];
-	pars.nx = values[5];
-	pars.ny = values[6];
-	pars.nz = values[7];
-	pars.repeat = values[8];
-	pars.prompt = values[9];
-	pars.boxsize = values[13];
-	pars.checkerror = values[14];
+	parser_config(values, pars);
 
 	Real* Yf_host = malloc_host<Real>(3*pars.N);					Real* Yf_device = malloc_device<Real>(3*pars.N);
 	Real* Yv_host = malloc_host<Real>(3*pars.N);					Real* Yv_device = malloc_device<Real>(3*pars.N);

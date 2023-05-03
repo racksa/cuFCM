@@ -35,6 +35,8 @@ void write_flow_field(Real *h, int Ngrid, const char *file_name);
 
 void read_config(Real *values, std::vector<std::string>& datafile_names, const char *file_name);
 
+void parser_config(Real *values, Pars& pars);
+
 __global__
 void init_pos_lattice(Real *Y, int N, Real Lx, Real Ly, Real Lz);
 

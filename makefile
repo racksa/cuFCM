@@ -10,22 +10,22 @@ TEST_FILES = CUFCM_TEST.cu CUFCM_CELLLIST.cu CUFCM_FCM.cu CUFCM_DATA.cu CUFCM_CO
 
 
 CUFCM : $(CUFCM_FILES)
-	nvcc $^ $(NVCC_FLAGS) $(LINK) -o bin/CUFCM
+	nvcc $^ $(NVCC_FLAGS) $(LINK) -o bin/$@
 
 CUFCM_DOUBLE : $(CUFCM_FILES)
 	nvcc $^ -DUSE_DOUBLE_PRECISION $(NVCC_FLAGS) $(LINK) -o bin/CUFCM
 
 FCM : $(CUFCM_FILES)
-	nvcc $^ -DUSE_REGULARFCM $(NVCC_FLAGS) $(LINK) -o bin/FCM
+	nvcc $^ -DUSE_REGULARFCM $(NVCC_FLAGS) $(LINK) -o bin/$@
 
 FLOWFIELD : $(CUFCM_FILES)
-	nvcc $^ $(NVCC_FLAGS) $(LINK) -o bin/FLOWFIELD
+	nvcc $^ $(NVCC_FLAGS) $(LINK) -o bin/$@
 
 RANDOM_GENERATOR : $(RANDOM_GENERATOR_FILES)
 	nvcc $^ $(NVCC_FLAGS) $(LINK) -o bin/RANDOM
 
 TEST : $(TEST_FILES)
-	nvcc $^ $(NVCC_FLAGS) $(LINK) -o bin/TEST
+	nvcc $^ $(NVCC_FLAGS) $(LINK) -o bin/$@
 
 clean :
 	rm -f bin/FCM

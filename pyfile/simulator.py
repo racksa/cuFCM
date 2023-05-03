@@ -253,7 +253,7 @@ class SIM:
             self.pars['alpha']= (self.pars['rh']/np.sqrt(np.pi))/dx
             self.pars['eta']= self.pars['eta']/self.pars['alpha']
 
-        util.execute([self.pars, self.datafiles], solver=0, mode=3)
+        # util.execute([self.pars, self.datafiles], solver=0, mode=3)
 
         npts = 320  # Fast FCM
         self.pars['nx']=         npts

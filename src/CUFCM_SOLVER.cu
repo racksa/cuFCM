@@ -673,7 +673,7 @@ void FCM_solver::spread(){
     #else
         cufcm_mono_dipole_distribution_mono<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+6)*sizeof(Real)>>>
                                         (hx_device, hy_device, hz_device, 
-                                        Y_device, F_device,
+                                        Yf_device, F_device,
                                         N, ngd,
                                         sigmaFCM, SigmaGRID,
                                         dx, nx, ny, nz);
@@ -743,7 +743,7 @@ void FCM_solver::gather(){
     #else
         cufcm_particle_velocities_mono<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+3)*sizeof(Real)>>>
                                 (hx_device, hy_device, hz_device,
-                                Y_device, V_device,
+                                Yv_device, V_device,
                                 N, ngd,
                                 sigmaFCM, SigmaGRID,
                                 dx, nx, ny, nz);
@@ -770,7 +770,7 @@ void FCM_solver::correction(){
                                     sigmaFCM,
                                     sigmaFCMdip);
             #else
-                cufcm_pair_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, V_device, F_device, N, Lx, Ly, Lz,
+                cufcm_pair_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yv_device, V_device, F_device, N, Lx, Ly, Lz,
                                 particle_cellhash_device, cell_start_device, cell_end_device,
                                 map_device,
                                 ncell, Rcsq,
@@ -856,7 +856,6 @@ void FCM_solver::prompt_time(){
 
 __host__
 void FCM_solver::finish(){
-
 	copy_to_host<Real>(Yf_device, Yf_host, 3*N);
     copy_to_host<Real>(Yv_device, Yv_host, 3*N);
 	copy_to_host<Real>(F_device, F_host, 3*N);
@@ -898,7 +897,6 @@ void FCM_solver::finish(){
 		std::cout << "PTPS:\t" << PTPS << " /s\n";
 		std::cout << std::endl;
 	}
-
 }
 
 __host__
@@ -932,7 +930,7 @@ void FCM_solver::write_cell_list(){
 
 __host__
 void FCM_solver::apply_repulsion(){
-    // contact_force<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, Lx, Ly, Lz,
+    // contact_force<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yf_device, F_device, rh, N, Lx, Ly, Lz,
     //                 particle_cellhash_device, cell_start_device, cell_end_device,
     //                 map_device,
     //                 ncell, 1.21*(2*rh)*(2*rh),
