@@ -72,7 +72,14 @@ void FCM_solver::init_config(){
 
 __host__
 void FCM_solver::init_fcm_var(){
-    #if SOLVER_MODE == 1
+    #if USE_REGULARFCM
+
+        sigmaFCM = rh/sqrt(PI);
+        sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
+
+        SigmaGRID = sigmaFCM;
+        
+    #else
 
         /* Monopole */
         sigmaFCM = rh/sqrt(PI); // Real particle size sigmaFCM
@@ -100,13 +107,6 @@ void FCM_solver::init_fcm_var(){
         WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
 
         // Rc = Real(-eta*pdmag);
-
-    #elif SOLVER_MODE == 0
-
-        sigmaFCM = rh/sqrt(PI);
-        sigmaFCMdip = rh/pow(6.0*sqrt(PI), 1.0/3.0);
-
-        SigmaGRID = sigmaFCM;
 
     #endif
 
@@ -154,23 +154,23 @@ void FCM_solver::prompt_info() {
             std::cout << "Data:\t\t\t<Single precision>" << "\n";
         #endif
 
-        #if SOLVER_MODE == 1
+        #ifndef USE_REGULARFCM
 			std::cout << "Solver:\t\t\t" << "<Fast FCM>" << "\n";
-		#elif SOLVER_MODE == 0
+		#elif USE_REGULARFCM
 			std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
 		#endif
 		std::cout << "Particle number:\t" << N << "\n";
 		std::cout << "Particle radius:\t" << rh << "\n";
 		std::cout << "Grid support:\t\t" << ngd << "\n";
-		#if SOLVER_MODE == 1
+		#ifndef USE_REGULARFCM
 			std::cout << "Sigma/sigma:\t\t" << SigmaGRID/sigmaFCM << "\n";
 			std::cout << "Alpha:\t\t\t" << alpha << "\n";
 			std::cout << "Beta:\t\t\t" << beta << "\n";
 			std::cout << "Eta:\t\t\t" << eta << "\n";
 		#endif
-		#if SOLVER_MODE == 1
+		#ifndef USE_REGULARFCM
 			std::cout << "Sigma:\t\t\t" << SigmaGRID << "\n";
-		#elif SOLVER_MODE == 0
+		#elif USE_REGULARFCM
 			std::cout << "sigma:\t\t\t" << sigmaFCM << "\n";
 		#endif
 		std::cout << "dx:\t\t\t" << dx<< "\n";
@@ -759,7 +759,7 @@ void FCM_solver::correction(){
     ///////////////////////////////////////////////////////////////////////////////
     cudaDeviceSynchronize();	time_start = get_time();
 
-    #if SOLVER_MODE == 1
+    #ifndef USE_REGULARFCM
         
             #if ROTATION ==1
                 cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yv_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
@@ -868,20 +868,20 @@ void FCM_solver::finish(){
 	// Time
 	///////////////////////////////////////////////////////////////////////////////
     
-	auto time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
-	auto time_spreading = mean(&time_spreading_array[warmup], repeat-warmup);
-	auto time_FFT = mean(&time_FFT_array[warmup], repeat-warmup);
-	auto time_gathering = mean(&time_gathering_array[warmup], repeat-warmup);
-	auto time_correction = mean(&time_correction_array[warmup], repeat-warmup);
+	time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
+	time_spreading = mean(&time_spreading_array[warmup], repeat-warmup);
+	time_FFT = mean(&time_FFT_array[warmup], repeat-warmup);
+	time_gathering = mean(&time_gathering_array[warmup], repeat-warmup);
+	time_correction = mean(&time_correction_array[warmup], repeat-warmup);
 
-	auto time_hashing_stdv = stdv(&time_hashing_array[warmup], repeat-warmup);
-	auto time_spreading_stdv = stdv(&time_spreading_array[warmup], repeat-warmup);
-	auto time_FFT_stdv = stdv(&time_FFT_array[warmup], repeat-warmup);
-	auto time_gathering_stdv = stdv(&time_gathering_array[warmup], repeat-warmup);
-	auto time_correction_stdv = stdv(&time_correction_array[warmup], repeat-warmup);
+	time_hashing_stdv = stdv(&time_hashing_array[warmup], repeat-warmup);
+	time_spreading_stdv = stdv(&time_spreading_array[warmup], repeat-warmup);
+	time_FFT_stdv = stdv(&time_FFT_array[warmup], repeat-warmup);
+	time_gathering_stdv = stdv(&time_gathering_array[warmup], repeat-warmup);
+	time_correction_stdv = stdv(&time_correction_array[warmup], repeat-warmup);
 
-	auto time_compute = time_spreading + time_FFT + time_gathering + time_correction;
-	auto PTPS = N/time_compute;
+	time_compute = time_spreading + time_FFT + time_gathering + time_correction;
+	PTPS = N/time_compute;
 
 	if(prompt > 1){
 		std::cout.precision(5);
@@ -899,62 +899,6 @@ void FCM_solver::finish(){
 		std::cout << std::endl;
 	}
 
-
-	///////////////////////////////////////////////////////////////////////////////
-	// Check error
-	///////////////////////////////////////////////////////////////////////////////
-    Real Yerror = -1;
-    Real Verror = -1;
-    Real Werror = -1;
-
-	if (checkerror == 1){
-        Real* Y_validation = malloc_host<Real>(3*N);
-		Real* F_validation = malloc_host<Real>(3*N);
-        Real* T_validation = malloc_host<Real>(3*N);
-		Real* V_validation = malloc_host<Real>(3*N);
-		Real* W_validation = malloc_host<Real>(3*N);
-
-		read_validate_data(Y_validation,
-						   F_validation,
-                           T_validation,
-						   V_validation,
-						   W_validation, N, "./data/refdata/ref_data_N500000");
-
-		Yerror = percentage_error_magnitude(Yf_host, Y_validation, N);
-		Verror = percentage_error_magnitude(V_host, V_validation, N);
-		Werror = percentage_error_magnitude(W_host, W_validation, N);
-
-		if(prompt > 1){
-			std::cout << "-------\nError\n-------\n";
-			std::cout << "%Y error:\t" << Yerror << "\n";
-			std::cout << "%V error:\t" << Verror << "\n";
-			std::cout << "%W error:\t" << Werror << "\n";
-		}
-    }
-
-	///////////////////////////////////////////////////////////////////////////////
-	// Write to file
-	///////////////////////////////////////////////////////////////////////////////
-	#if OUTPUT_TO_FILE == 1
-		write_data(Yf_host, F_host, T_host, V_host, W_host, N, 
-                   "./data/simulation/simulation_data.dat", "w");
-		
-		write_time(time_cuda_initialisation, 
-				time_readfile,
-				time_hashing,
-				time_spreading,
-				time_FFT,
-				time_gathering,
-				time_correction,
-				time_compute,
-				"./data/simulation/simulation_scalar.dat");
-
-        write_error(
-            Verror,
-            Werror,
-            "./data/simulation/simulation_scalar.dat");
-
-	#endif
 }
 
 __host__

@@ -21,8 +21,10 @@ public:
     bool *nan_check_device, nan_check_host=true;
 
     /* Timing */
-    Real time_start, time_cuda_initialisation, time_readfile;
-    Real *time_hashing_array, *time_linklist_array,*time_precompute_array,
+    Real time_start, time_cuda_initialisation, time_readfile, time_compute, PTPS;
+    Real time_hashing, time_spreading, time_FFT, time_gathering, time_correction;
+    Real time_hashing_stdv, time_spreading_stdv, time_FFT_stdv, time_gathering_stdv, time_correction_stdv;
+    Real *time_hashing_array,
          *time_spreading_array, *time_FFT_array, *time_gathering_array, *time_correction_array;
     int rept = 0;
 

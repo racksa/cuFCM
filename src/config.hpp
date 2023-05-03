@@ -16,9 +16,8 @@
 
 #define FCM_THREADS_PER_BLOCK 32
 
-#define SOLVER_MODE 0
-// 0 = FCM
-// 1 = Fast FCM
+#ifdef USE_REGULARFCM
+#endif
 
 #define ROTATION 1
 // 0 = No rotation
@@ -45,14 +44,6 @@
 #define SORT_BACK 1
 // 0 = Do not sort back
 // 1 = Sort back    **default
-
-#define PURE_PAIRWISE 0
-// 0 = Grid FCM (periodic)      **default
-// 1 = Pairwise FCM (open domain)
-
-#define OUTPUT_TO_FILE 1
-// 0 = Dont write to file
-// 1 = Write to file    **default
 
 #ifdef USE_DOUBLE_PRECISION
     typedef double Real;

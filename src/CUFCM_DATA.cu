@@ -57,6 +57,7 @@ void read_validate_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, cons
     return;
 }
 
+
 void write_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name, const char *mode){
     FILE *pfile;
     pfile = fopen(file_name, mode);

@@ -8,12 +8,11 @@
 #include <string>
 #include <vector>
 
-#include "config.hpp"
-#include "CUFCM_DATA.cuh"
-#include "CUFCM_SOLVER.cuh"
-#include "CUFCM_RANDOMPACKER.cuh"
-#include "util/cuda_util.hpp"
-#include "util/maths_util.hpp"
+#include "../src/config.hpp"
+#include "../src/CUFCM_DATA.cuh"
+#include "../src/CUFCM_SOLVER.cuh"
+#include "../src/util/cuda_util.hpp"
+#include "../src/util/maths_util.hpp"
 
 
 int main(int argc, char** argv) {
@@ -23,7 +22,7 @@ int main(int argc, char** argv) {
 	Pars pars;
 	Real values[100];
 	std::vector<std::string> datafile_names{3};
-	read_config(values, datafile_names, "simulation_info");
+	read_config(values, datafile_names, "./test/test_info/test_fastfcm_info");
 	pars.N = values[0];
 	pars.rh = values[1];
 	pars.alpha = values[2];
@@ -117,28 +116,5 @@ int main(int argc, char** argv) {
 
 		return 0;
 	}
-
-	///////////////////////////////////////////////////////////////////////////////
-	// Write to file
-	///////////////////////////////////////////////////////////////////////////////
-
-	write_data(Yf_host, F_host, T_host, V_host, W_host, solver.N, 
-				"./data/simulation/simulation_data.dat", "w");
-	
-	write_time(solver.time_cuda_initialisation, 
-			solver.time_readfile,
-			solver.time_hashing,
-			solver.time_spreading,
-			solver.time_FFT,
-			solver.time_gathering,
-			solver.time_correction,
-			solver.time_compute,
-			"./data/simulation/simulation_scalar.dat");
-
-	write_error(
-		Verror,
-		Werror,
-		"./data/simulation/simulation_scalar.dat");
-
 }
 

@@ -148,20 +148,3 @@ void cufcm_particle_velocities_mono(myCufftReal *ux, myCufftReal *uy, myCufftRea
 //                                 Real sigma, Real Sigma,
 //                                 Real dx, Real nx, Real ny, Real nz,
 //                                 int *particle_index, int start, int end);
-
-///////////////////////////////////////////////////////////////////////////////
-// Regular FCM
-///////////////////////////////////////////////////////////////////////////////
-// __global__
-// void cufcm_mono_dipole_distribution_regular_fcm(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz, Real *Y,
-//               Real *T, Real *F, int N, int ngd, 
-//               Real sigma, Real sigmadip,
-//               Real dx, Real nx, Real ny, Real nz);
-
-// __global__
-// void cufcm_particle_velocities_regular_fcm(myCufftReal *ux, myCufftReal *uy, myCufftReal *uz,
-//                                 Real *Y,
-//                                 Real *VTEMP, Real *WTEMP,
-//                                 int N, int ngd, 
-//                                 Real sigma, Real sigmadip,
-//                                 Real dx, Real nx, Real ny, Real nz);

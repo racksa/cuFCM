@@ -238,7 +238,6 @@ class SIM:
         self.pars['alpha']=      1.0
         self.pars['beta']=       9.0
         self.pars['eta']=        4.8
-        npts = 320  # Fast FCM
         npts = 480  # Regular FCM
 
         self.pars['nx']=         npts
@@ -254,9 +253,15 @@ class SIM:
             self.pars['alpha']= (self.pars['rh']/np.sqrt(np.pi))/dx
             self.pars['eta']= self.pars['eta']/self.pars['alpha']
 
-        util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
+        util.execute([self.pars, self.datafiles], solver=0, mode=3)
 
-        self.plot_pie_chart_of_time()
+        npts = 320  # Fast FCM
+        self.pars['nx']=         npts
+        self.pars['ny']=         npts
+        self.pars['nz']=         npts
+        util.execute([self.pars, self.datafiles], solver=1, mode=3)
+
+        # self.plot_pie_chart_of_time()
     
     def run_single(self):
         self.datafiles['$posfile'] = './data/init_data/artificial/artificial_pos.dat'
