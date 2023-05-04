@@ -53,15 +53,8 @@ int main(int argc, char** argv) {
 	read_init_data_thrust(F_host, pars.N, datafile_names[1].c_str());
 	read_init_data_thrust(T_host, pars.N, datafile_names[2].c_str());
 
-	// for(int i = 0; i<3*pars.N; i++){
-	// 	Yf_host[i] = Yf_host[i];
-	// 	Yv_host[i] = Yf_host[i];
-	// 	F_host[i] = F_host[i];
-	// 	T_host[i] = T_host[i];
-	// }
-
 	Yf_device = Yf_host;
-	Yv_device = Yf_host;
+	Yv_device = Yf_host; // This is on purpose
 	F_device = F_host;
 	T_device = T_host;
 
@@ -99,6 +92,11 @@ int main(int argc, char** argv) {
 	// Check error
 	///////////////////////////////////////////////////////////////////////////////
     Real Yerror = -1, Verror = -1, Werror = -1;
+
+	Yf_host = Yf_device;
+	Yv_host = Yv_device;
+	V_host = V_device;
+	W_host = W_device;
 
 	if (pars.checkerror == 1){
 		thrust::host_vector<Real> Y_validation(3*pars.N);

@@ -105,82 +105,69 @@ public:
     __host__
     void hydrodynamic_solver(Real *Yf_device_input, Real * F_device_input, Real *T_device_input,
                              Real *Yv_device_input, Real * V_device_input, Real *W_device_input);
-
-    __host__
-    void pairwise_solver(Real *Y_device_input, Real * F_device_input, Real *T_device_input,
-                             Real * V_device_input, Real *W_device_input);
-
+                             
     __host__
     void box_particle();
 
     /* Filament code start*/
-    __host__
-    void init_aux_for_filament();
+    // __host__
+    // void init_aux_for_filament();
 
-    __host__
-    void apply_repulsion();
+    // __host__
+    // void reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver);
 
-    __host__
-    void reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver);
+    // __host__
+    // void reform_fseg(Real *f_seg, bool to_solver);
 
-    __host__
-    void reform_fseg(Real *f_seg, bool to_solver);
+    // __host__
+    // void reform_vseg(Real *v_seg, bool to_solver);
 
-    __host__
-    void reform_vseg(Real *v_seg, bool to_solver);
+    // __host__
+    // void reform_fblob(Real *f_blob, bool to_solver);
 
-    __host__
-    void reform_fblob(Real *f_blob, bool to_solver);
+    // __host__
+    // void reform_vblob(Real *v_blob, bool to_solver);
 
-    __host__
-    void reform_vblob(Real *v_blob, bool to_solver);
-
-    __host__
-    void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
-                     Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier);
+    // __host__
+    // void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
+    //                  Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier);
     
-    __host__
-    void reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
-                     Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier);
+    // __host__
+    // void reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
+    //                  Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier);
 
-    __host__
-    void write_data_call();
-
-    __host__
-    void write_flowfield_call();
-
-    __host__
-    void Mss();
+    // __host__
+    // void Mss();
             
-    __host__
-    void Msb();
+    // __host__
+    // void Msb();
 
-    __host__
-    void Mbs();
+    // __host__
+    // void Mbs();
 
-    __host__
-    void Mbb();
+    // __host__
+    // void Mbb();
 
-    __host__
-    void apply_repulsion_for_timcode();
+    // __host__
+    // void apply_repulsion_for_timcode();
 
-    __host__
-    void spread_seg_force();
+    // __host__
+    // void spread_seg_force();
 
-    __host__
-    void spread_blob_force();
+    // __host__
+    // void spread_blob_force();
 
-    __host__
-    void gather_seg_velocity();
+    // __host__
+    // void gather_seg_velocity();
 
-    __host__
-    void gather_blob_velocity();
+    // __host__
+    // void gather_blob_velocity();
 
-    __host__
-    void correction_seg();
+    // __host__
+    // void correction_seg();
 
-    __host__
-    void correction_blob();
+    // __host__
+    // void correction_blob();
 
     /* Filament code end*/
 
@@ -209,18 +196,24 @@ public:
     void sortback(int start_index, int particle_number);
 
     __host__
-    void check_nan();
-
-    __host__
     void prompt_time();
 
     __host__
     void finish();
 
     __host__
+    void apply_repulsion();
+
+    __host__
     void assign_host_array_pointers(Real *Yf_host_o, Real *Yv_host_o, 
                                     Real *F_host_o, Real *T_host_o, 
                                     Real *V_host_o, Real *W_host_o);
+        
+    __host__
+    void write_data_call();
+
+    __host__
+    void write_flowfield_call();
 
     __host__
     void write_cell_list();

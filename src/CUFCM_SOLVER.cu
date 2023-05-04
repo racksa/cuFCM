@@ -188,7 +188,6 @@ void FCM_solver::init_cuda(){
     cudaMalloc((void **)&nan_check_device, sizeof (bool));
 
 	aux_host = malloc_host<Real>(3*N);					    aux_device = malloc_device<Real>(3*N);
-    
 
 	hx_host = malloc_host<myCufftReal>(grid_size);
 	hy_host = malloc_host<myCufftReal>(grid_size);
@@ -239,7 +238,7 @@ void FCM_solver::init_cuda(){
 
 	time_cuda_initialisation += get_time() - time_start;
 }
-
+/*
 // __host__
 // void FCM_solver::init_aux_for_filament(){
 
@@ -533,6 +532,8 @@ void FCM_solver::init_cuda(){
 //                             particle_index_device, num_seg, N);
 // }
 
+*/
+
 __host__ 
 void FCM_solver::hydrodynamic_solver(Real *Yf_device_input, Real *Yv_device_input, 
                                      Real *F_device_input, Real *T_device_input, 
@@ -743,52 +744,24 @@ void FCM_solver::correction(){
 
     #ifndef USE_REGULARFCM
         
-            #if ROTATION ==1
-                cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yv_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
-                                    particle_cellhash_device, cell_start_device, cell_end_device,
-                                    map_device,
-                                    ncell, Rcsq,
-                                    SigmaGRID,
-                                    sigmaFCM,
-                                    sigmaFCMdip);
-            #else
-                cufcm_pair_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yv_device, V_device, F_device, N, Lx, Ly, Lz,
-                                particle_cellhash_device, cell_start_device, cell_end_device,
-                                map_device,
-                                ncell, Rcsq,
-                                SigmaGRID,
-                                sigmaFCM,
-                                particle_index_device, 0, N);
-            #endif
+        cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yv_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
+                            particle_cellhash_device, cell_start_device, cell_end_device,
+                            map_device,
+                            ncell, Rcsq,
+                            SigmaGRID,
+                            sigmaFCM,
+                            sigmaFCMdip);
 
-            #if ROTATION ==1
-                cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
-                                        StokesMob, ModStokesMob,
-                                        PDStokesMob, BiLapMob,
-                                        WT1Mob, WT2Mob);
-            #else
-                cufcm_self_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, F_device, N,
+        cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
                                 StokesMob, ModStokesMob,
                                 PDStokesMob, BiLapMob,
-                                particle_index_device, 0, N);
-            #endif
+                                WT1Mob, WT2Mob);
 
     #endif
 
     cudaDeviceSynchronize();	time_correction_array[rept] = get_time() - time_start;
 }
 
-__host__
-void FCM_solver::check_nan(){
-    nan_check_host = true;
-    cudaMemcpy(nan_check_device, &nan_check_host, sizeof(bool), cudaMemcpyHostToDevice);
-    check_nan_in<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, 3*N, nan_check_device);
-    check_nan_in<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(W_device, 3*N, nan_check_device);
-    cudaMemcpy(&nan_check_host, nan_check_device, sizeof(bool), cudaMemcpyDeviceToHost);
-    if(!nan_check_host){
-        printf("\n\n********FATAL ERROR: NAN encountered********\n\n");
-    }
-}
 
 __host__
 void FCM_solver::assign_host_array_pointers(Real *Yf_host_o, Real *Yv_host_o, 
@@ -804,52 +777,7 @@ void FCM_solver::assign_host_array_pointers(Real *Yf_host_o, Real *Yv_host_o,
 
 __host__
 void FCM_solver::prompt_time(){
-    auto time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
-	auto time_spreading = mean(&time_spreading_array[warmup], repeat-warmup);
-	auto time_FFT = mean(&time_FFT_array[warmup], repeat-warmup);
-	auto time_gathering = mean(&time_gathering_array[warmup], repeat-warmup);
-	auto time_correction = mean(&time_correction_array[warmup], repeat-warmup);
-
-	auto time_hashing_stdv = stdv(&time_hashing_array[warmup], repeat-warmup);
-	auto time_spreading_stdv = stdv(&time_spreading_array[warmup], repeat-warmup);
-	auto time_FFT_stdv = stdv(&time_FFT_array[warmup], repeat-warmup);
-	auto time_gathering_stdv = stdv(&time_gathering_array[warmup], repeat-warmup);
-	auto time_correction_stdv = stdv(&time_correction_array[warmup], repeat-warmup);
-
-	auto time_compute = time_spreading + time_FFT + time_gathering + time_correction;
-	auto PTPS = N/time_compute;
-
-	if(prompt > 1){
-		std::cout.precision(5);
-		std::cout << std::endl;
-		std::cout << "-------\nTimings\n-------\n";
-		std::cout << "Init CUDA:\t" << time_cuda_initialisation << "s\n";
-		std::cout << "Readfile:\t" << time_readfile << " s\n";
-		std::cout << "Hashing:\t" << time_hashing << " \t+/-\t " << time_hashing_stdv << " s\n";
-        std::cout << "Spreading:\t" << time_spreading << " \t+/-\t " << time_spreading_stdv <<" s\n";
-		std::cout << "FFT+flow:\t" << time_FFT << " \t+/-\t " << time_FFT_stdv <<" s\n";
-		std::cout << "Gathering:\t" << time_gathering << " \t+/-\t " << time_gathering_stdv <<" s\n";
-		std::cout << "Correction:\t" << time_correction << " \t+/-\t " << time_correction_stdv <<" s\n";
-		std::cout << "Compute total:\t" << time_compute <<" s\n";
-		std::cout << "PTPS:\t" << PTPS << " /s\n";
-		std::cout << std::endl;
-	}
-}
-
-__host__
-void FCM_solver::finish(){
-	copy_to_host<Real>(Yf_device, Yf_host, 3*N);
-    copy_to_host<Real>(Yv_device, Yv_host, 3*N);
-	copy_to_host<Real>(F_device, F_host, 3*N);
-	copy_to_host<Real>(T_device, T_host, 3*N);
-	copy_to_host<Real>(V_device, V_host, 3*N);
-	copy_to_host<Real>(W_device, W_host, 3*N);
-
-	///////////////////////////////////////////////////////////////////////////////
-	// Time
-	///////////////////////////////////////////////////////////////////////////////
-    
-	time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
+    time_hashing = mean(&time_hashing_array[warmup], repeat-warmup);
 	time_spreading = mean(&time_spreading_array[warmup], repeat-warmup);
 	time_FFT = mean(&time_FFT_array[warmup], repeat-warmup);
 	time_gathering = mean(&time_gathering_array[warmup], repeat-warmup);
@@ -879,6 +807,15 @@ void FCM_solver::finish(){
 		std::cout << "PTPS:\t" << PTPS << " /s\n";
 		std::cout << std::endl;
 	}
+}
+
+__host__
+void FCM_solver::finish(){
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Time
+	///////////////////////////////////////////////////////////////////////////////
+    prompt_time();
 }
 
 __host__
@@ -912,12 +849,6 @@ void FCM_solver::write_cell_list(){
 
 __host__
 void FCM_solver::apply_repulsion(){
-    // contact_force<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yf_device, F_device, rh, N, Lx, Ly, Lz,
-    //                 particle_cellhash_device, cell_start_device, cell_end_device,
-    //                 map_device,
-    //                 ncell, 1.21*(2*rh)*(2*rh),
-    //                 (Real(2.0)*(Real(220.0)*Real(1800.0)/(Real(2.2)*Real(2.2)*Real(20.0)*Real(20.0)))));
-    
     contact_force<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yf_device, F_device, rh, N, Lx, Ly, Lz,
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
