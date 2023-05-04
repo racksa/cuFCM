@@ -7,6 +7,8 @@
 #include <cufft.h>
 #include <string>
 #include <vector>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
 
 #include "../src/config.hpp"
 #include "../src/CUFCM_DATA.cuh"
@@ -37,32 +39,31 @@ int main(int argc, char** argv) {
 	read_config(values, datafile_names, info_name.c_str());
 	parser_config(values, pars);
 
-	Real* Yf_host = malloc_host<Real>(3*pars.N);					Real* Yf_device = malloc_device<Real>(3*pars.N);
-	Real* Yv_host = malloc_host<Real>(3*pars.N);					Real* Yv_device = malloc_device<Real>(3*pars.N);
-	Real* F_host = malloc_host<Real>(3*pars.N);						Real* F_device = malloc_device<Real>(3*pars.N);
-	Real* T_host = malloc_host<Real>(3*pars.N);						Real* T_device = malloc_device<Real>(3*pars.N);
-	Real* V_host = malloc_host<Real>(3*pars.N);						Real* V_device = malloc_device<Real>(3*pars.N);
-	Real* W_host = malloc_host<Real>(3*pars.N);						Real* W_device = malloc_device<Real>(3*pars.N);
+	thrust::host_vector<Real> Yf_host(3*pars.N);						thrust::device_vector<Real> Yf_device(3*pars.N);
+	thrust::host_vector<Real> Yv_host(3*pars.N);						thrust::device_vector<Real> Yv_device(3*pars.N);
+	thrust::host_vector<Real> F_host(3*pars.N);							thrust::device_vector<Real> F_device(3*pars.N);
+	thrust::host_vector<Real> T_host(3*pars.N);							thrust::device_vector<Real> T_device(3*pars.N);
+	thrust::host_vector<Real> V_host(3*pars.N);							thrust::device_vector<Real> V_device(3*pars.N);
+	thrust::host_vector<Real> W_host(3*pars.N);							thrust::device_vector<Real> W_device(3*pars.N);
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
+	read_init_data_thrust(Yf_host, pars.N, datafile_names[0].c_str());
+	read_init_data_thrust(F_host, pars.N, datafile_names[1].c_str());
+	read_init_data_thrust(T_host, pars.N, datafile_names[2].c_str());
 
-	read_init_data(Yf_host, pars.N, datafile_names[0].c_str());
-	read_init_data(F_host, pars.N, datafile_names[1].c_str());
-	read_init_data(T_host, pars.N, datafile_names[2].c_str());
+	// for(int i = 0; i<3*pars.N; i++){
+	// 	Yf_host[i] = Yf_host[i];
+	// 	Yv_host[i] = Yf_host[i];
+	// 	F_host[i] = F_host[i];
+	// 	T_host[i] = T_host[i];
+	// }
 
-	for(int i = 0; i<3*pars.N; i++){
-		Yf_host[i] = Yf_host[i];
-		Yv_host[i] = Yf_host[i];
-		F_host[i] = F_host[i];
-		T_host[i] = T_host[i];
-	}
-
-	copy_to_device<Real>(Yf_host, Yf_device, 3*pars.N);
-	copy_to_device<Real>(Yv_host, Yv_device, 3*pars.N);
-	copy_to_device<Real>(F_host, F_device, 3*pars.N);
-	copy_to_device<Real>(T_host, T_device, 3*pars.N);
+	Yf_device = Yf_host;
+	Yv_device = Yf_host;
+	F_device = F_host;
+	T_device = T_host;
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Start repeat
@@ -71,13 +72,23 @@ int main(int argc, char** argv) {
 	/* Create FCM solver */
 	cudaDeviceSynchronize();
 	FCM_solver solver(pars);
-	solver.assign_host_array_pointers(Yf_host, Yv_host, F_host, T_host, V_host, W_host);
+	solver.assign_host_array_pointers(thrust::raw_pointer_cast(Yf_host.data()), 
+									  thrust::raw_pointer_cast(Yv_host.data()), 
+									  thrust::raw_pointer_cast(F_host.data()), 
+									  thrust::raw_pointer_cast(T_host.data()), 
+									  thrust::raw_pointer_cast(V_host.data()), 
+									  thrust::raw_pointer_cast(W_host.data()));
 
 	for(int t = 0; t < pars.repeat; t++){
 		if(pars.prompt > 5){
 			std::cout << "\r====Computing repeat " << t+1 << "/" << pars.repeat;
 		}
-		solver.hydrodynamic_solver(Yf_device, Yv_device, F_device, T_device, V_device, W_device);
+		solver.hydrodynamic_solver(thrust::raw_pointer_cast(Yf_device.data()), 
+								   thrust::raw_pointer_cast(Yv_device.data()), 
+								   thrust::raw_pointer_cast(F_device.data()), 
+								   thrust::raw_pointer_cast(T_device.data()), 
+								   thrust::raw_pointer_cast(V_device.data()), 
+								   thrust::raw_pointer_cast(W_device.data()));
 	}
 	if(pars.prompt > 5){
 		printf("\nFinished loop:)\n");
@@ -87,26 +98,24 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Check error
 	///////////////////////////////////////////////////////////////////////////////
-    Real Yerror = -1;
-    Real Verror = -1;
-    Real Werror = -1;
+    Real Yerror = -1, Verror = -1, Werror = -1;
 
 	if (pars.checkerror == 1){
-        Real* Y_validation = malloc_host<Real>(3*pars.N);
-		Real* F_validation = malloc_host<Real>(3*pars.N);
-        Real* T_validation = malloc_host<Real>(3*pars.N);
-		Real* V_validation = malloc_host<Real>(3*pars.N);
-		Real* W_validation = malloc_host<Real>(3*pars.N);
+		thrust::host_vector<Real> Y_validation(3*pars.N);
+		thrust::host_vector<Real> F_validation(3*pars.N);
+		thrust::host_vector<Real> T_validation(3*pars.N); 
+		thrust::host_vector<Real> V_validation(3*pars.N); 
+		thrust::host_vector<Real> W_validation(3*pars.N);
 
-		read_validate_data(Y_validation,
-						   F_validation,
-                           T_validation,
-						   V_validation,
-						   W_validation, pars.N, ref_name.c_str());
+		read_validate_data_thrust(Y_validation,
+								  F_validation,
+								  T_validation, 
+								  V_validation, 
+								  W_validation, pars.N, ref_name.c_str());
 
-		Yerror = percentage_error_magnitude(Yf_host, Y_validation, pars.N);
-		Verror = percentage_error_magnitude(V_host, V_validation, pars.N);
-		Werror = percentage_error_magnitude(W_host, W_validation, pars.N);
+		Yerror = percentage_error_magnitude_thrust(Yf_host, Y_validation, pars.N);
+		Verror = percentage_error_magnitude_thrust(V_host, V_validation, pars.N);
+		Werror = percentage_error_magnitude_thrust(W_host, W_validation, pars.N);
 
 		if(pars.prompt > 1){
 			std::cout << "-------\nError\n-------\n";
@@ -114,8 +123,9 @@ int main(int argc, char** argv) {
 			std::cout << "%V error:\t" << Verror << "\n";
 			std::cout << "%W error:\t" << Werror << "\n";
 		}
-
-		return 0;
 	}
+
+	std::cout<< "Test completed" << std::endl;
+	return 0;
 }
 

@@ -28,6 +28,7 @@ TEST : $(TEST_FILES)
 	nvcc $^ $(NVCC_FLAGS) $(LINK) -o bin/$@
 
 clean :
+	rm -f bin/TEST
 	rm -f bin/FCM
 	rm -f bin/CUFCM
 

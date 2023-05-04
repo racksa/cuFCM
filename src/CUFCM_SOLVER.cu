@@ -1,16 +1,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-// #include <algorithm>
-// #include <cmath>
-// #include <cuda_runtime.h>
-// #include <cufft.h>
-// #include <curand_kernel.h>
-// #include <curand.h>
-// #include <cudaProfiler.h>
-// #include <cuda_profiler_api.h>
-
-// #include <cub/device/device_radix_sort.cuh>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
 
 
 #include "config.hpp"

@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <string>
 #include <algorithm>
 #include "config.hpp"
 #include <curand_kernel.h>
@@ -24,6 +26,32 @@ void read_init_data(Real *Y, int N, const char *file_name){
     fclose(ifile);
 
     return;
+}
+
+void read_init_data_thrust(thrust::host_vector<Real>& Y, int N, const char *initpos_file_name){
+    std::ifstream input_file(initpos_file_name);
+    if (!input_file.is_open()) {
+        std::cerr << "Failed to open input file." << std::endl;
+        return ;
+    }
+
+    // Read the input file line by line
+    std::string line;
+    int index = 0;
+    while (std::getline(input_file, line)) {
+        // Split the line into three space-separated values
+        Real a, b, c;
+        std::istringstream iss(line);
+        iss >> a >> b >> c;
+
+        // Assign the values to the host vector
+        Y[index++] = a;
+        Y[index++] = b;
+        Y[index++] = c;
+    }
+
+    // Close the input file
+    input_file.close();
 }
 
 void read_validate_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name){
@@ -55,6 +83,71 @@ void read_validate_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, cons
     return;
 }
 
+void read_validate_data_thrust(thrust::host_vector<Real>& Y,
+                            thrust::host_vector<Real>& F,
+                            thrust::host_vector<Real>& T, 
+                            thrust::host_vector<Real>& V, 
+                            thrust::host_vector<Real>& W, int N, const char *file_name){
+    std::ifstream input_file(file_name);
+    if (!input_file.is_open()) {
+        std::cerr << "Failed to open validation file." << std::endl;
+        return ;
+    }
+
+    // Read the input file line by line
+    std::string line;
+    int index = 0;
+    while (std::getline(input_file, line) && index < N) {
+        // Split the line into three space-separated values
+        Real y1, y2, y3, f1, f2, f3, t1, t2, t3, v1, v2, v3, w1, w2, w3;
+        std::istringstream iss(line);
+        iss >> y1 >> y2 >> y3 >> f1 >> f2 >> f3 >> t1 >> t2 >> t3 >> v1 >> v2 >> v3 >> w1 >> w2 >> w3;
+
+        // Assign the values to the host vector
+        Y[3*index] = y1;
+        Y[3*index+1] = y2;
+        Y[3*index+2] = y3;
+        F[3*index] = f1;
+        F[3*index+1] = f2;
+        F[3*index+2] = f3;
+        T[3*index] = t1;
+        T[3*index+1] = t2;
+        T[3*index+2] = t3;
+        V[3*index] = v1;
+        V[3*index+1] = v2;
+        V[3*index+2] = v3;
+        W[3*index] = w1;
+        W[3*index+1] = w2;
+        W[3*index+2] = w3;
+        index++;
+    }
+
+    // Close the input file
+    input_file.close();
+}
+
+Real percentage_error_magnitude_thrust(thrust::host_vector<Real> data, thrust::host_vector<Real> ref_data, int N){
+    Real ret = Real(0.0);
+
+    for(int np = 0; np < N; np++){
+        Real x = data[3*np];
+        Real y = data[3*np + 1];
+        Real z = data[3*np + 2];
+        Real x_ref = ref_data[3*np];
+        Real y_ref = ref_data[3*np + 1];
+        Real z_ref = ref_data[3*np + 2];
+
+        ret += sqrt( (x - x_ref)*(x - x_ref) + 
+                     (y - y_ref)*(y - y_ref) + 
+                     (z - z_ref)*(z - z_ref) ) / 
+               sqrt( x_ref*x_ref + 
+                     y_ref*y_ref + 
+                     z_ref*z_ref );
+    }
+    ret = ret / (Real) N;
+
+    return ret;
+}
 
 void write_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name, const char *mode){
     FILE *pfile;

@@ -3,6 +3,8 @@
 #include "../config.hpp"
 #include <stdlib.h>
 #include <math.h>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
 
 inline Real percentage_error(Real *data, Real *ref_data, int N){
     Real ret;
