@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	Pars pars;
 	Real values[100];
 	std::vector<std::string> datafile_names{3};
-	read_config(values, datafile_names, "./test/test_info/test_fastfcm_info");
+	read_config(values, datafile_names, "simulation_info");
 	parser_config(values, pars);
 
 	Real* Yf_host = malloc_host<Real>(3*pars.N);					Real* Yf_device = malloc_device<Real>(3*pars.N);
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 						   F_validation,
                            T_validation,
 						   V_validation,
-						   W_validation, pars.N, "./data/refdata/ref_data_N500000_rotation_1e-4");
+						   W_validation, pars.N, "./data/refdata/ref_data_N500000_rotation_1e-4.dat");
 
 		Yerror = percentage_error_magnitude(Yf_host, Y_validation, pars.N);
 		Verror = percentage_error_magnitude(V_host, V_validation, pars.N);

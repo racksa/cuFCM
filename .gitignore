@@ -15,7 +15,6 @@ other/*
 data/init_data/*
 data/profiler_data/*
 data/simulation/*
-data/refdata/*
 
 
 # Unignore all with extensions

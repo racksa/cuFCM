@@ -664,20 +664,15 @@ void FCM_solver::spread(){
 
     #if ROTATION==1
         long shared_size = 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real);
-        cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, FCM_THREADS_PER_BLOCK, shared_size>>>
-                                            (hx_device, hy_device, hz_device, 
-                                            Yf_device, T_device, F_device,
-                                            N, ngd,
-                                            sigmaFCM, sigmaFCMdip, SigmaGRID,
-                                            dx, nx, ny, nz);
     #else
-        cufcm_mono_dipole_distribution_mono<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+6)*sizeof(Real)>>>
-                                        (hx_device, hy_device, hz_device, 
-                                        Yf_device, F_device,
-                                        N, ngd,
-                                        sigmaFCM, SigmaGRID,
-                                        dx, nx, ny, nz);
+        long shared_size = 3*ngd*sizeof(Integer)+(9*ngd+6)*sizeof(Real);
     #endif
+    cufcm_mono_dipole_distribution_bpp_shared_dynamic<<<N, FCM_THREADS_PER_BLOCK, shared_size>>>
+                                        (hx_device, hy_device, hz_device, 
+                                        Yf_device, T_device, F_device,
+                                        N, ngd,
+                                        sigmaFCM, sigmaFCMdip, SigmaGRID,
+                                        dx, nx, ny, nz);
 
     cudaDeviceSynchronize();	time_spreading_array[rept] = get_time() - time_start;
 }
@@ -734,20 +729,15 @@ void FCM_solver::gather(){
 
     #if ROTATION ==1
         long shared_size = 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real);
-        cufcm_particle_velocities_bpp_shared_dynamic<<<N, FCM_THREADS_PER_BLOCK, shared_size>>>
+    #else
+        long shared_size = 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real);
+    #endif
+    cufcm_particle_velocities_bpp_shared_dynamic<<<N, FCM_THREADS_PER_BLOCK, shared_size>>>
                                     (hx_device, hy_device, hz_device,
                                     Yv_device, V_device, W_device,
                                     N, ngd,
                                     sigmaFCM, sigmaFCMdip, SigmaGRID,
                                     dx, nx, ny, nz);
-    #else
-        cufcm_particle_velocities_mono<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+3)*sizeof(Real)>>>
-                                (hx_device, hy_device, hz_device,
-                                Yv_device, V_device,
-                                N, ngd,
-                                sigmaFCM, SigmaGRID,
-                                dx, nx, ny, nz);
-    #endif
 
     cudaDeviceSynchronize();	time_gathering_array[rept] = get_time() - time_start;
 }
