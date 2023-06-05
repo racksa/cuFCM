@@ -21,13 +21,13 @@ template <typename T>
 __global__
 void copy_device(T *from, T *to, int L){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
 
-    if (index < L) {
-        to[index] = from[index];
+    for(int np = index; np < L; np += stride){
+        to[np] = from[np];
     }
-    
-    return;
 }
+
 
 template <typename T>
 __global__

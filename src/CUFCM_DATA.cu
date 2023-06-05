@@ -339,7 +339,6 @@ void interleaved2separate(Real *F_device_interleave,
                           Real *F_device, Real *T_device, int N){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
-
     for(int i = index; i < N; i += stride){
         F_device[3*i + 0] = F_device_interleave[6*i + 0];
         F_device[3*i + 1] = F_device_interleave[6*i + 1];

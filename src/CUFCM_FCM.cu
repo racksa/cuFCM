@@ -17,7 +17,9 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
               Real *Y, Real *T, Real *F,
               int N, int ngd, 
               Real sigma, Real sigmadip, Real Sigma,
-              Real dx, double nx, double ny, double nz){
+              Real dx, double nx, double ny, double nz,
+              int *particle_index, int start, int end,
+              int rotation){
     
     int ngdh = ngd/2;
 
@@ -44,9 +46,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
 
     Real *Y_shared = (Real*)&grad_gaussz_dip_shared[ngd];
     Real *F_shared = (Real*)&Y_shared[3];
-    #if ROTATION == 1
-        Real *g_shared = (Real*)&F_shared[3];
-    #endif
+    Real *g_shared = (Real*)&F_shared[3];
     
     #if USE_REGULARFCM
         Real sigmasq = sigma*sigma;
@@ -58,15 +58,16 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
         Real anormdip = Real(1.0)/my_sqrt(Real(2.0)*Real(PI)*sigmadipsq);
     #else
         Real Sigmasq = Sigma*Sigma;
-        #if ROTATION == 1
-            Real Sigmadipsq = Sigmasq;
-        #endif
+        Real Sigmadipsq = 0;
+        if(rotation==1){
+            Sigmadipsq = Sigmasq;
+        }
         Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
         Real pdmag = sigma*sigma - Sigmasq;
     #endif
     
 
-    for(int np = blockIdx.x; np < N; np += gridDim.x){
+    for(int np = blockIdx.x; (np < N) && (particle_index[np] >= start && particle_index[np] < end); np += gridDim.x){
 
         if(threadIdx.x == 0){
             Y_shared[0] = Y[3*np + 0];
@@ -78,7 +79,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             F_shared[2] = F[3*np + 2];
 
             // anti-symmetric G_lk = 0.5*epsilon_lkp*T_p
-            #if ROTATION == 1
+            if(rotation==1){
                 g_shared[0] = + Real(0.0);
                 g_shared[1] = + Real(0.0);
                 g_shared[2] = + Real(0.0);
@@ -88,7 +89,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
                 g_shared[6] = - Real(-0.5)*T[3*np + 1];
                 g_shared[7] = + Real(0.5)*T[3*np + 0];
                 g_shared[8] = - Real(0.5)*T[3*np + 0];
-            #endif
+            }
         }
         __syncthreads();
 
@@ -120,11 +121,11 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             }
             /* grad_gauss */
             if(i>=2*ngd && i<3*ngd){
-                #if ROTATION == 1
+                if(rotation==1){
                     grad_gaussx_dip_shared[i-2*ngd] = - xx / Sigmadipsq;
                     grad_gaussy_dip_shared[i-2*ngd] = - yy / Sigmadipsq;
                     grad_gaussz_dip_shared[i-2*ngd] = - zz / Sigmadipsq;
-                #endif
+                }
             }
             /* ind */
             if(i>=3*ngd){
@@ -140,11 +141,12 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
             const int j = (t - k*ngd*ngd)/ngd;
             const int i = t - k*ngd*ngd - j*ngd;
 
-            #if ROTATION == 1
-                Real gradx = grad_gaussx_dip_shared[i];
-                Real grady = grad_gaussy_dip_shared[j];
-                Real gradz = grad_gaussz_dip_shared[k];
-            #endif
+            Real gradx = 0, grady = 0, gradz = 0;
+            if(rotation==1){
+                gradx = grad_gaussx_dip_shared[i];
+                grady = grad_gaussy_dip_shared[j];
+                gradz = grad_gaussz_dip_shared[k];
+            }
 
             int ind = indx_shared[i] + indy_shared[j]*nx + indz_shared[k]*nx*ny;
 
@@ -158,20 +160,21 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
                 Real temp3 = temp2 / Sigmasq;
                 Real temp4 = Real(3.0)*temp2;
                 Real temp = temp1*( Real(1.0) + temp3*r2 - temp4);
-                #if ROTATION == 1
-                    Real tempdip = temp1;
-                #endif
+                Real tempdip = 0;
+                if(rotation==1){
+                    tempdip = temp1;
+                }
             #endif
 
             Real dipole_x = 0;
             Real dipole_y = 0;
             Real dipole_z = 0;
 
-            #if ROTATION == 1
+            if(rotation==1){
                dipole_x = (g_shared[0]*gradx + g_shared[3]*grady + g_shared[5]*gradz)*tempdip;
                dipole_y = (g_shared[4]*gradx + g_shared[1]*grady + g_shared[7]*gradz)*tempdip;
                dipole_z = (g_shared[6]*gradx + g_shared[8]*grady + g_shared[2]*gradz)*tempdip;
-            #endif
+            }
 
             atomicAdd(&fx[ind], F_shared[0]*temp + dipole_x);
             atomicAdd(&fy[ind], F_shared[1]*temp + dipole_y);
@@ -247,14 +250,14 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
                                 Real *Y, Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
                                 Real sigma, Real sigmadip, Real Sigma,
-                                Real dx, Real nx, Real ny, Real nz){
+                                Real dx, Real nx, Real ny, Real nz,
+                                int *particle_index, int start, int end,
+                                int rotation){
 
     int ngdh = ngd/2;
     Real norm = dx*dx*dx;
     Real Vx = (Real) 0.0, Vy = (Real) 0.0, Vz = (Real) 0.0;
-    #if ROTATION == 1
-        Real Wx = (Real) 0.0, Wy = (Real) 0.0, Wz = (Real) 0.0;
-    #endif
+    Real Wx = (Real) 0.0, Wy = (Real) 0.0, Wz = (Real) 0.0;
 
     extern __shared__ Integer s[];
     Integer *indx_shared = s;
@@ -288,9 +291,10 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
         Real anormdip = Real(1.0)/my_sqrt(Real(2.0)*Real(PI)*sigmadipsq);
     #else
         Real Sigmasq = Sigma*Sigma;
-        #if ROTATION == 1
-            Real Sigmadipsq = Sigmasq;
-        #endif
+        Real Sigmadipsq = 0;
+        if(rotation==1){
+            Sigmadipsq = Sigmasq;
+        }
         Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
         Real width2 = (Real(2.0)*Sigmasq);
         Real pdmag = sigma*sigma - Sigmasq;
@@ -302,7 +306,7 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
     // Allocate shared memory for BlockReduce
     __shared__ typename BlockReduce::TempStorage temp_storage;
     
-    for(int np = blockIdx.x; np < N; np += gridDim.x){
+    for(int np = blockIdx.x; (np < N) && (particle_index[np] >= start && particle_index[np] < end); np += gridDim.x){
         if(threadIdx.x == 0){
             Y_shared[0] = Y[3*np + 0];
             Y_shared[1] = Y[3*np + 1];
@@ -338,11 +342,11 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
             }
             /* grad_gauss */
             if(i>=2*ngd && i<3*ngd){
-                #if ROTATION == 1
+                if(rotation==1){
                     grad_gaussx_dip_shared[i-2*ngd] = - xx / Sigmadipsq;
                     grad_gaussy_dip_shared[i-2*ngd] = - yy / Sigmadipsq;
                     grad_gaussz_dip_shared[i-2*ngd] = - zz / Sigmadipsq;
-                #endif
+                }
             }
             /* ind */
             if(i>=3*ngd){
@@ -358,11 +362,12 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
             const int j = (t - k*ngd*ngd)/ngd;
             const int i = t - k*ngd*ngd - j*ngd;
 
-            #if ROTATION == 1
-                Real gradx = grad_gaussx_dip_shared[i];
-                Real grady = grad_gaussy_dip_shared[j];
-                Real gradz = grad_gaussz_dip_shared[k];
-            #endif
+            Real gradx = 0, grady = 0, gradz = 0;
+            if(rotation==1){
+                gradx = grad_gaussx_dip_shared[i];
+                grady = grad_gaussy_dip_shared[j];
+                gradz = grad_gaussz_dip_shared[k];
+            }
 
             int ind = indx_shared[i] + indy_shared[j]*int(nx) + indz_shared[k]*int(nx)*int(ny);
             
@@ -377,40 +382,42 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
                 Real temp4 = Real(3.0)*temp2;
                 Real temp5 = ( Real(1.0) + temp3*r2 - temp4);
                 Real temp = temp1*temp5;
-                #if ROTATION == 1
-                    Real tempdip = temp1;
-                #endif
+                Real tempdip = 0;
+                if(rotation==1){
+                    tempdip = temp1;
+                }
             #endif
 
             Vx += ux[ind]*temp;
             Vy += uy[ind]*temp;
             Vz += uz[ind]*temp;
-            #if ROTATION == 1
+            if(rotation==1){
                 Wx += -Real(0.5)*(uz[ind]*grady - uy[ind]*gradz)*tempdip;
                 Wy += -Real(0.5)*(ux[ind]*gradz - uz[ind]*gradx)*tempdip;
                 Wz += -Real(0.5)*(uy[ind]*gradx - ux[ind]*grady)*tempdip; 
-            #endif
+            }
         }
         
         // Reduction
         Real total_Vx = BlockReduce(temp_storage).Sum(Vx);
         Real total_Vy = BlockReduce(temp_storage).Sum(Vy);
         Real total_Vz = BlockReduce(temp_storage).Sum(Vz);
-        #if ROTATION == 1
-            Real total_Wx = BlockReduce(temp_storage).Sum(Wx);
-            Real total_Wy = BlockReduce(temp_storage).Sum(Wy);
-            Real total_Wz = BlockReduce(temp_storage).Sum(Wz);
-        #endif
+        Real total_Wx = 0, total_Wy = 0, total_Wz = 0;
+        if(rotation==1){
+            total_Wx = BlockReduce(temp_storage).Sum(Wx);
+            total_Wy = BlockReduce(temp_storage).Sum(Wy);
+            total_Wz = BlockReduce(temp_storage).Sum(Wz);
+        }
     
         if(threadIdx.x==0){
             VTEMP[3*np + 0] = total_Vx;  
             VTEMP[3*np + 1] = total_Vy;
             VTEMP[3*np + 2] = total_Vz;
-            #if ROTATION == 1
+            if(rotation==1){
                 WTEMP[3*np + 0] = total_Wx;
                 WTEMP[3*np + 1] = total_Wy;
                 WTEMP[3*np + 2] = total_Wz;
-            #endif
+            }
         }
     }
 }
