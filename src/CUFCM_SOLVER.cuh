@@ -11,7 +11,7 @@ public:
     
     int N, nx, ny, nz, repeat, prompt, warmup, checkerror;
     Real Lx, Ly, Lz;
-    int num_seg, num_blob;
+    int num_seg = 0, num_blob = 0;
     Real rh, alpha, beta, eta;
     Real boxsize;
     Real values[100];
@@ -110,23 +110,26 @@ public:
     void box_particle();
 
     /* Filament code start*/
-    // __host__
-    // void init_aux_for_filament();
+    __host__
+    void init_aux_for_filament();
 
-    // __host__
-    // void reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver);
+    __host__
+    void reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver);
 
-    // __host__
-    // void reform_fseg(Real *f_seg, bool to_solver);
+    __host__
+    void reform_fseg(Real *f_seg, bool to_solver);
 
-    // __host__
-    // void reform_vseg(Real *v_seg, bool to_solver);
+    __host__
+    void reform_vseg(Real *v_seg, bool to_solver);
 
-    // __host__
-    // void reform_fblob(Real *f_blob, bool to_solver);
+    __host__
+    void reform_fblob(Real *f_blob, bool to_solver);
 
-    // __host__
-    // void reform_vblob(Real *v_blob, bool to_solver);
+    __host__
+    void reform_vblob(Real *v_blob, bool to_solver);
+
+    __host__
+    void evaluate_mobility_cilia();
 
     // __host__
     // void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
