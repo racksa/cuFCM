@@ -7,6 +7,7 @@
 #include "CUFCM_CORRECTION.cuh"
 
 // S_ij = S_I(r) delta_ij + S_xx(r) x_ix_j
+/*
 __device__ __host__
 Real A_old(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
 	return Real(1.0)/(Real(8.0)*Real(PI)*r) * ((Real(1.0) + sigmasq/rsq)*erfS - (Real(2.0)*sigma/r)/PI2sqrt * expS);
@@ -26,6 +27,7 @@ __device__ __host__
 Real dfdr_old(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
 	return Real(-3.0)/r*f_old(r, rsq, sigma, sigmasq, expS, erfS) + Real(1.0)/(Real(8.0)*Real(PI)*pow(r, 3)) * (rsq/(sigmasq*sigma)) * Real(sqrt2oPI) * expS;
 }
+*/
 
 // __device__ __host__
 // Real dAdr(Real r, Real rsq, Real sigma, Real sigmasq, Real expS, Real erfS){
@@ -111,7 +113,7 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
     const int stride = blockDim.x*gridDim.x;
 
     int icell = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
-    Real vxi = (Real)0.0, vyi = (Real)0.0, vzi = (Real)0.0;
+    Real vxi = Real(0.0), vyi = Real(0.0), vzi = Real(0.0);
     #if ROTATION == 1
         Real wxi = (Real)0.0, wyi = (Real)0.0, wzi = (Real)0.0;
     #endif
@@ -133,7 +135,7 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
         icell = particle_cellindex[i];
     
         Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
-        Real xij = (Real)0.0, yij = (Real)0.0, zij = (Real)0.0;
+        Real xij = Real(0.0), yij = Real(0.0), zij = Real(0.0);
         /* intra-cell interactions */
         /* corrections only apply to particle i */
         for(j = cell_start[icell]; j < cell_end[icell]; j++){
@@ -178,6 +180,10 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
                     Real temp1VF = (AFCMtemp - Atemp - Ctemp - Ptemp);
                     Real temp2VF = (BFCMtemp - Btemp - Dtemp - Qtemp);
 
+                    // printf("%d (%.8f %.8f %.8f) %d (%.8f %.8f %.8f)  %.8f\n",
+                    // i, Y[3*i + 0], Y[3*i + 0], Y[3*i + 0],
+                    // j, Y[3*j + 0], Y[3*j + 0], Y[3*j + 0], rij);
+
                     Real tempVTWF = 0;
                     #if ROTATION == 1
                         // ------------WF+VT------------
@@ -204,7 +210,7 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
                                         - P_xx(rij, rijsq, gamma, gammasq, gaussgam, erfS);
                     #endif
 
-                    // Summation
+                    // Summation                    
                     vxi = vxi + temp1VF*F[3*j + 0] + temp2VF*xij*Fjdotx + tempVTWF*( zij*T[3*j + 1] - yij*T[3*j + 2] );
                     vyi = vyi + temp1VF*F[3*j + 1] + temp2VF*yij*Fjdotx + tempVTWF*( xij*T[3*j + 2] - zij*T[3*j + 0] );
                     vzi = vzi + temp1VF*F[3*j + 2] + temp2VF*zij*Fjdotx + tempVTWF*( yij*T[3*j + 0] - xij*T[3*j + 1] );
