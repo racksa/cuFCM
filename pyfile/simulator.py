@@ -29,7 +29,7 @@ class SIM:
         self.reference_pars = pardict.copy()
 
         # self.search_grid_shape = (17, 10, 1, 1) # alpha, beta, eta, npts
-        self.search_grid_shape = (1, 1, 1, 8) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 1) # alpha, beta, eta, npts
 
         self.nphi = 1
         self.nn = 1
@@ -57,12 +57,12 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                phi=                        0.0005*4**j
-                self.pars['rh']=            0.5
+                phi=                        0.05*4**j
+                self.pars['rh']=            1.0
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
 
                 ###### temporary ######
-                self.pars['N']=2
+                # self.pars['N']=2
                 ###### temporary ######
 
                 phi=                        util.compute_phi(self.pars['N'], self.pars['rh'], self.pars['boxsize'])
@@ -137,8 +137,8 @@ class SIM:
             for i in range(self.search_grid_shape[0]):
                 for j in range(self.search_grid_shape[1]):
                     for k in range(self.search_grid_shape[2]):
-                        self.pars['alpha']=      2.0 + 0.1*i
-                        self.pars['beta']=       (15. + j )
+                        self.pars['alpha']=      0.9 + 0.1*i
+                        self.pars['beta']=       (4. + j )
                         self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
 
                         if(HIsolver==1):
@@ -155,13 +155,13 @@ class SIM:
                             self.pars['eta']= self.pars['eta']/self.pars['alpha']
 
                         # temporary #############################
-                        Sigma = (self.pars['alpha']*self.pars['boxsize']/self.pars['nx'])
+                        # Sigma = (self.pars['alpha']*self.pars['boxsize']/self.pars['nx'])
                         # self.pars['eta']=        (1+1*k)/Sigma
-                        self.pars['eta']=       0.1/Sigma
+                        # self.pars['eta']=       0.1/Sigma
                         # temporary #############################
 
                         if(sys.argv[1] == 'run'):
-                            util.execute([self.pars, self.datafiles], solver=HIsolver, mode=2)
+                            util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
 
                         sim_dict = util.read_scalar(self.pars)
                         if(sim_dict):
@@ -197,9 +197,9 @@ class SIM:
             print('Tolerance not satisfied in optimal finding. Carry on with the smallest error.')
 
         print('N=', self.pars['N'])
-        # print(np.array2string(sigma_ratio_array[0,0,:,:], separator=", "))
-        # print(np.array2string(eta_array[0,0,:,:], separator=", "))
-        # print(np.array2string(Verror_array[0,0,:,:], separator=", "))
+        print(np.array2string(sigma_ratio_array[0,0,:,:], separator=", "))
+        print(np.array2string(eta_array[0,0,:,:], separator=", "))
+        print(np.array2string(Verror_array[0,0,:,:], separator=", "))
 
         # print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
         # print(np.array2string(ptps_array[0,0,0,:], separator=", "))
@@ -208,8 +208,8 @@ class SIM:
         # print(np.array2string(beta_array[:,:,0,0], separator=", "))
         # print(np.array2string(Verror_array[:,:,0,0], separator=", "))
 
-        print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
-        print(np.array2string(Verror_array[0,0,0,:], separator=", "))
+        # print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
+        # print(np.array2string(Verror_array[0,0,0,:], separator=", "))
 
         optimal_Verror = Verror_array[min_index][0]
         optimal_Werror = Werror_array[min_index][0]
@@ -487,6 +487,18 @@ class SIM:
     def analyse_and_plot_both(self):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
+        fig2 = plt.figure()
+        ax2 = fig2.add_subplot(1,1,1)
+
+        fcm_ptps_array = np.zeros(np.shape(self.phi_array[0]))
+        ffcm_ptps_array = np.zeros(np.shape(self.phi_array[0]))
+        
+        global fcm_directory
+        global fastfcm_directory
+        fcm_directory = cufcm_dir + "data/simulation/20221125_fcm/"
+        fastfcm_directory = cufcm_dir + "data/simulation/20221125_fastfcm/"
+
+        self.pars['boxsize'] = 6.283185307179586
 
         for j in range(2):
             self.mod_solver(j)
@@ -494,24 +506,44 @@ class SIM:
 
             for i in range(len(self.n_array)-1):
                 if (HIsolver==0):
-                    label = 'FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 4))
+                    label = 'FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3))
                     marker = '+'
                     linestyle='solid'
+                    fcm_ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
                 if (HIsolver==1):
-                    label = 'F-FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 4))
+                    label = 'F-FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3))
                     marker = ','
                     linestyle='dashed'
+                    ffcm_ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
                 
                 ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
                 ax.plot(self.phi_array[i], ptps_array, marker=marker, linestyle=linestyle, c=util.color_codex[i], label=label)
-        
+                if(j==1):
+                    ratio = ffcm_ptps_array/fcm_ptps_array
+                    ax2.axhline(y = 1, color = 'r', linestyle = '-.')
+                    ax2.plot(self.phi_array[i], ratio, label='a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3)))
+                    # plot cross points
+                    idx = np.argwhere(np.diff(np.sign(ratio - 1))).flatten()
+                    lenx = (self.phi_array[i][idx+1] - self.phi_array[i][idx])
+                    leny = (ratio[idx+1] - ratio[idx])
+                    grad = leny/lenx
+                    interception_x = self.phi_array[i][idx] + (1-ratio[idx])/grad
+                    ax2.plot(interception_x, 1, 'x', c="black")
+
         # adding title and labels
         # ax.set_title(r"PTPS vs. $\phi$")
         ax.set_xlabel(r'$\phi$')
         ax.set_ylabel('PTPS')
         ax.legend()
         # ax.set_xscale('log')
-        plt.savefig('img/ptps_combined.eps', bbox_inches = 'tight', format='eps')
+        ax2.set_xlabel(r'$\phi$')
+        ax2.set_ylabel(r'$PTPS_{fcm}/PTPS_{ffcm}$')
+        ax2.set_yscale('log')
+        ax2.legend()
+        fig.savefig('img/ptps_combined.pdf', bbox_inches = 'tight', format='pdf')
+        fig.savefig('img/ptps_combined.png', bbox_inches = 'tight', format='png')
+        fig2.savefig('img/ptps_combined_ratio.pdf', bbox_inches = 'tight', format='pdf')
+        fig2.savefig('img/ptps_combined_ratio.png', bbox_inches = 'tight', format='png')
         plt.show()
 
     

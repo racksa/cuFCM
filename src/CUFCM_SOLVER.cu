@@ -960,7 +960,7 @@ void FCM_solver::write_data_call(){
 	copy_to_host<Real>(V_device, V_host, 3*N);
 	copy_to_host<Real>(W_device, W_host, 3*N);
     write_data(Yf_host, F_host, T_host, V_host, W_host, N, 
-                   "simulation_data!!.dat", "a");
+                   "simulation_data.dat", "a");
 }
 
 __host__

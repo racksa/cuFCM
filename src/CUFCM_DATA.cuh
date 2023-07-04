@@ -25,6 +25,13 @@ void write_pos(Real *Y, Real rh, int N, const char *file_name);
 
 void write_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name, const char *mode);
 
+void write_data_thrust(thrust::host_vector<Real> Y,
+                        thrust::host_vector<Real> F,
+                        thrust::host_vector<Real> T,
+                        thrust::host_vector<Real> V,
+                        thrust::host_vector<Real> W, 
+                        int N, const char *file_name, const char *mode);
+
 void write_init_data(Real *Y, Real *F, Real *T, int N);
 
 void write_time(Real time_cuda_initialisation, 

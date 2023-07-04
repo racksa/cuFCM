@@ -164,6 +164,26 @@ void write_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *
     fclose(pfile);
 }
 
+void write_data_thrust(thrust::host_vector<Real> Y,
+                        thrust::host_vector<Real> F,
+                        thrust::host_vector<Real> T,
+                        thrust::host_vector<Real> V,
+                        thrust::host_vector<Real> W, 
+                        int N, const char *file_name, const char *mode){
+    FILE *pfile;
+    pfile = fopen(file_name, mode);
+    for(int i = 0; i < N; i++){
+        fprintf(pfile, "%d %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f %.16f\n", 
+        i, Y[3*i + 0], Y[3*i + 1], Y[3*i + 2], 
+        F[3*i + 0], F[3*i + 1], F[3*i + 2], 
+        T[3*i + 0], T[3*i + 1], T[3*i + 2],
+        V[3*i + 0], V[3*i + 1], V[3*i + 2], 
+        W[3*i + 0], W[3*i + 1], W[3*i + 2]);
+        }
+    fprintf(pfile, "\n#");
+    fclose(pfile);
+}
+
 void write_pos(Real *Y, Real rh, int N, const char *file_name){
     FILE *pfile;
     pfile = fopen(file_name, "w");

@@ -105,7 +105,8 @@ def plot_ptps_vs_npts(sigma_ratio_array, ptps_array):
     ax.set_ylim((0, 1e7))
     # ax.set_title(r"PTPS vs. $\Sigma/\sigma$")
     ax.set_ylabel('PTPS')
-    plt.savefig('img/ptps_vs_sigmaratio_rotation.eps', bbox_inches = 'tight', format='eps')
+    plt.savefig('img/ptps_vs_sigmaratio_rotation.pdf', bbox_inches = 'tight', format='pdf')
+    plt.savefig('img/ptps_vs_sigmaratio_rotation.png', bbox_inches = 'tight', format='png')
     plt.show()
 
 plot_ptps_vs_npts(sigma_ratio_array, ptps_array)

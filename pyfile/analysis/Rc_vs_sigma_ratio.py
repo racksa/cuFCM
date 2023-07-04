@@ -3,9 +3,9 @@ import matplotlib.cm as cm
 import matplotlib as mpl
 import numpy as np
 
-boxsize=150
-phi_array = np.array([0.0005*4**j for j in range(5)])
-N_array = phi_array*(boxsize/0.5)**3/(4./3.*np.pi)
+# boxsize=150
+# phi_array = np.array([0.0005*4**j for j in range(5)])
+# N_array = phi_array*(boxsize/0.5)**3/(4./3.*np.pi)
 
 sigma_ratio_array = np.array(
 [[17.72453851, 13.29340388, 10.63472311,  8.86226925,  7.59623079,
@@ -339,11 +339,33 @@ error_array = np.array(
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
 levels = np.logspace(-12, -1, 12)
+k_array = np.zeros(np.shape(levels))
 print(levels)
+
 cs = ax.contourf(sigma_ratio_array, eta_array*sigma_ratio_array*0.5/np.sqrt(np.pi), error_array,
                 levels, cmap=plt.cm.bone, norm=mpl.colors.LogNorm())
 cs2 = ax.contour(cs,
-                levels, norm=mpl.colors.LogNorm())        
+                levels, norm=mpl.colors.LogNorm())
+
+#####Fitting
+from scipy.optimize import curve_fit
+def prop(x, k):
+    return k*x
+
+ydata = eta_array*sigma_ratio_array*0.5/np.sqrt(np.pi)
+for i in range(2, len(levels)):    
+    xdata = cs2.collections[i].get_paths()[0].vertices[:, 0]
+    ydata = cs2.collections[i].get_paths()[0].vertices[:, 1]
+    popt, pcov = curve_fit(prop, xdata, ydata)
+    k_array[i] = popt
+    fit_x = np.linspace(2, 12, 100)
+    fit_y = prop(fit_x, popt)
+    # ax.plot(fit_x, fit_y, '.')
+    # ax.scatter(xdata, ydata, marker='+')
+print(k_array)
+#####Fitting
+
+
 ax.clabel(cs2, inline=True, fontsize=10, fmt='%2.1E', colors=[plt.cm.bone((30*i + 100)%291) for i in range(9)])
 cbar = fig.colorbar(cs)
 cbar.ax.set_ylabel('Linear velocity % error')
@@ -355,5 +377,5 @@ ax.set_xlabel(r"$\Sigma/\sigma$")
 ax.set_xlim((2.31, 12))
 ax.set_ylim((1, 20))
 # ax.set_title(r"$R_c/\sigma$ vs. $\Sigma/\sigma$")
-plt.savefig('img/rc_vs_sigmaratio.eps', bbox_inches = 'tight', format='eps')
+plt.savefig('img/rc_vs_sigmaratio.pdf', bbox_inches = 'tight', format='pdf')
 plt.show()

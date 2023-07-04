@@ -23,8 +23,9 @@ if(sys.argv[1] == 'run' or sys.argv[1] == 'read'):
     else:
         sim.start_loop()
 
-if(sys.argv[1] == 'test'):
-    sim.run_test()
+# deprecated
+# if(sys.argv[1] == 'test'):
+#     sim.run_test()
 
 if(sys.argv[1] == 'single'):
     sim.run_single()
