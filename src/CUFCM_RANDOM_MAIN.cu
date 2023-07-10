@@ -44,8 +44,11 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////	
 
 	/* Create random genertaor solver */
-	init_random_force(F_device, pars.rh, pars.N);
-	init_random_force(T_device, pars.rh, pars.N);
+	init_random_force(F_device, pars.Fref, pars.rh, pars.N);
+	init_random_force(T_device, pars.Fref, pars.rh, pars.N);
+
+	copy_to_host<Real>(F_device, F_host, 3*pars.N);
+	copy_to_host<Real>(T_device, T_host, 3*pars.N);
 
 	random_packer packer(Y_host, Y_device, pars);
 	for(int t = 0; t < packrep; t++){
@@ -56,16 +59,10 @@ int main(int argc, char** argv) {
 	}
 	packer.finish();
 	if(pars.prompt > 5){
-		printf("\nFinished packing");
-	}
-
-	if(pars.prompt > 5){
-		printf("\nCopying to host...\n");
+		printf("\nFinished packing & Copying to host...");
 	}
 
 	copy_to_host<Real>(Y_device, Y_host, 3*pars.N);
-	copy_to_host<Real>(F_device, F_host, 3*pars.N);
-	copy_to_host<Real>(T_device, T_host, 3*pars.N);
 
 	if(pars.prompt > 5){
 		printf("\nFinished copying...\n");

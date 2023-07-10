@@ -175,7 +175,7 @@ random_packer::random_packer(Real *Y_host_input, Real *Y_device_input, Random_Pa
 
     init_pos_lattice<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, N, Lx, Ly, Lz);
 
-    init_drag<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(init_F_device, rh, N, Fref, dev_random);
+    init_drag<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, rh, N, Fref, dev_random);
 
     write();
 
@@ -227,6 +227,7 @@ void random_packer::init_cuda(){
 		std::cout << "Particle number:\t" << N << "\n";
 		std::cout << "Particle radius:\t" << rh << "\n";
         std::cout << "boxsize:\t\t" << "(" << Lx << " " << Ly << " " << Lz << ")\n";
+        std::cout << "Volume fraction:\t" << (4./3*PI*rh*rh*rh*N/(boxsize*boxsize*boxsize)) << "\n";
         std::cout << "Grid points:\t\t" << "(" << nx << " " << ny << " " << nz << ")\n";
 		std::cout << "Cell number:\t\t" << "(" << Mx << " " << My << " " << Mz << ")\n";
         std::cout << "Rc/a:\t\t\t" << Rc/rh << "\n";
@@ -237,7 +238,7 @@ void random_packer::init_cuda(){
 
     aux_host = malloc_host<Real>(3*N);					    aux_device = malloc_device<Real>(3*N);
     F_host = malloc_host<Real>(3*N);						F_device = malloc_device<Real>(3*N);
-    init_F_host = malloc_host<Real>(3*N);					init_F_device = malloc_device<Real>(3*N);
+    // init_F_host = malloc_host<Real>(3*N);					init_F_device = malloc_device<Real>(3*N);
     V_host = malloc_host<Real>(3*N);						V_device = malloc_device<Real>(3*N);
 
     key_buf = malloc_device<int>(N);
@@ -296,12 +297,14 @@ void random_packer::sort_back(){
 
     copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, aux_device, 3*N);
     sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, Y_device, aux_device, N);
+    // copy_device<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, aux_device, 3*N);
+    // sort_3d_by_index<Real> <<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(sortback_index_device, F_device, aux_device, N);
 }
 
 __host__
 void random_packer::update(){
 
-    copy_device<Real><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(init_F_device, F_device, 3*N);
+    // copy_device<Real><<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(init_F_device, F_device, 3*N);
     // reset_device<Real> (F_device, 3*N);
 
     spatial_hashing();
@@ -330,7 +333,7 @@ void random_packer::update(){
 
     sort_back();
 
-    decrease_drag<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(init_F_device, 0.98, N);
+    decrease_drag<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, 0.98, N);
 
     
 }

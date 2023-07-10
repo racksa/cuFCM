@@ -11,6 +11,7 @@ import matplotlib.cm as cm
 import numpy as np
 from settings import *
 import util
+np.set_printoptions(threshold=sys.maxsize)
 
 class SIM:
 
@@ -29,7 +30,7 @@ class SIM:
         self.reference_pars = pardict.copy()
 
         # self.search_grid_shape = (17, 10, 1, 1) # alpha, beta, eta, npts
-        self.search_grid_shape = (1, 1, 1, 1) # alpha, beta, eta, npts
+        self.search_grid_shape = (75, 16, 1, 1) # alpha, beta, eta, npts
 
         self.nphi = 1
         self.nn = 1
@@ -57,7 +58,7 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                phi=                        0.05*4**j
+                phi=                        0.08*2**j
                 self.pars['rh']=            1.0
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
 
@@ -107,7 +108,7 @@ class SIM:
         print("Generating reference data")
         self.reference_pars=                self.pars.copy()
         self.reference_pars['alpha']        = 2.0
-        self.reference_pars['beta']         = 16.0
+        self.reference_pars['beta']         = 32.0
         self.reference_pars['eta']          = round(24.0, 1)
         # npts                                = min( int(0.026/self.reference_pars['rh'] * 270 /2) * 2, 460)
         npts = 400
@@ -137,12 +138,12 @@ class SIM:
             for i in range(self.search_grid_shape[0]):
                 for j in range(self.search_grid_shape[1]):
                     for k in range(self.search_grid_shape[2]):
-                        self.pars['alpha']=      0.9 + 0.1*i
-                        self.pars['beta']=       (4. + j )
-                        self.pars['eta']=        5.0 + np.exp(-8e-6*self.pars['N'])
+                        self.pars['alpha']=      0.5 + 0.02*i
+                        self.pars['beta']=       (5. + 1*j )
+                        self.pars['eta']=        16.0 #+ np.exp(-8e-6*self.pars['N'])
 
                         if(HIsolver==1):
-                            npts = min(60 + 20*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
+                            npts = min(300 + 10*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
                         if(HIsolver==0):
                             npts = 60 + 20*l
                         self.pars['nx']=         npts
@@ -156,12 +157,12 @@ class SIM:
 
                         # temporary #############################
                         # Sigma = (self.pars['alpha']*self.pars['boxsize']/self.pars['nx'])
-                        # self.pars['eta']=        (1+1*k)/Sigma
+                        # self.pars['eta']=        (2+2*k)/Sigma
                         # self.pars['eta']=       0.1/Sigma
                         # temporary #############################
 
                         if(sys.argv[1] == 'run'):
-                            util.execute([self.pars, self.datafiles], solver=HIsolver, mode=3)
+                            util.execute([self.pars, self.datafiles], solver=HIsolver, mode=2)
 
                         sim_dict = util.read_scalar(self.pars)
                         if(sim_dict):
@@ -196,20 +197,21 @@ class SIM:
             min_time = time_compute_array[min_index][0]
             print('Tolerance not satisfied in optimal finding. Carry on with the smallest error.')
 
-        print('N=', self.pars['N'])
-        print(np.array2string(sigma_ratio_array[0,0,:,:], separator=", "))
-        print(np.array2string(eta_array[0,0,:,:], separator=", "))
-        print(np.array2string(Verror_array[0,0,:,:], separator=", "))
+        # print('N=', self.pars['N'])
+        # print('sigma_ratio_array=np.array(' + np.array2string(sigma_ratio_array[0,0,:,:], separator=", ") + ')')
+        # print('eta_array=np.array(' + np.array2string(eta_array[0,0,:,:], separator=", ") + ')')
+        # print('error_array=np.array(' + np.array2string(Verror_array[0,0,:,:], separator=", ") + ')')
 
-        # print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
-        # print(np.array2string(ptps_array[0,0,0,:], separator=", "))
+        # print('sigma_ratio_array=np.array(' + np.array2string(sigma_ratio_array[0,0,0,:], separator=", ") + ')')
+        # print('eta_array=np.array(' + np.array2string(eta_array[0,0,0,:], separator=", ") + ')')
+        # print('ptps_array=np.array(' + np.array2string(ptps_array[0,0,0,:], separator=", ") + ')')
         
-        # print(np.array2string(alpha_array[:,:,0,0], separator=", "))
-        # print(np.array2string(beta_array[:,:,0,0], separator=", "))
-        # print(np.array2string(Verror_array[:,:,0,0], separator=", "))
+        print('alpha_array=np.array(' + np.array2string(alpha_array[:,:,0,0], separator=", ") + ')')
+        print('beta_array=np.array(' + np.array2string(beta_array[:,:,0,0], separator=", ") + ')')
+        print('error_array=np.array(' + np.array2string(Verror_array[:,:,0,0], separator=", ") + ')')
 
-        # print(np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
-        # print(np.array2string(Verror_array[0,0,0,:], separator=", "))
+        # print('eta_array=' + np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
+        # print('error_array=' + np.array2string(Verror_array[0,0,0,:], separator=", "))
 
         optimal_Verror = Verror_array[min_index][0]
         optimal_Werror = Werror_array[min_index][0]
@@ -220,10 +222,10 @@ class SIM:
 
 
         print("Min compute time for error=" + str(tol) + " is " + str(min_time))
-        print("Corresponding (alpha beta eta npts):" + str(optimal_alpha) + ' '\
-                                                + str(optimal_beta) + ' '\
-                                                + str(optimal_eta) + ' '\
-                                                + str(optimal_npts) + ' ')
+        print("Corresponding (alpha beta eta npts):" + '{:.2f}'.format(optimal_alpha) + ' '\
+                                                + '{:.2f}'.format(optimal_beta) + ' '\
+                                                + '{:.2f}'.format(optimal_eta) + ' '\
+                                                + '{:.2f}'.format(optimal_npts) + ' ')
                         
         return optimal_alpha, optimal_beta, optimal_eta, optimal_npts, optimal_Verror, optimal_Werror, min_time
 
@@ -442,7 +444,7 @@ class SIM:
 
     def print_scalar(self, sim_dict):
         if(self.siminfo):
-            print("(", str(self.pars['nx']), str(self.pars['alpha']), self.pars['beta'], self.pars['eta'], ") "
+            print("(", '{:.0f}'.format(self.pars['nx']), '{:.2f}'.format(self.pars['alpha']), '{:.0f}'.format(self.pars['beta']), '{:.2f}'.format(self.pars['eta']), ") "
                                     "Verror=", str(sim_dict["Verror"]),\
                                     "Werror=", str(sim_dict["Werror"]),\
                                     "time_compute=", str(sim_dict["time_compute"]),\

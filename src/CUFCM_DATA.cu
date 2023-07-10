@@ -390,18 +390,18 @@ void separate2interleaved(Real *F_device_interleave,
 }
 
 
-void init_random_force(Real *F, Real rad, int N){
+void init_random_force(Real *F, Real Fref, Real rad, int N){
 
     int num_thread_blocks_N;
     curandState *dev_random;
 	num_thread_blocks_N = (N + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
 	cudaMalloc((void**)&dev_random, num_thread_blocks_N*FCM_THREADS_PER_BLOCK*sizeof(curandState));
 
-    init_force_kernel<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F, rad, N, dev_random);
+    init_force_kernel<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F, Fref*rad, N, dev_random);
 }
 
 __global__
-void init_force_kernel(Real *F, Real rad, int N, curandState *states){
+void init_force_kernel(Real *F, Real Fref, int N, curandState *states){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
@@ -415,9 +415,9 @@ void init_force_kernel(Real *F, Real rad, int N, curandState *states){
         rnd2 = curand_uniform (&states[index]);
         rnd3 = curand_uniform (&states[index]);
 
-        F[3*j + 0] = 12.0*PI*rad*(rnd1 - 0.5);
-        F[3*j + 1] = 12.0*PI*rad*(rnd2 - 0.5);
-        F[3*j + 2] = 12.0*PI*rad*(rnd3 - 0.5);
+        F[3*j + 0] = Fref*(rnd1 - 0.5);
+        F[3*j + 1] = Fref*(rnd2 - 0.5);
+        F[3*j + 2] = Fref*(rnd3 - 0.5);
     }
     return;
 }

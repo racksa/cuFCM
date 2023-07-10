@@ -4,7 +4,7 @@ import os
 
 cufcm_dir = '/data/hs2216/CUFCM/'
 info_file_name = "simulation_info"
-date = "20230704"
+date = "20230710"
 fcm_directory = cufcm_dir + "data/simulation/" + date + "_fcm/"
 fastfcm_directory = cufcm_dir + "data/simulation/" + date + "_fastfcm/"
 

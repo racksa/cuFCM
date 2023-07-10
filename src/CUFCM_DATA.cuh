@@ -67,10 +67,10 @@ __global__
 void separate2interleaved(Real *F_device_interleave,
                           Real *F_device, Real *T_device, int N);
 
-void init_random_force(Real *F, Real rad, int N);
+void init_random_force(Real *F, Real Fref, Real rad, int N);
 
 __global__
-void init_force_kernel(Real *F, Real rad, int N, curandState *states);
+void init_force_kernel(Real *F, Real Fref, int N, curandState *states);
 
 __global__
 void box(Real *Y, int N, Real Lx, Real Ly, Real Lz);
