@@ -18,22 +18,22 @@ class SIM:
     def __init__(self):
         pardict, filedict = util.read_info(info_file_name)
         # Initialise parameters
-        pardict['repeat']=     1
+        pardict['repeat']=     50
         pardict['prompt']=     -1
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
         pardict['packrep']=    1000
-        pardict['boxsize']=    150
+        pardict['boxsize']=    400
 
         self.pars = pardict.copy()
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
         # self.search_grid_shape = (17, 10, 1, 1) # alpha, beta, eta, npts
-        self.search_grid_shape = (75, 16, 1, 1) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 50) # alpha, beta, eta, npts
 
         self.nphi = 1
-        self.nn = 1
+        self.nn = 5
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -58,7 +58,7 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                phi=                        0.08*2**j
+                phi=                        0.0005*4**j
                 self.pars['rh']=            1.0
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
 
@@ -138,12 +138,12 @@ class SIM:
             for i in range(self.search_grid_shape[0]):
                 for j in range(self.search_grid_shape[1]):
                     for k in range(self.search_grid_shape[2]):
-                        self.pars['alpha']=      0.5 + 0.02*i
-                        self.pars['beta']=       (5. + 1*j )
-                        self.pars['eta']=        16.0 #+ np.exp(-8e-6*self.pars['N'])
+                        self.pars['alpha']=      1.1 + 0.02*i
+                        self.pars['beta']=       (10. + 1*j )
+                        self.pars['eta']=        4.2 #+ np.exp(-8e-6*self.pars['N'])
 
                         if(HIsolver==1):
-                            npts = min(300 + 10*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
+                            npts = min(60 + 10*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
                         if(HIsolver==0):
                             npts = 60 + 20*l
                         self.pars['nx']=         npts
@@ -202,13 +202,12 @@ class SIM:
         # print('eta_array=np.array(' + np.array2string(eta_array[0,0,:,:], separator=", ") + ')')
         # print('error_array=np.array(' + np.array2string(Verror_array[0,0,:,:], separator=", ") + ')')
 
-        # print('sigma_ratio_array=np.array(' + np.array2string(sigma_ratio_array[0,0,0,:], separator=", ") + ')')
-        # print('eta_array=np.array(' + np.array2string(eta_array[0,0,0,:], separator=", ") + ')')
-        # print('ptps_array=np.array(' + np.array2string(ptps_array[0,0,0,:], separator=", ") + ')')
+        print('sigma_ratio_array=np.array(' + np.array2string(sigma_ratio_array[0,0,0,:], separator=", ") + ')')
+        print('ptps_array=np.array(' + np.array2string(ptps_array[0,0,0,:], separator=", ") + ')')
         
-        print('alpha_array=np.array(' + np.array2string(alpha_array[:,:,0,0], separator=", ") + ')')
-        print('beta_array=np.array(' + np.array2string(beta_array[:,:,0,0], separator=", ") + ')')
-        print('error_array=np.array(' + np.array2string(Verror_array[:,:,0,0], separator=", ") + ')')
+        # print('alpha_array=np.array(' + np.array2string(alpha_array[:,:,0,0], separator=", ") + ')')
+        # print('beta_array=np.array(' + np.array2string(beta_array[:,:,0,0], separator=", ") + ')')
+        # print('error_array=np.array(' + np.array2string(Verror_array[:,:,0,0], separator=", ") + ')')
 
         # print('eta_array=' + np.array2string(sigma_ratio_array[0,0,0,:], separator=", "))
         # print('error_array=' + np.array2string(Verror_array[0,0,0,:], separator=", "))
@@ -539,7 +538,7 @@ class SIM:
         ax.legend()
         # ax.set_xscale('log')
         ax2.set_xlabel(r'$\phi$')
-        ax2.set_ylabel(r'$PTPS_{fcm}/PTPS_{ffcm}$')
+        ax2.set_ylabel(r'$PTPS_{ffcm}/PTPS_{fcm}$')
         ax2.set_yscale('log')
         ax2.legend()
         fig.savefig('img/ptps_combined.pdf', bbox_inches = 'tight', format='pdf')

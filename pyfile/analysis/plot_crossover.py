@@ -6,8 +6,16 @@ import matplotlib.colors as colors
 def inv_f(x, a):
     return a/x**.5
 
+def exp(x, a, b):
+    return np.exp(-b*x)
+
+def linear(x, k, c):
+    return k*x+c
+
 def N_from_al_and_phi(al, phi):
     return phi/(4./3.*np.pi*al**3)
+
+
 
 aL_array = np.array([0.004, 0.0049, 0.0059, 0.0068, 0.0078, 0.0088, 0.0097, 0.0107, 0.0116, 0.0126, 0.0135])
 crossover_array = np.array([0.180, 0.183, 0.160, 0.155, 0.139, 0.120, 0.131, 0.124, 0.103, 0.1075, 0.089])
@@ -17,17 +25,19 @@ N_domain = N_from_al_and_phi(aL_domain, phic_domain)
 # print(aL_domain)
 # print(N_domain)
 
-p0 = curve_fit(inv_f, aL_array, crossover_array)
+# p0 = curve_fit(inv_f, aL_array, crossover_array)
+p0 = curve_fit(linear, aL_array, crossover_array)
 print(p0)
 theory_x = list()
 theory_y = list()
 for sec in range(2):
     if sec == 0:
-        x_array = np.linspace(1e-10, 0.015, 50)
+        x_array = np.linspace(0, 0.015, 50)
     else:
         x_array = np.linspace(0.004, 0.0135, 50)
     theory_x.append(x_array)
-    theory_y.append(inv_f(x_array, p0[0]))
+    # theory_y.append(inv_f(x_array, p0[0]))
+    theory_y.append(linear(x_array, p0[0][0], p0[0][1]))
 
 fig, ax = plt.subplots()
 for sec in range(2):
