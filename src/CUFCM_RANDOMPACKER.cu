@@ -48,94 +48,6 @@ void decrease_drag(Real *F, Real fac, int N){
 
 
 __global__
-void apply_repulsion(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
-                    int *particle_cellindex, int *cell_start, int *cell_end,
-                    int *map,
-                    int ncell, Real Rcsq,
-                    Real Fref){
-
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
-
-    Real asum = Real(2)*rad;
-
-
-    for(int i = index; i < N; i += stride){
-        Real fxi = (Real)0.0, fyi = (Real)0.0, fzi = (Real)0.0;
-        Real xi = Y[3*i + 0], yi = Y[3*i + 1], zi = Y[3*i + 2];
-        int icell = particle_cellindex[i];
-        
-        /* intra-cell interactions */
-        /* corrections only apply to particle i */
-        for(int j = cell_start[icell]; j < cell_end[icell]; j++){
-            if(i != j){
-                Real xij = xi - Y[3*j + 0];
-                Real yij = yi - Y[3*j + 1];
-                Real zij = zi - Y[3*j + 2];
-
-                xij = xij - Lx * Real(int(xij/(Lx/Real(2.0))));
-                yij = yij - Ly * Real(int(yij/(Ly/Real(2.0))));
-                zij = zij - Lz * Real(int(zij/(Lz/Real(2.0))));
-
-                Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < Rcsq){
-
-                    // Real rij = sqrtf(rijsq);
-
-                    Real fxij = Fref*xij/rijsq;
-                    Real fyij = Fref*yij/rijsq;
-                    Real fzij = Fref*zij/rijsq;
-
-                    fxi += fxij;
-                    fyi += fyij;
-                    fzi += fzij;
-
-                }
-            }
-            
-        }
-        int jcello = 13*icell;
-        /* inter-cell interactions */
-        /* corrections apply to both parties in different cells */
-        for(int nabor = 0; nabor < 13; nabor++){
-            int jcell = map[jcello + nabor];
-            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
-                Real xij = xi - Y[3*j + 0];
-                Real yij = yi - Y[3*j + 1];
-                Real zij = zi - Y[3*j + 2];
-
-                xij = xij - Lx * Real(int(xij/(Lx/Real(2.0))));
-                yij = yij - Ly * Real(int(yij/(Ly/Real(2.0))));
-                zij = zij - Lz * Real(int(zij/(Lz/Real(2.0))));
-
-                Real rijsq=xij*xij+yij*yij+zij*zij;
-                if(rijsq < Rcsq){
-
-                    // Real rij = sqrtf(rijsq);
-
-                    Real fxij = Fref*xij/rijsq;
-                    Real fyij = Fref*yij/rijsq;
-                    Real fzij = Fref*zij/rijsq;
-
-                    fxi += fxij;
-                    fyi += fyij;
-                    fzi += fzij;
-
-                    atomicAdd(&F[3*j + 0], -fxij);
-                    atomicAdd(&F[3*j + 1], -fyij);
-                    atomicAdd(&F[3*j + 2], -fzij);
-                }
-            }
-        }
-        atomicAdd(&F[3*i + 0], fxi);
-        atomicAdd(&F[3*i + 1], fyi);
-        atomicAdd(&F[3*i + 2], fzi);
-
-        return;
-    }
-}
-
-__global__
 void compute_stokes(Real *F, Real *V, Real rad, int N){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
@@ -318,12 +230,6 @@ void random_packer::update(){
                     map_device,
                     ncell, Rcsq,
                     0.1*Fref);
-
-    // apply_repulsion<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Y_device, F_device, rh, N, Lx, Ly, Lz,
-    //                 particle_cellhash_device, cell_start_device, cell_end_device,
-    //                 map_device,
-    //                 ncell, Rcsq,
-    //                 Fref);
 
     compute_stokes<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(F_device, V_device, rh, N);
 
