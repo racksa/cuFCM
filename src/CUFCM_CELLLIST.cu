@@ -84,35 +84,6 @@ void particle_index_range(int *particle_index, int N){
     return;
 }
 
-// template <typename T>
-// __global__
-// void copy_device(T *from, T *to, int L){
-//     const int index = threadIdx.x + blockIdx.x*blockDim.x;
-//     const int stride = blockDim.x*gridDim.x;
-
-//     for(int np = index; np < L; np += stride){
-//         to[np] = from[np];
-//     }
-    
-//     return;
-// }
-
-// template <typename T>
-// __global__
-// void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
-//     const int index = threadIdx.x + blockIdx.x*blockDim.x;
-//     const int stride = blockDim.x*gridDim.x;
-
-//     for(int np = index; np < L; np+=stride){
-
-//         in[3*np + 0] = aux[3*pindex[np] + 0];
-//         in[3*np + 1] = aux[3*pindex[np] + 1];
-//         in[3*np + 2] = aux[3*pindex[np] + 2];
-//     }
-    
-//     return;
-// }
-
 
 void sort_index_by_key(int *key, int *index, int *key_buf_, int *index_buf_, int N){
 	void     *d_temp_storage = NULL;
@@ -132,6 +103,7 @@ void sort_index_by_key(int *key, int *index, int *key_buf_, int *index_buf_, int
     cudaFree(key_buf);
     cudaFree(index_buf);
 }
+
 
 __global__
 void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_end, int N){
@@ -157,6 +129,28 @@ void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_
     
     return;
     
+}
+
+
+__global__
+void check_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int *map, int N){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+    
+    for(int i = index; i < N; i += stride){
+        int icell = particle_cellindex[i];
+        int jcello = 13*icell;
+        for(int nabor = 0; nabor < 13; nabor++){
+            int jcell = map[jcello + nabor];
+            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
+                if(i==j){
+                    printf("LETHAL ERROR: particle %d in two cells %d and %d\n", i, icell, jcell);
+                    printf("    icell [%d %d]  jcell [%d %d] \n", cell_start[icell],cell_end[icell],
+                                                                cell_start[jcell], cell_end[jcell]);
+                }
+            }
+        }
+    }
 }
 
 __global__
@@ -317,3 +311,33 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
         return;
     }
 }
+
+
+// template <typename T>
+// __global__
+// void copy_device(T *from, T *to, int L){
+//     const int index = threadIdx.x + blockIdx.x*blockDim.x;
+//     const int stride = blockDim.x*gridDim.x;
+
+//     for(int np = index; np < L; np += stride){
+//         to[np] = from[np];
+//     }
+    
+//     return;
+// }
+
+// template <typename T>
+// __global__
+// void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
+//     const int index = threadIdx.x + blockIdx.x*blockDim.x;
+//     const int stride = blockDim.x*gridDim.x;
+
+//     for(int np = index; np < L; np+=stride){
+
+//         in[3*np + 0] = aux[3*pindex[np] + 0];
+//         in[3*np + 1] = aux[3*pindex[np] + 1];
+//         in[3*np + 2] = aux[3*pindex[np] + 2];
+//     }
+    
+//     return;
+// }

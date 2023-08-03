@@ -229,9 +229,9 @@ class SIM:
         return optimal_alpha, optimal_beta, optimal_eta, optimal_npts, optimal_Verror, optimal_Werror, min_time
 
     def run_test(self):
-        self.datafiles['$posfile'] = './data/init_data/N500000/pos-N500000-rh02609300-2.dat'
-        self.datafiles['$forcefile'] = './data/init_data/N500000/force-N500000-rh02609300.dat'
-        self.datafiles['$torquefile'] = './data/init_data/N500000/force-N500000-rh02609300-2.dat'
+        self.datafiles['$posfile'] = './test/test_data/pos-N500000-rh02609300-2.dat'
+        self.datafiles['$forcefile'] = './test/test_data/force-N500000-rh02609300.dat'
+        self.datafiles['$torquefile'] = './test/test_data/force-N500000-rh02609300-2.dat'
         self.pars['checkerror'] = 1
 
         self.pars['N']=          500000
@@ -245,7 +245,7 @@ class SIM:
         self.pars['ny']=         npts
         self.pars['nz']=         npts
         self.pars['Fref']=       1.0
-        self.pars['repeat']=     1
+        self.pars['repeat']=     50
         self.pars['prompt']=     10
         self.pars['boxsize']=    np.pi*2
 
@@ -496,21 +496,24 @@ class SIM:
         
         global fcm_directory
         global fastfcm_directory
-        fcm_directory = cufcm_dir + "data/simulation/20221125_fcm/"
-        fastfcm_directory = cufcm_dir + "data/simulation/20221125_fastfcm/"
+        fcm_directory = cufcm_dir + "data/simulation/20221129_fcm/"
+        fastfcm_directory = cufcm_dir + "data/simulation/20221129_fastfcm/"
 
         self.pars['boxsize'] = 6.283185307179586
+
+        fcm_ptps_array_list = list()
 
         for j in range(2):
             self.mod_solver(j)
             self.analyse()
 
-            for i in range(len(self.n_array)-1):
+            for i in range(0, len(self.n_array)-1, 4):
                 if (HIsolver==0):
                     label = 'FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3))
                     marker = '+'
                     linestyle='solid'
                     fcm_ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
+                    fcm_ptps_array_list.append(fcm_ptps_array)
                 if (HIsolver==1):
                     label = 'F-FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3))
                     marker = ','
@@ -520,16 +523,17 @@ class SIM:
                 ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
                 ax.plot(self.phi_array[i], ptps_array, marker=marker, linestyle=linestyle, c=util.color_codex[i], label=label)
                 if(j==1):
-                    ratio = ffcm_ptps_array/fcm_ptps_array
-                    ax2.axhline(y = 1, color = 'r', linestyle = '-.')
+                    ratio = ffcm_ptps_array/fcm_ptps_array_list[int(i/4)]
+                    ax2.axhline(y = 1, color = 'grey', linestyle = '-.', lw=0.5)
                     ax2.plot(self.phi_array[i], ratio, label='a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3)))
                     # plot cross points
-                    idx = np.argwhere(np.diff(np.sign(ratio - 1))).flatten()
+                    idx = np.argwhere(np.diff(np.sign(ratio - 1))).flatten()[0]
                     lenx = (self.phi_array[i][idx+1] - self.phi_array[i][idx])
                     leny = (ratio[idx+1] - ratio[idx])
                     grad = leny/lenx
                     interception_x = self.phi_array[i][idx] + (1-ratio[idx])/grad
-                    ax2.plot(interception_x, 1, 'x', c="black")
+                    ax2.scatter(interception_x, 1, marker = '+', s=100, color='red', zorder=10)
+                    # ax.scatter(aL_array, crossover_array, marker = '+', s=100, color='red', label='Data', zorder=10)
 
         # adding title and labels
         # ax.set_title(r"PTPS vs. $\phi$")

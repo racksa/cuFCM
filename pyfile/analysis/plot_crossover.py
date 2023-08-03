@@ -17,8 +17,15 @@ def N_from_al_and_phi(al, phi):
 
 
 
-aL_array = np.array([0.004, 0.0049, 0.0059, 0.0068, 0.0078, 0.0088, 0.0097, 0.0107, 0.0116, 0.0126, 0.0135])
-crossover_array = np.array([0.180, 0.183, 0.160, 0.155, 0.139, 0.120, 0.131, 0.124, 0.103, 0.1075, 0.089])
+# aL_array = np.array([0.004, 0.0049, 0.0059, 0.0068, 0.0078, 0.0088, 0.0097, 0.0107, 0.0116, 0.0126, 0.0135])
+# crossover_array = np.array([0.180, 0.183, 0.160, 0.155, 0.139, 0.120, 0.131, 0.124, 0.103, 0.1075, 0.089])
+
+aL_array = np.linspace(0.004, 0.014, 11)
+crossover_array = np.array([0.1796988332018473, 0.18341836874267936, 0.16029990375180314,
+                            0.1555956484307304, 0.1393131236584624, 0.11949121802627433,
+                            0.13161303422224319, 0.11153336982307753, 0.10390989284238716,
+                            0.10763130372030884, 0.08996120945668212])
+
 
 aL_domain, phic_domain = np.meshgrid(np.linspace(5e-4, 0.014, 100), np.linspace(0.001, 0.25, 100) )
 N_domain = N_from_al_and_phi(aL_domain, phic_domain)
@@ -32,9 +39,9 @@ theory_x = list()
 theory_y = list()
 for sec in range(2):
     if sec == 0:
-        x_array = np.linspace(0, 0.015, 50)
+        x_array = np.linspace(0, 0.016, 50)
     else:
-        x_array = np.linspace(0.004, 0.0135, 50)
+        x_array = np.linspace(0.004, 0.014, 50)
     theory_x.append(x_array)
     # theory_y.append(inv_f(x_array, p0[0]))
     theory_y.append(linear(x_array, p0[0][0], p0[0][1]))
@@ -56,7 +63,7 @@ ax.scatter(aL_array, crossover_array, marker = '+', s=100, color='red', label='D
 ax.set_xlabel('a/L')
 ax.set_ylabel(r'$\phi_c$')
 # ax.set_title(r"Crossover volume fraction vs. aspect ratio")
-ax.set_xlim((0, 0.015))
+ax.set_xlim((0, 0.016))
 ax.set_ylim((0, 0.25))
 ax.legend()
 ax.annotate('FCM region', (0.004, 0.22), weight='bold', size=25)

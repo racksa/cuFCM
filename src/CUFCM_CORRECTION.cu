@@ -229,7 +229,6 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
         for(nabor = 0; nabor < 13; nabor++){
             jcell = map[jcello + nabor];
             for(j = cell_start[jcell]; j < cell_end[jcell]; j++){
-
                 xij = xi - Y[3*j + 0];
                 yij = yi - Y[3*j + 1];
                 zij = zi - Y[3*j + 2];

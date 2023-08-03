@@ -52,6 +52,9 @@ __global__
 void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_end, int N);
 
 __global__
+void check_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int *map, int N);
+
+__global__
 void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     int *particle_cellindex, int *cell_start, int *cell_end,
                     int *map,

@@ -239,7 +239,7 @@ void FCM_solver::init_cuda(){
 	time_cuda_initialisation += get_time() - time_start;
 }
 
-/*  Cilia code  */
+/*  Cilia code start */
 
 void FCM_solver::init_aux_for_filament(){
 
@@ -258,7 +258,7 @@ void FCM_solver::reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver){
     int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
     if(to_solver){copy_device<Real> <<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(x_seg, Yf_device, 3*num_seg);
     copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(x_blob, &Yf_device[3*num_seg], 3*num_blob);
-    copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(Yf_device, Yv_device, 3*N);
+    // copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(Yf_device, Yv_device, 3*N);
     }
     else{copy_device<Real> <<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(Yf_device, x_seg, 3*num_seg);
     copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(&Yf_device[3*num_seg], x_blob, 3*num_blob);}
@@ -296,311 +296,81 @@ void FCM_solver::reform_vblob(Real *v_blob, bool to_solver){
 __host__ 
 void FCM_solver::evaluate_mobility_cilia(){
 
+    cudaError_t err = cudaGetLastError();
+
     box_particle();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error box_particle: %s\n", cudaGetErrorString(err));
+    }
 
     reset_grid();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error reset_grid: %s\n", cudaGetErrorString(err));
+    }
 
     spatial_hashing();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error spatial_hashing: %s\n", cudaGetErrorString(err));
+    }
 
     sort_particle(0, N);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error sort_particle: %s\n", cudaGetErrorString(err));
+    }
+
+    // check_cell_list<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, 
+    //                         cell_start_device, cell_end_device,
+    //                         map_device, N);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error check_cell_list: %s\n", cudaGetErrorString(err));
+    }
 
     spread();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error spread: %s\n", cudaGetErrorString(err));
+    }
     
     fft_solve();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error fft_solve: %s\n", cudaGetErrorString(err));
+    }
 
     gather();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error gather: %s\n", cudaGetErrorString(err));
+    }
 
     correction();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        write_cell_list();
+        write_data_call();
+        cudaDeviceSynchronize();
+        printf("Write to file\n");
+        fprintf(stderr, "CUDA error correction: %s\n", cudaGetErrorString(err));
+        
+
+
+    }
 
     sortback(0, N);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error sortback: %s\n", cudaGetErrorString(err));
+    }
 
 }
 
-/*
-// __host__
 
-// __host__
-// void FCM_solver::reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver){
-//     int num_thread_blocks_Nseg = (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-//     int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-//     if(to_solver){copy_device<Real> <<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(x_seg, Yf_device, 3*num_seg);
-//     copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(x_blob, &Yf_device[3*num_seg], 3*num_blob);}
-//     else{copy_device<Real> <<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(Yf_device, x_seg, 3*num_seg);
-//     copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(&Yf_device[3*num_seg], x_blob, 3*num_blob);}
-// }
-
-// __host__
-// void FCM_solver::reform_fseg(Real *f_seg, bool to_solver){
-//     int num_thread_blocks_Nseg = (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-//     if(to_solver){interleaved2separate<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);}
-//     else{separate2interleaved<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);}
-// }
-
-// __host__
-// void FCM_solver::reform_vseg(Real *v_seg, bool to_solver){
-//     int num_thread_blocks_Nseg = (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-//     if(to_solver){interleaved2separate<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);}
-//     else{separate2interleaved<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);}
-// }
-
-// __host__
-// void FCM_solver::reform_fblob(Real *f_blob, bool to_solver){
-//     int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-//     if(to_solver){copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], 3*num_blob);}
-//     else{copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(&F_device[3*num_seg], f_blob, 3*num_blob);}
-// }
-
-// __host__
-// void FCM_solver::reform_vblob(Real *v_blob, bool to_solver){
-//     int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-//     if(to_solver){copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], 3*num_blob);}
-//     else{copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(&V_device[3*num_seg], v_blob, 3*num_blob);}
-// }
-
-// __host__
-// void FCM_solver::reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
-//                              Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier){
-//     int num_thread_blocks_Nseg = (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-//     int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-
-//     copy_device<Real> <<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(x_seg, Yf_device, 3*num_seg);
-//     interleaved2separate<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);
-
-//     copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(x_blob, &Yf_device[3*num_seg], 3*num_blob);
-//     copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], 3*num_blob);
-
-//     return;
-// }
-
-// __host__
-// void FCM_solver::reform_data_back(Real *x_seg, Real *f_seg, Real *v_seg,
-//                              Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier){
-//     int num_thread_blocks_Nseg = (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-//     int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-
-//     if(is_barrier){
-//         separate2interleaved<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);
-//         copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(&F_device[3*num_seg], f_blob, 3*num_blob);
-//     }
-//     else{
-//         separate2interleaved<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);
-//         copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(&V_device[3*num_seg], v_blob, 3*num_blob);
-//     }
-
-//     return;
-// }
-
-// __host__
-// void FCM_solver::Mss(){
-
-//     box_particle();
-
-//     reset_grid();
-//     reset_device<Real> (V_device, 3*N);
-//     reset_device<Real> (W_device, 3*N);
-//     reset_device<Real> (&F_device[3*num_seg], 3*num_blob);
-//     reset_device<Real> (&T_device[3*num_seg], 3*num_blob);
-
-//     spatial_hashing();
-
-//     sort_particle(0, N);
-
-//     spread_seg_force();
-
-//     fft_solve();
-
-//     gather_seg_velocity();
-
-//     correction_seg();
-
-//     sortback(0, N);
-
-// }
-
-// __host__
-// void FCM_solver::Mbb(){
-
-//     box_particle();
-
-//     reset_grid();
-//     reset_device<Real> (V_device, 3*N);
-//     reset_device<Real> (W_device, 3*N);
-//     reset_device<Real> (F_device, 3*num_seg);
-//     reset_device<Real> (T_device, 3*N);
-
-//     spatial_hashing();
-
-//     sort_particle(0, N);
-
-//     spread_blob_force();
-
-//     fft_solve();
-
-//     gather_blob_velocity();
-
-//     correction_blob();
-
-//     sortback(0, N);
-
-
-// }
-
-// __host__
-// void FCM_solver::Mbs(){
-
-
-//     box_particle();
-
-//     reset_grid();
-//     reset_device<Real> (V_device, 3*num_seg);
-//     reset_device<Real> (W_device, 3*num_seg);
-//     reset_device<Real> (&F_device[3*num_seg], 3*num_blob);
-//     reset_device<Real> (&T_device[3*num_seg], 3*num_blob);
-
-//     spatial_hashing();
-
-//     sort_particle(0, N);
-
-//     spread_seg_force();
-
-//     fft_solve();
-
-//     gather_blob_velocity();
-
-//     correction_blob();
-
-//     sortback(0, N);
-
-// }
-
-// __host__
-// void FCM_solver::Msb(){
-
-//     box_particle();
-
-//     reset_grid();
-//     reset_device<Real> (&V_device[3*num_seg], 3*num_blob);
-//     reset_device<Real> (&W_device[3*num_seg], 3*num_blob);
-//     reset_device<Real> (F_device, 3*num_seg);
-//     reset_device<Real> (T_device, 3*N);
-
-//     spatial_hashing();
-
-//     sort_particle(0, N);
-
-//     spread_blob_force();
-
-//     fft_solve();
-
-//     gather_seg_velocity();
-
-//     correction_seg();
-
-//     sortback(0, N);
-
-// }
-
-// __host__
-// void FCM_solver::apply_repulsion_for_timcode(){
-//     box_particle();
-
-//     reset_device<Real> (&F_device[3*num_seg], 3*num_blob);
-
-//     spatial_hashing();
-
-//     sort_particle(0, N);
-
-//     apply_repulsion();
-
-//     sortback(0, N);
-
-// }
-
-// __host__
-// void FCM_solver::spread_seg_force(){
-    
-//     cufcm_mono_dipole_distribution_selection<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real)>>>
-//                                                 (hx_device, hy_device, hz_device, 
-//                                                 Yf_device, T_device, F_device,
-//                                                 N, ngd,
-//                                                 sigmaFCM, SigmaGRID,
-//                                                 dx, nx, ny, nz,
-//                                                 particle_index_device, 0, num_seg);
-// }
-
-// __host__
-// void FCM_solver::gather_seg_velocity(){
-
-//     cufcm_particle_velocities_selection<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(9*ngd+3)*sizeof(Real)>>>
-//                                         (hx_device, hy_device, hz_device,
-//                                         Yv_device, V_device, W_device,
-//                                         N, ngd,
-//                                         sigmaFCM, SigmaGRID,
-//                                         dx, nx, ny, nz,
-//                                         particle_index_device, 0, num_seg);
-// }
-
-// __host__
-// void FCM_solver::spread_blob_force(){
-    
-//     cufcm_mono_dipole_distribution_mono_selection<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+6)*sizeof(Real)>>>
-//                                                 (hx_device, hy_device, hz_device, 
-//                                                 Yf_device, F_device,
-//                                                 N, ngd,
-//                                                 sigmaFCM, SigmaGRID,
-//                                                 dx, nx, ny, nz,
-//                                                 particle_index_device, num_seg, N);
-// }
-
-// __host__
-// void FCM_solver::gather_blob_velocity(){
-
-//     cufcm_particle_velocities_mono_selection<<<N, FCM_THREADS_PER_BLOCK, 3*ngd*sizeof(Integer)+(6*ngd+3)*sizeof(Real)>>>
-//                                         (hx_device, hy_device, hz_device,
-//                                         Yv_device, V_device,
-//                                         N, ngd,
-//                                         sigmaFCM, SigmaGRID,
-//                                         dx, nx, ny, nz,
-//                                         particle_index_device, num_seg, N);
-// }
-
-// __host__
-// void FCM_solver::correction_seg(){
-
-//     cufcm_pair_correction_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yv_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
-//                                 particle_cellhash_device, cell_start_device, cell_end_device,
-//                                 map_device,
-//                                 ncell, Rcsq,
-//                                 SigmaGRID,
-//                                 sigmaFCM,
-//                                 sigmaFCMdip,
-//                                 particle_index_device, 0, num_seg);
-
-//     cufcm_self_correction_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
-//                             StokesMob, ModStokesMob,
-//                             PDStokesMob, BiLapMob,
-//                             WT1Mob, WT2Mob,
-//                             particle_index_device, 0, num_seg);
-// }
-
-// __host__
-// void FCM_solver::correction_blob(){
-                            
-//     cufcm_pair_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yv_device, V_device, F_device, N, Lx, Ly, Lz,
-//                                 particle_cellhash_device, cell_start_device, cell_end_device,
-//                                 map_device,
-//                                 ncell, Rcsq,
-//                                 SigmaGRID,
-//                                 sigmaFCM,
-//                                 particle_index_device, num_seg, N);
-
-//     cufcm_self_correction_mono_selection<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, F_device, N,
-//                             StokesMob, ModStokesMob,
-//                             PDStokesMob, BiLapMob,
-//                             particle_index_device, num_seg, N);
-// }
-
-*/
+/*  Cilia code end */
 
 __host__ 
 void FCM_solver::hydrodynamic_solver(Real *Yf_device_input, Real *Yv_device_input, 
@@ -623,7 +393,7 @@ void FCM_solver::hydrodynamic_solver(Real *Yf_device_input, Real *Yv_device_inpu
     sort_particle(0, N);
 
     spread();
-    
+
     fft_solve();
     
     // write_flowfield_call();
