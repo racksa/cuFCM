@@ -1,13 +1,8 @@
-from distutils.log import error
 import sys
 from pathlib import Path
 import os
 import subprocess
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import numpy as np
-from pylab import *
 from settings import *
 import util
 import simulator
