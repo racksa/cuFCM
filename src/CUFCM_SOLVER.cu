@@ -296,16 +296,16 @@ void FCM_solver::evaluate_mobility_cilia(){
 
     cudaError_t err = cudaGetLastError();
 
-    box_particle();
-    err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "CUDA error box_particle: %s\n", cudaGetErrorString(err));
-    }
-
     reset_grid();
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         fprintf(stderr, "CUDA error reset_grid: %s\n", cudaGetErrorString(err));
+    }
+
+    box_particle();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error box_particle: %s\n", cudaGetErrorString(err));
     }
 
     spatial_hashing();
@@ -443,8 +443,8 @@ void FCM_solver::sort_particle(){
 
     cudaDeviceSynchronize();	time_hashing_array[rept] = get_time() - time_start;
 
-    verify_cell_list<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, Yf_device, 
-    N, Mx, My, Mz, Lx, Ly, Lz);
+    // verify_cell_list<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, Yf_device, 
+    // N, Mx, My, Mz, Lx, Ly, Lz);
 
 }
 

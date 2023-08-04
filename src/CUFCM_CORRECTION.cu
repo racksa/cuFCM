@@ -226,7 +226,6 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
         jcello = 13*icell;
         /* inter-cell interactions */
         /* corrections apply to both parties in different cells */
-        /*
         for(nabor = 0; nabor < 13; nabor++){
             jcell = map[jcello + nabor];
             for(j = cell_start[jcell]; j < cell_end[jcell]; j++){
@@ -317,7 +316,6 @@ void cufcm_pair_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, R
                 
             }
         }
-        */
         atomicAdd(&V[3*i + 0], vxi);
         atomicAdd(&V[3*i + 1], vyi);
         atomicAdd(&V[3*i + 2], vzi);

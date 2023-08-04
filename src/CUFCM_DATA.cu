@@ -432,13 +432,34 @@ void box(Real *Y, int N, Real Lx, Real Ly, Real Lz){
         images(Y[3*i + 0], Lx);
         images(Y[3*i + 1], Ly);
         images(Y[3*i + 2], Lz);
+
+        if(Y[3*i + 0]<0.0f || Y[3*i + 1]<0.0f || Y[3*i + 2]<0.0f || 
+           Y[3*i + 0]>=Lx || Y[3*i + 1]>=Ly || Y[3*i + 2]>=Lz){
+			printf("-------- boxing,\
+                    particle %d (%.8f %.8f %.8f) not in box\n", 
+			i, Y[3*i + 0], Y[3*i + 1], Y[3*i + 2]);
+		}
     }
 
 }
 
-__host__ __device__
-void images(Real &x, Real boxsize){
+__device__
+void images(Real& x, Real boxsize){
+    Real x_old = Real(10.0);
+    x_old = x;
+
     x -= my_floor(x/boxsize)*boxsize;
+
+    if(x == boxsize){
+        x = Real(0.0);
+    }
+
+    if(x>=boxsize){
+        printf("-------- images,\
+                boxing %.8f into [0 %.8f] get %.8f\n", 
+        x_old, boxsize, x);        
+    }
+
 }
 
 

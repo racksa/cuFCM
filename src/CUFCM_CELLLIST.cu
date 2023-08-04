@@ -60,24 +60,13 @@ void create_hash_gpu(int *hash, Real *Y, int N, int Mx, int My, int Mz,
     const int stride = blockDim.x*gridDim.x;
 
 	for(int np = index; np < N; np+=stride){
-		if(Y[3*np + 0]<0 || Y[3*np + 1]<0 || Y[3*np + 2]<0){
-			printf("ERROR particle %d (%.4f %.4f %.4f) not in box\n", 
-			np, Y[3*np + 0], Y[3*np + 1], Y[3*np + 2]);
-		}
+		
 
 		int xc = int(Y[3*np + 0]/Lx * Mx);
 		int yc = int(Y[3*np + 1]/Ly * My);
 		int zc = int(Y[3*np + 2]/Lz * Mz);
 
 		hash[np] = xc + (yc + zc*My)*Mx;
-        
-
-        if(hash[np] > Mx*My*Mz){
-            printf("-------- create hash,\
-                     particle %d (%.2f %.2f %.2f) in cell %d (%d %d %d)\n", 
-			np, Y[3*np + 0], Y[3*np + 1], Y[3*np + 2],
-            hash[np], xc, yc, zc);
-        }
 	}
 	return;
 }
@@ -89,16 +78,22 @@ void verify_hash_gpu(int *hash, Real *Y, int N, int Mx, int My, int Mz,
     const int stride = blockDim.x*gridDim.x;
 
 	for(int np = index; np < N; np+=stride){
+        if(Y[3*np + 0]<0.0f || Y[3*np + 1]<0.0f || Y[3*np + 2]<0.0f || 
+           Y[3*np + 0]>=Lx || Y[3*np + 1]>=Ly || Y[3*np + 2]>=Lz){
+			printf("-------- create hash,\
+                    particle %d (%.8f %.8f %.8f) not in box\n", 
+			np, Y[3*np + 0], Y[3*np + 1], Y[3*np + 2]);
+		}
 
 		int xc = int(Y[3*np + 0]/Lx * Mx);
 		int yc = int(Y[3*np + 1]/Ly * My);
 		int zc = int(Y[3*np + 2]/Lz * Mz);
 
-		int cell_index = xc + (yc + zc*My)*Mx;
         if(hash[np] > Mx*My*Mz){
             printf("-------- verify hash,\
-                     particle %d in cell %d but should be %d\n", 
-			np, hash[np], cell_index);
+                     particle %d (%.8f %.8f %.8f) in cell %d (%d %d %d)\n", 
+			np, Y[3*np + 0], Y[3*np + 1], Y[3*np + 2],
+            hash[np], xc, yc, zc);
         }
 	}
 	return;
@@ -237,42 +232,6 @@ void verify_cell_list(const int *particle_cellindex, const int *cell_start, cons
     return;
 }
 
-
-__global__
-void check_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int *map, int N, Real *Y){
-    const int index = threadIdx.x + blockIdx.x*blockDim.x;
-    const int stride = blockDim.x*gridDim.x;
-
-    int icell = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
-
-    for(int i = index; i < N; i += stride){
-        icell = particle_cellindex[i];
-
-        jcello = 13*icell;
-        /* inter-cell interactions */
-        /* corrections apply to both parties in different cells */
-        for(nabor = 0; nabor < 13; nabor++){
-            jcell = map[jcello + nabor];
-            for(j = cell_start[jcell]; j < cell_end[jcell]; j++){
-                if(i==j){
-                    printf("-------- checklist i=%d[%.2f %.2f %.2f], \
-                    j=%d[%.2f %.2f %.2f], \
-                    icell=%d[%d %d], \
-                    jcell=%d[%d %d], \
-                    Y[%d] = [%.2f %.2f %.2f]\n", 
-                    i, Y[3*i], Y[3*i+1], Y[3*i+2],
-                    j, Y[3*j], Y[3*j+1] ,Y[3*j+2],
-                    icell, cell_start[icell], cell_end[icell],
-                    jcell, cell_start[jcell], cell_end[jcell], 
-                    cell_start[jcell], Y[3*cell_start[jcell]], Y[3*cell_start[jcell]+1], Y[3*cell_start[jcell]+2]);
-                }
-            }
-        }
-    }
-    
-
-    return;
-}
 
 __global__
 void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,
@@ -432,33 +391,3 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
         return;
     }
 }
-
-
-// template <typename T>
-// __global__
-// void copy_device(T *from, T *to, int L){
-//     const int index = threadIdx.x + blockIdx.x*blockDim.x;
-//     const int stride = blockDim.x*gridDim.x;
-
-//     for(int np = index; np < L; np += stride){
-//         to[np] = from[np];
-//     }
-    
-//     return;
-// }
-
-// template <typename T>
-// __global__
-// void sort_3d_by_index(int *pindex, T *in, T *aux, int L){
-//     const int index = threadIdx.x + blockIdx.x*blockDim.x;
-//     const int stride = blockDim.x*gridDim.x;
-
-//     for(int np = index; np < L; np+=stride){
-
-//         in[3*np + 0] = aux[3*pindex[np] + 0];
-//         in[3*np + 1] = aux[3*pindex[np] + 1];
-//         in[3*np + 2] = aux[3*pindex[np] + 2];
-//     }
-    
-//     return;
-// }
