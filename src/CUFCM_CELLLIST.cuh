@@ -15,6 +15,10 @@ void create_hash_gpu(int *hash, Real *Y, int N, int Mx, int My, int Mz,
 					Real Lx, Real Ly, Real Lz);
 
 __global__
+void verify_hash_gpu(int *hash, Real *Y, int N, int Mx, int My, int Mz,
+					Real Lx, Real Ly, Real Lz);
+
+__global__
 void particle_index_range(int *particle_index, int N);
 
 template <typename T>
@@ -52,7 +56,12 @@ __global__
 void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_end, int N);
 
 __global__
-void check_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int *map, int N);
+void verify_cell_list(const int *particle_cellindex, const int *cell_start, const int *cell_end, const Real *Y,
+                     int N, int Mx, int My, int Mz, Real Lx, Real Ly, Real Lz);
+
+__global__
+void check_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int *map, int N, Real *Y);
+
 
 __global__
 void contact_force(Real* Y, Real *F, Real rad, int N, Real Lx, Real Ly, Real Lz,

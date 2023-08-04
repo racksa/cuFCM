@@ -45,7 +45,7 @@ UAMMD_ROOT= ../UAMMD/
 #Uncomment to compile in double precision mode
 #DOUBLE_PRECISION=-DDOUBLE_PRECISION
 INCLUDEFLAGS=-I$(CUDA_ROOT)/include -I$(UAMMD_ROOT)/src -I$(UAMMD_ROOT)/src/third_party
-NVCCFLAGS=-ccbin=$(CXX) -std=c++14 -O3 $(INCLUDEFLAGS) -DMAXLOGLEVEL=$(LOG_LEVEL) $(DOUBLE_PRECISION) --extended-lambda
+NVCCFLAGS=-ccbin=$(CXX) -std=c++14 -O3 $(INCLUDEFLAGS) -DMAXLOGLEVEL=$(LOG_LEVEL) $(DOUBLE_PRECISION) --extended-lambda -lineinfo
 
 CUFCM_FILES_NOMAIN = incorporate/CUFCM_INCORPORATE.cu
 

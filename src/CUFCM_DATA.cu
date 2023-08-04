@@ -28,7 +28,7 @@ void read_init_data(Real *Y, int N, const char *file_name){
     return;
 }
 
-void read_init_data_thrust(thrust::host_vector<Real>& Y, int N, const char *initpos_file_name){
+void read_init_data_thrust(thrust::host_vector<Real>& Y, const char *initpos_file_name){
     std::ifstream input_file(initpos_file_name);
     if (!input_file.is_open()) {
         std::cerr << "Failed to open input file." << std::endl;
@@ -42,12 +42,12 @@ void read_init_data_thrust(thrust::host_vector<Real>& Y, int N, const char *init
         // Split the line into three space-separated values
         Real a, b, c;
         std::istringstream iss(line);
-        iss >> a >> b >> c;
-
-        // Assign the values to the host vector
-        Y[index++] = a;
-        Y[index++] = b;
-        Y[index++] = c;
+        if(iss >> a >> b >> c){
+            // Assign the values to the host vector
+            Y[index++] = a;
+            Y[index++] = b;
+            Y[index++] = c;
+        }        
     }
 
     // Close the input file
@@ -87,7 +87,7 @@ void read_validate_data_thrust(thrust::host_vector<Real>& Y,
                             thrust::host_vector<Real>& F,
                             thrust::host_vector<Real>& T, 
                             thrust::host_vector<Real>& V, 
-                            thrust::host_vector<Real>& W, int N, const char *file_name){
+                            thrust::host_vector<Real>& W, const char *file_name){
     std::ifstream input_file(file_name);
     if (!input_file.is_open()) {
         std::cerr << "Failed to open validation file." << std::endl;
@@ -97,29 +97,29 @@ void read_validate_data_thrust(thrust::host_vector<Real>& Y,
     // Read the input file line by line
     std::string line;
     int index = 0;
-    while (std::getline(input_file, line) && index < N) {
+    while (std::getline(input_file, line)) {
         // Split the line into three space-separated values
         Real y1, y2, y3, f1, f2, f3, t1, t2, t3, v1, v2, v3, w1, w2, w3;
         std::istringstream iss(line);
-        iss >> y1 >> y2 >> y3 >> f1 >> f2 >> f3 >> t1 >> t2 >> t3 >> v1 >> v2 >> v3 >> w1 >> w2 >> w3;
-
-        // Assign the values to the host vector
-        Y[3*index] = y1;
-        Y[3*index+1] = y2;
-        Y[3*index+2] = y3;
-        F[3*index] = f1;
-        F[3*index+1] = f2;
-        F[3*index+2] = f3;
-        T[3*index] = t1;
-        T[3*index+1] = t2;
-        T[3*index+2] = t3;
-        V[3*index] = v1;
-        V[3*index+1] = v2;
-        V[3*index+2] = v3;
-        W[3*index] = w1;
-        W[3*index+1] = w2;
-        W[3*index+2] = w3;
-        index++;
+        if(iss >> y1 >> y2 >> y3 >> f1 >> f2 >> f3 >> t1 >> t2 >> t3 >> v1 >> v2 >> v3 >> w1 >> w2 >> w3){
+            // Assign the values to the host vector
+            Y[3*index] = y1;
+            Y[3*index+1] = y2;
+            Y[3*index+2] = y3;
+            F[3*index] = f1;
+            F[3*index+1] = f2;
+            F[3*index+2] = f3;
+            T[3*index] = t1;
+            T[3*index+1] = t2;
+            T[3*index+2] = t3;
+            V[3*index] = v1;
+            V[3*index+1] = v2;
+            V[3*index+2] = v3;
+            W[3*index] = w1;
+            W[3*index+1] = w2;
+            W[3*index+2] = w3;
+            index++;
+        }
     }
 
     // Close the input file
@@ -438,7 +438,7 @@ void box(Real *Y, int N, Real Lx, Real Ly, Real Lz){
 
 __host__ __device__
 void images(Real &x, Real boxsize){
-    x -= floor(x/boxsize)*boxsize;
+    x -= my_floor(x/boxsize)*boxsize;
 }
 
 

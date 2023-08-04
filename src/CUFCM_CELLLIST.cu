@@ -57,18 +57,49 @@ __global__
 void create_hash_gpu(int *hash, Real *Y, int N, int Mx, int My, int Mz,
 					Real Lx, Real Ly, Real Lz){
 	const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
 
-	if(index < N){
-		if(Y[3*index + 0]<0 || Y[3*index + 1]<0 || Y[3*index + 2]<0){
+	for(int np = index; np < N; np+=stride){
+		if(Y[3*np + 0]<0 || Y[3*np + 1]<0 || Y[3*np + 2]<0){
 			printf("ERROR particle %d (%.4f %.4f %.4f) not in box\n", 
-			index, Y[3*index + 0], Y[3*index + 1], Y[3*index + 2]);
+			np, Y[3*np + 0], Y[3*np + 1], Y[3*np + 2]);
 		}
 
-		int xc = int(Y[3*index + 0]/Lx * Mx);
-		int yc = int(Y[3*index + 1]/Ly * My);
-		int zc = int(Y[3*index + 2]/Lz * Mz);
+		int xc = int(Y[3*np + 0]/Lx * Mx);
+		int yc = int(Y[3*np + 1]/Ly * My);
+		int zc = int(Y[3*np + 2]/Lz * Mz);
 
-		hash[index] = xc + (yc + zc*My)*Mx;
+		hash[np] = xc + (yc + zc*My)*Mx;
+        
+
+        if(hash[np] > Mx*My*Mz){
+            printf("-------- create hash,\
+                     particle %d (%.2f %.2f %.2f) in cell %d (%d %d %d)\n", 
+			np, Y[3*np + 0], Y[3*np + 1], Y[3*np + 2],
+            hash[np], xc, yc, zc);
+        }
+	}
+	return;
+}
+
+__global__
+void verify_hash_gpu(int *hash, Real *Y, int N, int Mx, int My, int Mz,
+					Real Lx, Real Ly, Real Lz){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+	for(int np = index; np < N; np+=stride){
+
+		int xc = int(Y[3*np + 0]/Lx * Mx);
+		int yc = int(Y[3*np + 1]/Ly * My);
+		int zc = int(Y[3*np + 2]/Lz * Mz);
+
+		int cell_index = xc + (yc + zc*My)*Mx;
+        if(hash[np] > Mx*My*Mz){
+            printf("-------- verify hash,\
+                     particle %d in cell %d but should be %d\n", 
+			np, hash[np], cell_index);
+        }
 	}
 	return;
 }
@@ -114,8 +145,9 @@ void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_
 
     for(int np = index; np < N; np+=stride){
         c2 = particle_cellindex[np];
-        c1 = particle_cellindex[np-1];
-
+        if(np > 0){
+            c1 = particle_cellindex[np-1];
+        }
         if(c1 != c2 || np == 0){
             cell_start[c2] = np;
             if(np > 0){
@@ -131,26 +163,115 @@ void create_cell_list(const int *particle_cellindex, int *cell_start, int *cell_
     
 }
 
-
 __global__
-void check_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int *map, int N){
+void verify_cell_list(const int *particle_cellindex, const int *cell_start, const int *cell_end, const Real *Y, 
+    int N , int Mx, int My, int Mz, Real Lx, Real Ly, Real Lz){
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
-    
-    for(int i = index; i < N; i += stride){
-        int icell = particle_cellindex[i];
-        int jcello = 13*icell;
-        for(int nabor = 0; nabor < 13; nabor++){
-            int jcell = map[jcello + nabor];
-            for(int j = cell_start[jcell]; j < cell_end[jcell]; j++){
-                if(i==j){
-                    printf("LETHAL ERROR: particle %d in two cells %d and %d\n", i, icell, jcell);
-                    printf("    icell [%d %d]  jcell [%d %d] \n", cell_start[icell],cell_end[icell],
-                                                                cell_start[jcell], cell_end[jcell]);
+
+    unsigned int c1, c2;
+
+    for(int np = index; np < N; np+=stride){
+        c2 = particle_cellindex[np];
+        if(np > 0){
+            c1 = particle_cellindex[np-1];
+            if(c1 != c2 && np>0){
+                if(cell_start[c2] != cell_end[c1]){
+                    Real x2 = Y[3*np];
+                    Real y2 = Y[3*np+1];
+                    Real z2 = Y[3*np+2];
+                    Real x1 = Y[3*np-3];
+                    Real y1 = Y[3*np-2];
+                    Real z1 = Y[3*np-1];
+
+                    Real xstart = Y[3*cell_start[c2] ];
+                    Real ystart = Y[3*cell_start[c2] +1];
+                    Real zstart = Y[3*cell_start[c2] +2];
+                    Real xend = Y[3*cell_end[c1]-3];
+                    Real yend = Y[3*cell_end[c1]-2];
+                    Real zend = Y[3*cell_end[c1]-1];
+
+
+                    int xc2 = int(x2/Lx * Mx);
+                    int yc2 = int(y2/Ly * My);
+                    int zc2 = int(z2/Lz * Mz);
+                    int should_be2 = xc2 + (yc2 + zc2*My)*Mx;
+
+                    int xc1 = int(x1/Lx * Mx);
+                    int yc1 = int(y1/Ly * My);
+                    int zc1 = int(z1/Lz * Mz);
+                    int should_be1 = xc1 + (yc1 + zc1*My)*Mx;
+
+                    int xcend = int(xend/Lx * Mx);
+                    int ycend = int(yend/Ly * My);
+                    int zcend = int(zend/Lz * Mz);
+                    int should_beend = xcend + (ycend + zcend*My)*Mx;
+
+
+                    int xcstart = int(xstart/Lx * Mx);
+                    int ycstart = int(ystart/Ly * My);
+                    int zcstart = int(zstart/Lz * Mz);
+                    int should_bestart = xcstart + (ycstart + zcstart*My)*Mx;
+
+                    
+
+                    printf("-------- verify cell,\
+                    icell[%d]=[%d %d],\
+                    icell[%d]=[%d %d],\
+                    Y[%d](%.2f %.2f %.2f) in cell [%d] but should be [%d](%d %d %d)\
+                    Y[%d](%.2f %.2f %.2f) in cell [%d] but should be [%d](%d %d %d)\
+                    Y[%d](%.2f %.2f %.2f) in cell [%d] but should be [%d](%d %d %d)\
+                    Y[%d](%.2f %.2f %.2f) in cell [%d] but should be [%d](%d %d %d) \n", 
+                    c1, cell_start[c1], cell_end[c1],
+                    c2, cell_start[c2], cell_end[c2],
+                    cell_end[c1], xend, yend, zend, particle_cellindex[cell_end[c1]], should_beend, xc1, yc1, zc1,
+                    cell_start[c2], xstart, ystart, zstart, particle_cellindex[cell_start[c2]], should_bestart, xc2, yc2, zc2,
+                    np-1, x1, y1, z1, particle_cellindex[np-1], should_be1, xcend, ycend, zcend, 
+                    np, x2, y2, z2, particle_cellindex[np], should_be2, xcstart, ycstart, zcstart
+                    );
                 }
             }
         }
     }
+    
+    return;
+}
+
+
+__global__
+void check_cell_list(int *particle_cellindex, int *cell_start, int *cell_end, int *map, int N, Real *Y){
+    const int index = threadIdx.x + blockIdx.x*blockDim.x;
+    const int stride = blockDim.x*gridDim.x;
+
+    int icell = 0, j = 0, jcello = 0, jcell = 0, nabor = 0;
+
+    for(int i = index; i < N; i += stride){
+        icell = particle_cellindex[i];
+
+        jcello = 13*icell;
+        /* inter-cell interactions */
+        /* corrections apply to both parties in different cells */
+        for(nabor = 0; nabor < 13; nabor++){
+            jcell = map[jcello + nabor];
+            for(j = cell_start[jcell]; j < cell_end[jcell]; j++){
+                if(i==j){
+                    printf("-------- checklist i=%d[%.2f %.2f %.2f], \
+                    j=%d[%.2f %.2f %.2f], \
+                    icell=%d[%d %d], \
+                    jcell=%d[%d %d], \
+                    Y[%d] = [%.2f %.2f %.2f]\n", 
+                    i, Y[3*i], Y[3*i+1], Y[3*i+2],
+                    j, Y[3*j], Y[3*j+1] ,Y[3*j+2],
+                    icell, cell_start[icell], cell_end[icell],
+                    jcell, cell_start[jcell], cell_end[jcell], 
+                    cell_start[jcell], Y[3*cell_start[jcell]], Y[3*cell_start[jcell]+1], Y[3*cell_start[jcell]+2]);
+                }
+            }
+        }
+    }
+    
+
+    return;
 }
 
 __global__

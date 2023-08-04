@@ -9,7 +9,7 @@
 
 void read_init_data(Real *Y, int N, const char *initpos_file_name);
 
-void read_init_data_thrust(thrust::host_vector<Real>& Y, int N, const char *initpos_file_name);
+void read_init_data_thrust(thrust::host_vector<Real>& Y, const char *initpos_file_name);
 
 void read_validate_data(Real *Y, Real *F, Real *T, Real *V, Real *W, int N, const char *file_name);
 
@@ -17,7 +17,8 @@ void read_validate_data_thrust(thrust::host_vector<Real>& Y,
                                thrust::host_vector<Real>& F,
                                thrust::host_vector<Real>& T, 
                                thrust::host_vector<Real>& V, 
-                               thrust::host_vector<Real>& W, int N, const char *file_name);
+                               thrust::host_vector<Real>& W,
+                               const char *file_name);
 
 Real percentage_error_magnitude_thrust(thrust::host_vector<Real> data, thrust::host_vector<Real> ref_data, int N);
 

@@ -230,7 +230,6 @@ int main(int argc, char** argv) {
 	parser_config(values, pars);
 
 	thrust::host_vector<Real> Yf_host(3*pars.N);						thrust::device_vector<Real> Yf_device(3*pars.N);
-	thrust::host_vector<Real> Yv_host(3*pars.N);						thrust::device_vector<Real> Yv_device(3*pars.N);
 	thrust::host_vector<Real> F_host(3*pars.N);							thrust::device_vector<Real> F_device(3*pars.N);
 	thrust::host_vector<Real> T_host(3*pars.N);							thrust::device_vector<Real> T_device(3*pars.N);
 	thrust::host_vector<Real> V_host(3*pars.N);							thrust::device_vector<Real> V_device(3*pars.N);
@@ -244,7 +243,6 @@ int main(int argc, char** argv) {
 	read_init_data_thrust(T_host, pars.N, datafile_names[2].c_str());
 
 	Yf_device = Yf_host;
-	Yv_device = Yf_host; // This is on purpose
 	F_device = F_host;
 	T_device = T_host;
 
@@ -256,7 +254,6 @@ int main(int argc, char** argv) {
 	cudaDeviceSynchronize();
 	FCM_solver solver(pars);
 	solver.assign_host_array_pointers(thrust::raw_pointer_cast(Yf_host.data()), 
-									  thrust::raw_pointer_cast(Yv_host.data()), 
 									  thrust::raw_pointer_cast(F_host.data()), 
 									  thrust::raw_pointer_cast(T_host.data()), 
 									  thrust::raw_pointer_cast(V_host.data()), 
@@ -267,7 +264,6 @@ int main(int argc, char** argv) {
 			std::cout << "\r====Computing repeat " << t+1 << "/" << pars.repeat;
 		}
 		solver.hydrodynamic_solver(thrust::raw_pointer_cast(Yf_device.data()), 
-								   thrust::raw_pointer_cast(Yv_device.data()), 
 								   thrust::raw_pointer_cast(F_device.data()), 
 								   thrust::raw_pointer_cast(T_device.data()), 
 								   thrust::raw_pointer_cast(V_device.data()), 
@@ -284,7 +280,6 @@ int main(int argc, char** argv) {
     Real Yerror = -1, Verror = -1, Werror = -1;
 
 	Yf_host = Yf_device;
-	Yv_host = Yv_device;
 	V_host = V_device;
 	W_host = W_device;
 

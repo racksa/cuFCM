@@ -30,7 +30,7 @@ public:
 
     cufftHandle plan, iplan;
     /* source */
-    Real *aux_host, *aux_device, *Yf_host, *Yf_device, *Yv_host, *Yv_device;
+    Real *aux_host, *aux_device, *Yf_host, *Yf_device;
     Real *F_host, *F_device, *T_host, *T_device, *V_host, *V_device, *W_host, *W_device;
         
     /* grid */
@@ -103,8 +103,9 @@ public:
     void init_cuda();
 
     __host__
-    void hydrodynamic_solver(Real *Yf_device_input, Real * F_device_input, Real *T_device_input,
-                             Real *Yv_device_input, Real * V_device_input, Real *W_device_input);
+    void hydrodynamic_solver(Real *Yf_device_input, 
+                            Real *F_device_input, Real *T_device_input,
+                            Real *V_device_input, Real *W_device_input);
                              
     __host__
     void box_particle();
@@ -181,7 +182,7 @@ public:
     void spatial_hashing();
 
     __host__
-    void sort_particle(int start_index, int particle_number);
+    void sort_particle();
 
     __host__
     void spread();
@@ -196,7 +197,7 @@ public:
     void correction();
 
     __host__
-    void sortback(int start_index, int particle_number);
+    void sortback();
 
     __host__
     void prompt_time();
@@ -208,7 +209,7 @@ public:
     void apply_repulsion();
 
     __host__
-    void assign_host_array_pointers(Real *Yf_host_o, Real *Yv_host_o, 
+    void assign_host_array_pointers(Real *Yf_host_o,
                                     Real *F_host_o, Real *T_host_o, 
                                     Real *V_host_o, Real *W_host_o);
         

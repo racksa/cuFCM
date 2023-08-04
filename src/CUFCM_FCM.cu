@@ -17,7 +17,7 @@ void cufcm_mono_dipole_distribution_bpp_shared_dynamic(myCufftReal *fx, myCufftR
               Real *Y, Real *T, Real *F,
               int N, int ngd, 
               Real sigma, Real sigmadip, Real Sigma,
-              Real dx, double nx, double ny, double nz,
+              Real dx, int nx, int ny, int nz,
               int *particle_index, int start, int end,
               int rotation){
     
@@ -250,7 +250,7 @@ void cufcm_particle_velocities_bpp_shared_dynamic(myCufftReal *ux, myCufftReal *
                                 Real *Y, Real *VTEMP, Real *WTEMP,
                                 int N, int ngd, 
                                 Real sigma, Real sigmadip, Real Sigma,
-                                Real dx, Real nx, Real ny, Real nz,
+                                Real dx, int nx, int ny, int nz,
                                 int *particle_index, int start, int end,
                                 int rotation){
 
