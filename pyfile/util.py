@@ -52,6 +52,8 @@ def read_info(fileName, symbol='='):
     ret_filedict = {}
     infoFile = open(fileName, 'r')
     lines = infoFile.readlines()
+    print(lines)
+    print(fileName)
     for row in range(len(lines)):
         if not lines[row][0] == '$' or lines[row][0] == ' ':
             sep = find_pos(lines[row], symbol)

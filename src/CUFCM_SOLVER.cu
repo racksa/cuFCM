@@ -253,8 +253,8 @@ void FCM_solver::init_aux_for_filament(){
 
 __host__
 void FCM_solver::reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver){
-    int num_thread_blocks_Nseg = (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
-    int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
+    int num_thread_blocks_Nseg = std::max(1,(num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK);
+    int num_thread_blocks_Nblob = std::max(1, (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK);
     if(to_solver){copy_device<Real> <<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(x_seg, Yf_device, 3*num_seg);
     copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(x_blob, &Yf_device[3*num_seg], 3*num_blob);
     }
@@ -264,21 +264,21 @@ void FCM_solver::reform_xsegblob(Real *x_seg, Real *x_blob, bool to_solver){
 
 __host__
 void FCM_solver::reform_fseg(Real *f_seg, bool to_solver){
-    int num_thread_blocks_Nseg = (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
+    int num_thread_blocks_Nseg = std::max(1, (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK);
     if(to_solver){interleaved2separate<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);}
     else{separate2interleaved<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(f_seg, F_device, T_device, num_seg);}
 }
 
 __host__
 void FCM_solver::reform_vseg(Real *v_seg, bool to_solver){
-    int num_thread_blocks_Nseg = (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
+    int num_thread_blocks_Nseg = std::max(1, (num_seg + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK);
     if(to_solver){interleaved2separate<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);}
     else{separate2interleaved<<<num_thread_blocks_Nseg, FCM_THREADS_PER_BLOCK>>>(v_seg, V_device, W_device, num_seg);}
 }
 
 __host__
 void FCM_solver::reform_fblob(Real *f_blob, bool to_solver){
-    int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
+    int num_thread_blocks_Nblob = std::max(1, (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK);
     if(to_solver){copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(f_blob, &F_device[3*num_seg], 3*num_blob);
     reset_device<Real> (&T_device[3*num_seg], 3*num_blob);}
     else{copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(&F_device[3*num_seg], f_blob, 3*num_blob);}
@@ -286,7 +286,7 @@ void FCM_solver::reform_fblob(Real *f_blob, bool to_solver){
 
 __host__
 void FCM_solver::reform_vblob(Real *v_blob, bool to_solver){
-    int num_thread_blocks_Nblob = (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK;
+    int num_thread_blocks_Nblob = std::max(1, (num_blob + FCM_THREADS_PER_BLOCK - 1)/FCM_THREADS_PER_BLOCK);
     if(to_solver){copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(v_blob, &V_device[3*num_seg], 3*num_blob);}
     else{copy_device<Real> <<<num_thread_blocks_Nblob, FCM_THREADS_PER_BLOCK>>>(&V_device[3*num_seg], v_blob, 3*num_blob);}
 }
@@ -366,28 +366,61 @@ void FCM_solver::hydrodynamic_solver(Real *Yf_device_input,
     V_device = V_device_input;
     W_device = W_device_input;
 
-    box_particle();
+    cudaError_t err = cudaGetLastError();
 
     reset_grid();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error reset_grid: %s\n", cudaGetErrorString(err));
+    }
+
+    box_particle();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error box_particle: %s\n", cudaGetErrorString(err));
+    }
 
     spatial_hashing();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error spatial_hashing: %s\n", cudaGetErrorString(err));
+    }
 
     sort_particle();
-
-    verify_cell_list<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(particle_cellhash_device, cell_start_device, cell_end_device, Yf_device, 
-    N, Mx, My, Mz, Lx, Ly, Lz);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error sort_particle: %s\n", cudaGetErrorString(err));
+    }
 
     spread();
-
-    fft_solve();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error spread: %s\n", cudaGetErrorString(err));
+    }
     
-    // write_flowfield_call();
+    fft_solve();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error fft_solve: %s\n", cudaGetErrorString(err));
+    }
 
     gather();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error gather: %s\n", cudaGetErrorString(err));
+    }
 
     correction();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error correction: %s\n", cudaGetErrorString(err));
+    }
 
     sortback();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error sortback: %s\n", cudaGetErrorString(err));
+    }
 
     rept += 1;
 

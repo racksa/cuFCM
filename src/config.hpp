@@ -19,7 +19,7 @@
 #ifdef USE_REGULARFCM
 #endif
 
-#define ROTATION 1
+#define ROTATION 0
 // 0 = No rotation
 // 1 = Rotation     **default
 

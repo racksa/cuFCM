@@ -6,6 +6,7 @@ boxsize=200
 phi_array = np.array([0.0005*4**j for j in range(5)])
 N_array = phi_array*(boxsize/0.5)**3/(4./3.*np.pi)
 
+
 sigma_ratio_array = np.array([11.81635901, 10.12830772,  8.86226925,  7.87757267,  7.0898154 ,
   6.44528673,  5.9081795 ,  5.45370416,  5.06415386,  4.7265436 ,
   4.43113463,  4.17047965,  3.93878634,  3.73148179,  3.5449077 ,
@@ -97,9 +98,11 @@ def plot_ptps_vs_npts(sigma_ratio_array, ptps_array):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     
+    linestyle_list = ['solid', 'dotted', 'dashed', 'dashdot', '' ]
+    marker_list = ['', '', '', '', '+']
     # plot data
     for i, phi in enumerate(phi_array):
-        ax.plot(sigma_ratio_array, ptps_array[i], marker='+', label=rf"$N$={int(N_array[i])},$\phi$={phi*100}%")
+        ax.plot(sigma_ratio_array, ptps_array[i], marker=marker_list[i], c='black', linestyle=linestyle_list[i], label=rf"$N$={int(N_array[i])},$\phi$={phi*100}%")
     ax.legend()
     
     # adding title and labels
@@ -109,7 +112,7 @@ def plot_ptps_vs_npts(sigma_ratio_array, ptps_array):
     ax.set_ylim((0, 1.2e7))
     # ax.set_title(r"PTPS vs. $\Sigma/\sigma$")
     ax.set_ylabel('PTPS')
-    plt.savefig('img/ptps_vs_sigmaratio_linear.eps', bbox_inches = 'tight', format='eps')
+    plt.savefig('img/ptps_vs_sigmaratio_linear.png', bbox_inches = 'tight', format='png')
     plt.show()
 
 plot_ptps_vs_npts(sigma_ratio_array, ptps_array)

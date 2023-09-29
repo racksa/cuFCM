@@ -46,7 +46,8 @@ for sec in range(2):
     # theory_y.append(inv_f(x_array, p0[0]))
     theory_y.append(linear(x_array, p0[0][0], p0[0][1]))
 
-fig, ax = plt.subplots()
+fig = plt.figure(figsize=(4.8, 3.6))
+ax = fig.add_subplot(1,1,1)
 for sec in range(2):
     if sec == 1:
         linestyle = 'solid'
@@ -54,10 +55,11 @@ for sec in range(2):
     else:
         linestyle = 'dotted'
         label = 'Prediction'
-    ax.plot(theory_x[sec], theory_y[sec], linestyle=linestyle, color='blue', label=label)
-ax.fill_between(theory_x[0], 0, theory_y[0], color='mediumaquamarine', alpha=0.5)
-ax.fill_between(theory_x[0], theory_y[0], 1, color='beige', alpha=0.5)
-ax.scatter(aL_array, crossover_array, marker = '+', s=100, color='red', label='Data', zorder=10)
+    ax.plot(theory_x[sec], theory_y[sec], linestyle=linestyle, color='black', label=label)
+ax.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
+ax.fill_between(theory_x[0], 0, theory_y[0], color='grey', alpha=0.5)
+ax.fill_between(theory_x[0], theory_y[0], 1, color='white', alpha=0.5)
+ax.scatter(aL_array, crossover_array, marker = '+', color='black', label='Data', zorder=10)
 # CS = ax.contour(aL_domain, phic_domain, N_domain, norm=colors.LogNorm(vmin=100, vmax=1e7))
 # ax.clabel(CS, inline=True, fontsize=10)
 ax.set_xlabel('a/L')
@@ -66,10 +68,11 @@ ax.set_ylabel(r'$\phi_c$')
 ax.set_xlim((0, 0.016))
 ax.set_ylim((0, 0.25))
 ax.legend()
-ax.annotate('FCM region', (0.004, 0.22), weight='bold', size=25)
-ax.annotate('FFCM region', (0.0015, 0.06), weight='bold', size=25)
+ax.annotate('FCM region', (0.004, 0.22), size=12)
+ax.annotate('FFCM region', (0.0015, 0.06), size=12)
+ax.annotate(r'fit: $y=-9.24x+0.22$', (0.008, 0.16), size=12)
 
-plt.savefig('img/r_crossover.eps', bbox_inches = 'tight', format='eps')
+plt.savefig('img/r_crossover.pdf', bbox_inches = 'tight', format='pdf')
 plt.show()
 
 # delta = 0.025

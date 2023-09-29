@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib as mpl
 import numpy as np
+import matplotlib.ticker as ticker
 
 boxsize=150
 # phi_array = np.array([0.0005*4**j for j in range(5)])
@@ -1454,15 +1455,16 @@ error_array=np.array([[1.79599110e-01, 1.79599110e-01, 1.84856726e-01, 1.8485672
   2.41910395e-15, 3.93961243e-16, 3.90492203e-16, 3.98788588e-16,
   3.82557127e-16, 3.79131078e-16, 3.83800015e-16, 4.24646767e-16]])
 
-fig = plt.figure()
+fig = plt.figure(figsize=(4.8, 3.6))
 ax = fig.add_subplot(1,1,1)
-levels = np.logspace(-16, -1, 16)
+ax.set_facecolor("black")
+levels = np.logspace(-11, 0, 12)
 print(levels)
 cs = ax.contourf(ngd_array, alpha_array, error_array,
-                levels, cmap=plt.cm.bone, norm=mpl.colors.LogNorm())
-cs2 = ax.contour(cs,
-                levels, norm=mpl.colors.LogNorm())        
-ax.clabel(cs2, inline=True, fontsize=10, fmt='%2.1E', colors=[plt.cm.bone((18*i + 100)%291) for i in range(16)])
+                levels, cmap=plt.cm.gray, norm=mpl.colors.LogNorm(), locator = ticker.MaxNLocator(prune = 'lower'))
+# cs2 = ax.contour(cs,
+#                 levels, norm=mpl.colors.LogNorm())        
+# ax.clabel(cs2, inline=True, fontsize=10, fmt='%2.1E', colors=[plt.cm.bone((18*i + 100)%291) for i in range(16)])
 cbar = fig.colorbar(cs)
 cbar.ax.set_ylabel('Linear velocity % error')
 cbar.ax.set_yscale('log')
@@ -1470,11 +1472,10 @@ cbar.ax.set_yscale('log')
 # adding title and labels
 ax.set_xlabel(r"$M_G$")
 ax.set_ylabel(r"$\Sigma/\Delta x$")
-ax.set_xlim((5, 20))
-ax.set_ylim((0.5, 2))
+ax.set_xlim((5, 16))
+ax.set_ylim((0.5, 1.7))
 # ax.set_title(r"$\Sigma/\Delta x$ vs. $ngd$")
 plt.savefig('img/alpha_vs_ngd.pdf', bbox_inches = 'tight', format='pdf')
-plt.show()
 
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(1,1,1)

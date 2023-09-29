@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib as mpl
 import numpy as np
+import matplotlib.ticker as ticker
 
 # boxsize=150
 # phi_array = np.array([0.0005*4**j for j in range(5)])
@@ -475,38 +476,39 @@ error_array=np.array([[1.05200757e-01, 8.33286005e-02, 6.80940995e-02, 5.6709000
 
 
 
-fig = plt.figure()
+fig = plt.figure(figsize=(4.8, 3.6))
 ax = fig.add_subplot(1,1,1)
-levels = np.logspace(-16, -2, 15)
+ax.set_facecolor("black")
+levels = np.logspace(-11, -1, 11)
 k_array = np.zeros(np.shape(levels))
 print(np.shape(levels)[0])
 print(levels)
 
 cs = ax.contourf(sigma_ratio_array, eta_array*sigma_ratio_array, error_array,
-                levels, cmap=plt.cm.bone, norm=mpl.colors.LogNorm())
-cs2 = ax.contour(cs,
-                levels, norm=mpl.colors.LogNorm())
+                levels, cmap=plt.cm.gray, norm=mpl.colors.LogNorm(), locator = ticker.MaxNLocator(prune = 'lower'))
+# cs2 = ax.contour(cs,
+#                 levels, norm=mpl.colors.LogNorm())
 
-# #####Fitting
-from scipy.optimize import curve_fit
-def prop(x, k):
-    return k*x
+# # #####Fitting
+# from scipy.optimize import curve_fit
+# def prop(x, k):
+#     return k*x
 
-ydata = eta_array*sigma_ratio_array*0.5/np.sqrt(np.pi)
-for i in range(1, len(levels)):    
-    xdata = cs2.collections[i].get_paths()[0].vertices[:, 0]
-    ydata = cs2.collections[i].get_paths()[0].vertices[:, 1]
-    popt, pcov = curve_fit(prop, xdata, ydata)
-    k_array[i] = popt
-    fit_x = np.linspace(2, 12, 100)
-    fit_y = prop(fit_x, popt)
-    # ax.plot(fit_x, fit_y, linestyle='dashed')
-    # ax.scatter(xdata, ydata, marker='+')
-print(k_array)
-# #####Fitting
+# ydata = eta_array*sigma_ratio_array*0.5/np.sqrt(np.pi)
+# for i in range(1, len(levels)):    
+#     xdata = cs2.collections[i].get_paths()[0].vertices[:, 0]
+#     ydata = cs2.collections[i].get_paths()[0].vertices[:, 1]
+#     popt, pcov = curve_fit(prop, xdata, ydata)
+#     k_array[i] = popt
+#     fit_x = np.linspace(2, 12, 100)
+#     fit_y = prop(fit_x, popt)
+#     # ax.plot(fit_x, fit_y, linestyle='dashed')
+#     # ax.scatter(xdata, ydata, marker='+')
+# print(k_array)
+# # #####Fitting
 
 
-ax.clabel(cs2, inline=True, fontsize=10, fmt='%2.1E', colors=[plt.cm.bone((20*i + 100)%291) for i in range(np.shape(levels)[0])])
+# ax.clabel(cs2, inline=True, fontsize=10, fmt='%2.1E', colors=[plt.cm.bone((20*i + 100)%291) for i in range(np.shape(levels)[0])])
 cbar = fig.colorbar(cs)
 cbar.ax.set_ylabel('Linear velocity % error')
 cbar.ax.set_yscale('log')

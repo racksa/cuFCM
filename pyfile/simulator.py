@@ -486,9 +486,9 @@ class SIM:
         print(self.optimal_time_compute_array)
 
     def analyse_and_plot_both(self):
-        fig = plt.figure()
+        fig = plt.figure(figsize=(4.8, 3.2))
         ax = fig.add_subplot(1,1,1)
-        fig2 = plt.figure()
+        fig2 = plt.figure(figsize=(4.8, 3.2))
         ax2 = fig2.add_subplot(1,1,1)
 
         fcm_ptps_array = np.zeros(np.shape(self.phi_array[0]))
@@ -507,6 +507,8 @@ class SIM:
             self.mod_solver(j)
             self.analyse()
 
+            linestyle_list = ['solid', 'dotted', 'dashed', 'dashdot', '' ]
+            marker_list = ['', '', '', '', '+']
             for i in range(0, len(self.n_array)-1, 4):
                 if (HIsolver==0):
                     label = 'FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3))
@@ -525,14 +527,14 @@ class SIM:
                 if(j==1):
                     ratio = ffcm_ptps_array/fcm_ptps_array_list[int(i/4)]
                     ax2.axhline(y = 1, color = 'grey', linestyle = '-.', lw=0.5)
-                    ax2.plot(self.phi_array[i], ratio, label='a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3)))
+                    ax2.plot(self.phi_array[i], ratio, linestyle=linestyle_list[int(i/4)], c='black', label='a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3)))
                     # plot cross points
                     idx = np.argwhere(np.diff(np.sign(ratio - 1))).flatten()[0]
                     lenx = (self.phi_array[i][idx+1] - self.phi_array[i][idx])
                     leny = (ratio[idx+1] - ratio[idx])
                     grad = leny/lenx
                     interception_x = self.phi_array[i][idx] + (1-ratio[idx])/grad
-                    ax2.scatter(interception_x, 1, marker = '+', s=100, color='red', zorder=10)
+                    # ax2.scatter(interception_x, 1, marker = 'x', c='black', zorder=10)
                     # ax.scatter(aL_array, crossover_array, marker = '+', s=100, color='red', label='Data', zorder=10)
 
         # adding title and labels

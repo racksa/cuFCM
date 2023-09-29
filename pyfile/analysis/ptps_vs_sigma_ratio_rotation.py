@@ -93,9 +93,11 @@ def plot_ptps_vs_npts(sigma_ratio_array, ptps_array):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     
+    linestyle_list = ['solid', 'dotted', 'dashed', 'dashdot', '' ]
+    marker_list = ['', '', '', '', '+']
     # plot data
     for i, phi in enumerate(phi_array):
-        ax.plot(sigma_ratio_array, ptps_array[i], marker='+', label=rf"$N$={int(N_array[i])},$\phi$={phi*100}%")
+        ax.plot(sigma_ratio_array, ptps_array[i], marker=marker_list[i], c='black', linestyle=linestyle_list[i], label=rf"$N$={int(N_array[i])},$\phi$={phi*100}%")
     ax.legend()
     
     # adding title and labels
@@ -106,7 +108,7 @@ def plot_ptps_vs_npts(sigma_ratio_array, ptps_array):
     # ax.set_title(r"PTPS vs. $\Sigma/\sigma$")
     ax.set_ylabel('PTPS')
     plt.savefig('img/ptps_vs_sigmaratio_rotation.pdf', bbox_inches = 'tight', format='pdf')
-    plt.savefig('img/ptps_vs_sigmaratio_rotation.png', bbox_inches = 'tight', format='png')
+    # plt.savefig('img/ptps_vs_sigmaratio_rotation.png', bbox_inches = 'tight', format='png')
     plt.show()
 
 plot_ptps_vs_npts(sigma_ratio_array, ptps_array)
