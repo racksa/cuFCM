@@ -702,11 +702,12 @@ void FCM_solver::write_cell_list(){
 
 __host__
 void FCM_solver::apply_repulsion(){
+    reset_device<Real> (F_device, 3*N);
     contact_force<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yf_device, F_device, rh, N, Lx, Ly, Lz,
                     particle_cellhash_device, cell_start_device, cell_end_device,
                     map_device,
                     ncell, 1.21*(2*rh)*(2*rh),
-                    (Real(2.0)*Real(22.0)));
+                    (Real(2.0)*Real(44.0)));
 }
 
 __host__
