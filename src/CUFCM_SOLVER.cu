@@ -714,6 +714,6 @@ __host__
 void FCM_solver::check_overlap(){
     check_overlap_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yf_device, rh, N, Lx, Ly, Lz,
                       particle_cellhash_device, cell_start_device, cell_end_device, 
-                      map_device, ncell, Rcsq);
+                      map_device, ncell, 0.5*Rcsq);
 }
 

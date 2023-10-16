@@ -1,6 +1,11 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
+import matplotlib
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
+matplotlib.rcParams['mathtext.it'] = 'Bitstream Vera Sans:italic'
+matplotlib.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 boxsize=200
 phi_array = np.array([0.0005*4**j for j in range(5)])

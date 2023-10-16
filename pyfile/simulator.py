@@ -486,10 +486,16 @@ class SIM:
         print(self.optimal_time_compute_array)
 
     def analyse_and_plot_both(self):
-        fig = plt.figure(figsize=(4.8, 3.2))
+        fig = plt.figure(figsize=(4.8, 3.6))
         ax = fig.add_subplot(1,1,1)
-        fig2 = plt.figure(figsize=(4.8, 3.2))
+        fig2 = plt.figure(figsize=(4.8, 3.6))
         ax2 = fig2.add_subplot(1,1,1)
+
+        import matplotlib
+        matplotlib.rcParams['mathtext.fontset'] = 'stix'
+        matplotlib.rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
+        matplotlib.rcParams['mathtext.it'] = 'Bitstream Vera Sans:italic'
+        matplotlib.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
         fcm_ptps_array = np.zeros(np.shape(self.phi_array[0]))
         ffcm_ptps_array = np.zeros(np.shape(self.phi_array[0]))
@@ -527,7 +533,7 @@ class SIM:
                 if(j==1):
                     ratio = ffcm_ptps_array/fcm_ptps_array_list[int(i/4)]
                     ax2.axhline(y = 1, color = 'grey', linestyle = '-.', lw=0.5)
-                    ax2.plot(self.phi_array[i], ratio, linestyle=linestyle_list[int(i/4)], c='black', label='a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3)))
+                    ax2.plot(self.phi_array[i], ratio, linestyle=linestyle_list[int(i/4)], c='black', label=r'$a/L=$' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3)))
                     # plot cross points
                     idx = np.argwhere(np.diff(np.sign(ratio - 1))).flatten()[0]
                     lenx = (self.phi_array[i][idx+1] - self.phi_array[i][idx])

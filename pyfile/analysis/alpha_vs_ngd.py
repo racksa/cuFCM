@@ -3,6 +3,11 @@ import matplotlib.cm as cm
 import matplotlib as mpl
 import numpy as np
 import matplotlib.ticker as ticker
+import matplotlib
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
+matplotlib.rcParams['mathtext.it'] = 'Bitstream Vera Sans:italic'
+matplotlib.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 boxsize=150
 # phi_array = np.array([0.0005*4**j for j in range(5)])
@@ -1454,6 +1459,8 @@ error_array=np.array([[1.79599110e-01, 1.79599110e-01, 1.84856726e-01, 1.8485672
   3.75612353e-09, 1.52689049e-10, 4.79122412e-12, 1.16528743e-13,
   2.41910395e-15, 3.93961243e-16, 3.90492203e-16, 3.98788588e-16,
   3.82557127e-16, 3.79131078e-16, 3.83800015e-16, 4.24646767e-16]])
+
+
 
 fig = plt.figure(figsize=(4.8, 3.6))
 ax = fig.add_subplot(1,1,1)

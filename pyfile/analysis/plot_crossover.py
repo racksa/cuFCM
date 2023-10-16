@@ -2,6 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import matplotlib.colors as colors
+import matplotlib
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
+matplotlib.rcParams['mathtext.it'] = 'Bitstream Vera Sans:italic'
+matplotlib.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 def inv_f(x, a):
     return a/x**.5
@@ -62,7 +67,7 @@ ax.fill_between(theory_x[0], theory_y[0], 1, color='white', alpha=0.5)
 ax.scatter(aL_array, crossover_array, marker = '+', color='black', label='Data', zorder=10)
 # CS = ax.contour(aL_domain, phic_domain, N_domain, norm=colors.LogNorm(vmin=100, vmax=1e7))
 # ax.clabel(CS, inline=True, fontsize=10)
-ax.set_xlabel('a/L')
+ax.set_xlabel(r'$a/L$')
 ax.set_ylabel(r'$\phi_c$')
 # ax.set_title(r"Crossover volume fraction vs. aspect ratio")
 ax.set_xlim((0, 0.016))
