@@ -14,10 +14,11 @@
 #define PI2sqrt_inv 0.3989422804014327
 #define SQRT2 1.4142135623730951
 
-#define FCM_THREADS_PER_BLOCK 32
-
 #ifdef USE_REGULARFCM
 #endif
+
+// Options
+#define FCM_THREADS_PER_BLOCK 32 // default value is 32
 
 #define ROTATION 0
 // 0 = No rotation
@@ -75,9 +76,6 @@
     #define my_sqrt sqrtf
     
 #endif
-
-#define NGD_UAMMD 9
-#define NGD 9
 
 struct Pars
     {
