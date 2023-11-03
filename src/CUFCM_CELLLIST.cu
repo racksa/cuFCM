@@ -340,7 +340,7 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
     const int index = threadIdx.x + blockIdx.x*blockDim.x;
     const int stride = blockDim.x*gridDim.x;
 
-    Real forgiving = 0.75; // Typical value is 1.0
+    Real forgiving = 0.98; // Typical value is 1.0
 
     for(int i = index; i < N; i += stride){
         int icell = particle_cellindex[i];
@@ -358,7 +358,7 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
 
                 Real rijsq=xij*xij+yij*yij+zij*zij;
                 if(rijsq < Rcsq){
-                    if (rijsq < forgiving*3.98*rad*rad){
+                    if (rijsq < forgiving*rad*rad){
                         printf("ERROR: Overlap between %d (%.4f %.4f %.4f) and %d (%.4f %.4f %.4f) within same cell. sep = %.6f 2rad = %.6f \n",
                         i, xi, yi, zi, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], sqrt(rijsq), (2*rad));
                     }
@@ -381,7 +381,7 @@ void check_overlap_gpu(Real *Y, Real rad, int N, Real Lx, Real Ly, Real Lz,
                     zij = zij - Lz * Real(int(zij/(Real(0.5)*Lz)));
                     Real rijsq=xij*xij+yij*yij+zij*zij;
                     if(rijsq < Rcsq){
-                        if (rijsq < forgiving*3.98*rad*rad){
+                        if (rijsq < forgiving*rad*rad){
                             printf("ERROR: Overlap between %d (%.4f %.4f %.4f) in %d and %d (%.4f %.4f %.4f) in %d. sep = %.6f 2rad = %.6f  \n", 
                             i, xi, yi, zi, icell, j, Y[3*j + 0], Y[3*j + 1], Y[3*j + 2], jcell, sqrt(rijsq), (2*rad));
                         }
