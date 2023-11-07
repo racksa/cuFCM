@@ -17,6 +17,9 @@ data/init_data/*
 data/profiler_data/*
 data/simulation/*
 
+!data/ref_data_N500000_rotation_1e-4.dat
+!data/ref_data_N500000_translate_1e-4.dat
+
 
 # Unignore all with extensions
 # !*/
