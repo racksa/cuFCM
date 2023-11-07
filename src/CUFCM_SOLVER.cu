@@ -151,6 +151,11 @@ void FCM_solver::prompt_info() {
 		#elif USE_REGULARFCM
 			std::cout << "Solver:\t\t\t" << "<Regular FCM>" << "\n";
 		#endif
+        #if ROTATION == 0
+			std::cout << "Order:\t\t\t" << "<Translation>" << "\n";
+		#elif ROTATION == 1
+			std::cout << "Order:\t\t\t" << "<Rotation>" << "\n";
+		#endif
 		std::cout << "Particle number:\t" << N << "\n";
 		std::cout << "Particle radius:\t" << rh << "\n";
 		std::cout << "Grid support:\t\t" << ngd << "\n";

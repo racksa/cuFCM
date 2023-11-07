@@ -31,9 +31,18 @@ Run with
 where x is the name of the executable binary.
 
 ## PYTHON SCRIPT
-A Python script is provided to automatically run sequential simulations using a single binary file. This is achieved by replacing the text in a config file which is then read by the binary file. 
+A Python script is provided to automatically run sequential simulations using a single binary file. This is achieved by replacing the text in a config file which is then read by the binary file.
 
-To use the script, first modify the parameters in file `script.py`. The member function `start_loop` can be modified to sweep the simulation parameters. Data generation and data reading/processing are separate process, and can be controled by system arguments passed in the terminal.
+> :warning: **The Python script is very custom written and does not run out of the box**: Be very careful here!
+
+To use that, first change the path in 'settings.py' to match your fast fcm directory path. Create the required directory for data saving. 
+
+You will need to use the random generator by compiling
+''' make RANDOM_GENERATOR
+'''
+
+To use the script, modify the parameters in file `script.py`. The member function `start_loop` can be modified to sweep the simulation parameters. Data generation and data reading/processing are separate process, and can be controled by system arguments passed in the terminal.
+
 
 ## GENERATING DATA
 Run simulations with
