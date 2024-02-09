@@ -48,9 +48,9 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////
 	// Physical system initialisation
 	///////////////////////////////////////////////////////////////////////////////
-	read_init_data_thrust(Yf_host, pars.N, datafile_names[0].c_str());
-	read_init_data_thrust(F_host, pars.N, datafile_names[1].c_str());
-	read_init_data_thrust(T_host, pars.N, datafile_names[2].c_str());
+	read_init_data_thrust(Yf_host, datafile_names[0].c_str());
+	read_init_data_thrust(F_host, datafile_names[1].c_str());
+	read_init_data_thrust(T_host, datafile_names[2].c_str());
 
 	Yf_device = Yf_host;
 	F_device = F_host;
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 								  F_validation,
 								  T_validation, 
 								  V_validation, 
-								  W_validation, pars.N, ref_name.c_str());
+								  W_validation, ref_name.c_str());
 
 		Yerror = percentage_error_magnitude_thrust(Yf_host, Y_validation, pars.N);
 		Verror = percentage_error_magnitude_thrust(V_host, V_validation, pars.N);

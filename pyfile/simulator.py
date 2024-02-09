@@ -23,17 +23,17 @@ class SIM:
         pardict['dt']=         0.1
         pardict['Fref']=       pardict['rh']
         pardict['packrep']=    1000
-        pardict['boxsize']=    400
+        pardict['boxsize']=    500
 
         self.pars = pardict.copy()
         self.datafiles = filedict.copy()
         self.reference_pars = pardict.copy()
 
         # self.search_grid_shape = (17, 10, 1, 1) # alpha, beta, eta, npts
-        self.search_grid_shape = (1, 1, 1, 50) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 36) # alpha, beta, eta, npts
 
-        self.nphi = 1
-        self.nn = 5
+        self.nphi = 16
+        self.nn = 21
         loopshape = (self.nphi, self.nn)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
@@ -58,8 +58,8 @@ class SIM:
 
         for i in range(self.nphi):
             for j in range(self.nn):
-                phi=                        0.0005*4**j
-                self.pars['rh']=            1.0
+                phi=                        0.01 + 0.01*j
+                self.pars['rh']=            2.0 + 0.04*i
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
 
                 ###### temporary ######
@@ -78,7 +78,7 @@ class SIM:
                     util.execute_random_generator(self.pars)
                     self.get_reference()
 
-                self.pars['alpha'], self.pars['beta'], self.pars['eta'], npts, optimal_Verror, optimal_Werror, optimal_time = self.find_optimal(1.e-3)
+                self.pars['alpha'], self.pars['beta'], self.pars['eta'], npts, optimal_Verror, optimal_Werror, optimal_time = self.find_optimal(2.e-6)
                 self.pars['nx']=         npts
                 self.pars['ny']=         npts
                 self.pars['nz']=         npts
@@ -138,14 +138,14 @@ class SIM:
             for i in range(self.search_grid_shape[0]):
                 for j in range(self.search_grid_shape[1]):
                     for k in range(self.search_grid_shape[2]):
-                        self.pars['alpha']=      1.1 + 0.02*i
-                        self.pars['beta']=       (10. + 1*j )
-                        self.pars['eta']=        4.2 #+ np.exp(-8e-6*self.pars['N'])
+                        self.pars['alpha']=      1.2 + 0.02*i
+                        self.pars['beta']=       (12. + 1*j )
+                        self.pars['eta']=        6.0 #+ np.exp(-8e-6*self.pars['N'])
 
                         if(HIsolver==1):
-                            npts = min(60 + 10*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
+                            npts = min(160 + 10*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
                         if(HIsolver==0):
-                            npts = 60 + 20*l
+                            npts = 200 + 10*l
                         self.pars['nx']=         npts
                         self.pars['ny']=         npts
                         self.pars['nz']=         npts
@@ -459,8 +459,10 @@ class SIM:
 
     def compute_error(self):
         vx, vy, vz, wx, wy, wz = util.read_velocity(cufcm_dir + 'data/simulation/simulation_data.dat', 0, int(self.pars['N']))
+        # vx_ref, vy_ref, vz_ref, wx_ref, wy_ref, wz_ref =\
+        #         util.read_velocity(fastfcm_directory + 'simulation_data' + util.parser(self.reference_pars) + '.dat', 0, int(self.reference_pars['N']))
         vx_ref, vy_ref, vz_ref, wx_ref, wy_ref, wz_ref =\
-                util.read_velocity(fastfcm_directory + 'simulation_data' + util.parser(self.reference_pars) + '.dat', 0, int(self.reference_pars['N']))
+                util.read_velocity(save_directory + 'simulation_data' + util.parser(self.reference_pars) + '.dat', 0, int(self.reference_pars['N']))
 
         v_array = np.array([vx, vy, vz])
         vref_array = np.array([vx_ref, vy_ref, vz_ref])
@@ -502,10 +504,19 @@ class SIM:
         
         global fcm_directory
         global fastfcm_directory
+
+        # Old one 10^-4
         fcm_directory = cufcm_dir + "data/simulation/20221129_fcm/"
         fastfcm_directory = cufcm_dir + "data/simulation/20221129_fastfcm/"
-
         self.pars['boxsize'] = 6.283185307179586
+        plot_interval = 4
+
+        # New one 10^-6
+        fcm_directory = cufcm_dir + "data/simulation/20240209_fcm/"
+        fastfcm_directory = cufcm_dir + "data/simulation/20240209_fastfcm/"
+        self.pars['boxsize'] = 500.0
+        plot_interval = 1
+        
 
         fcm_ptps_array_list = list()
 
@@ -513,9 +524,12 @@ class SIM:
             self.mod_solver(j)
             self.analyse()
 
+            print('^^^^^^^^^', self.rh_array)
+
             linestyle_list = ['solid', 'dotted', 'dashed', 'dashdot', '' ]
             marker_list = ['', '', '', '', '+']
-            for i in range(0, len(self.n_array)-1, 4):
+            for i in range(0, len(self.rh_array), plot_interval):
+                print("========", i, len(self.rh_array))
                 if (HIsolver==0):
                     label = 'FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3))
                     marker = '+'
@@ -531,9 +545,9 @@ class SIM:
                 ptps_array = self.n_array[i]/self.optimal_time_compute_array[i]
                 ax.plot(self.phi_array[i], ptps_array, marker=marker, linestyle=linestyle, c=util.color_codex[i], label=label)
                 if(j==1):
-                    ratio = ffcm_ptps_array/fcm_ptps_array_list[int(i/4)]
+                    ratio = ffcm_ptps_array/fcm_ptps_array_list[int(i/plot_interval)]
                     ax2.axhline(y = 1, color = 'grey', linestyle = '-.', lw=0.5)
-                    ax2.plot(self.phi_array[i], ratio, linestyle=linestyle_list[int(i/4)], c='black', label=r'$a/L=$' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3)))
+                    ax2.plot(self.phi_array[i], ratio, linestyle=linestyle_list[int(i/plot_interval)], c='black', label=r'$a/L=$' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3)))
                     # plot cross points
                     idx = np.argwhere(np.diff(np.sign(ratio - 1))).flatten()[0]
                     lenx = (self.phi_array[i][idx+1] - self.phi_array[i][idx])
