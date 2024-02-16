@@ -30,11 +30,12 @@ class SIM:
         self.reference_pars = pardict.copy()
 
         # self.search_grid_shape = (17, 10, 1, 1) # alpha, beta, eta, npts
-        self.search_grid_shape = (1, 1, 1, 36) # alpha, beta, eta, npts
+        self.search_grid_shape = (1, 1, 1, 50) # alpha, beta, eta, npts
 
-        self.nphi = 16
-        self.nn = 21
-        loopshape = (self.nphi, self.nn)
+        self.na = 12
+        self.nphi = 21
+        
+        loopshape = (self.na, self.nphi)
         self.optimal_time_compute_array = np.zeros(loopshape)
         self.optimal_Verror_array = np.zeros(loopshape)
         self.optimal_Werror_array = np.zeros(loopshape)
@@ -56,10 +57,11 @@ class SIM:
         self.datafiles['$torquefile'] = './data/init_data/new/torque_data.dat'
         self.pars['checkerror'] = 0
 
-        for i in range(self.nphi):
-            for j in range(self.nn):
+        for i in range(self.na):
+            for j in range(self.nphi):
                 phi=                        0.01 + 0.01*j
-                self.pars['rh']=            2.0 + 0.04*i
+                # self.pars['rh']=            2.0 + (4./12)*i
+                self.pars['rh']=            1.9894367886486917 + 0.477464829275686*i
                 self.pars['N']=             util.compute_N(phi, self.pars['rh'], self.pars['boxsize'])
 
                 ###### temporary ######
@@ -140,12 +142,12 @@ class SIM:
                     for k in range(self.search_grid_shape[2]):
                         self.pars['alpha']=      1.2 + 0.02*i
                         self.pars['beta']=       (12. + 1*j )
-                        self.pars['eta']=        6.0 #+ np.exp(-8e-6*self.pars['N'])
+                        self.pars['eta']=        5.8 #+ np.exp(-8e-6*self.pars['N'])
 
                         if(HIsolver==1):
-                            npts = min(160 + 10*l, int(self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
+                            npts = min(60 + 10*l, int(self.pars['alpha']*self.pars['boxsize']/(self.pars['rh']/np.sqrt(np.pi)) /2)*2 )
                         if(HIsolver==0):
-                            npts = 200 + 10*l
+                            npts = 60 + 10*l
                         self.pars['nx']=         npts
                         self.pars['ny']=         npts
                         self.pars['nz']=         npts
@@ -474,15 +476,19 @@ class SIM:
 
     def analyse(self):
         self.load_optimal_arrays()
+
+        self.na, self.nphi = np.shape(self.optimal_alpha_array)
+
+        print(np.shape(self.optimal_alpha_array))
         print('Optimal parameters:')
         optimal_parameters = [[i, j, self.optimal_alpha_array[i, j], self.optimal_beta_array[i, j],\
                 self.optimal_eta_array[i, j], self.optimal_npts_array[i, j]] \
-                for i in range(self.nphi) for j in range(self.nn)]
+                for i in range(self.na) for j in range(self.nphi)]
         optimal_times = [self.optimal_time_compute_array[i, j] \
-                for i in range(self.nphi) for j in range(self.nn)]
+                for i in range(self.na) for j in range(self.nphi)]
         for i, pars in enumerate(optimal_parameters):
             print(pars, 'PTPS=', self.pars['N']/optimal_times[i])
-            if ((i+1)%self.nn == 0):
+            if ((i+1)%self.nphi == 0):
                 print('--------------------')
 
         print(self.optimal_time_compute_array)
@@ -501,6 +507,8 @@ class SIM:
 
         fcm_ptps_array = np.zeros(np.shape(self.phi_array[0]))
         ffcm_ptps_array = np.zeros(np.shape(self.phi_array[0]))
+
+        fcm_ptps_array_list = list()
         
         global fcm_directory
         global fastfcm_directory
@@ -511,25 +519,24 @@ class SIM:
         self.pars['boxsize'] = 6.283185307179586
         plot_interval = 4
 
-        # New one 10^-6
-        fcm_directory = cufcm_dir + "data/simulation/20240209_fcm/"
-        fastfcm_directory = cufcm_dir + "data/simulation/20240209_fastfcm/"
+        # # New one 10^-6
+        fcm_directory = cufcm_dir + "data/simulation/20240212_fcm/"
+        fastfcm_directory = cufcm_dir + "data/simulation/20240212_fastfcm/"
         self.pars['boxsize'] = 500.0
-        plot_interval = 1
+        plot_interval = 4
         
-
-        fcm_ptps_array_list = list()
 
         for j in range(2):
             self.mod_solver(j)
             self.analyse()
 
-            print('^^^^^^^^^', self.rh_array)
+            # print('^^^^^^^^^', self.rh_array)
 
             linestyle_list = ['solid', 'dotted', 'dashed', 'dashdot', '' ]
             marker_list = ['', '', '', '', '+']
             for i in range(0, len(self.rh_array), plot_interval):
                 print("========", i, len(self.rh_array))
+                # print(self.rh_array[i][0]/self.pars['boxsize'])
                 if (HIsolver==0):
                     label = 'FCM a/L=' + str(round(self.rh_array[i][0]/self.pars['boxsize'], 3))
                     marker = '+'
@@ -554,6 +561,8 @@ class SIM:
                     leny = (ratio[idx+1] - ratio[idx])
                     grad = leny/lenx
                     interception_x = self.phi_array[i][idx] + (1-ratio[idx])/grad
+                    # print('intercept', interception_x)
+
                     # ax2.scatter(interception_x, 1, marker = 'x', c='black', zorder=10)
                     # ax.scatter(aL_array, crossover_array, marker = '+', s=100, color='red', label='Data', zorder=10)
 
