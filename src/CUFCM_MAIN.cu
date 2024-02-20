@@ -25,9 +25,9 @@ int main(int argc, char** argv) {
 	#endif
 
 	#if ROTATION == 0
-		std::string ref_name = "./data/refdata/ref_data_N500000_translate_1e-4.dat";
+		std::string ref_name = "./data/refdata/ref_data_N500000_translate.dat";
 	#elif ROTATION == 1
-		std::string ref_name = "./data/refdata/ref_data_N500000_rotation_1e-4.dat";
+		std::string ref_name = "./data/refdata/ref_data_N500000_rotation.dat";
 	#endif
 
 	///////////////////////////////////////////////////////////////////////////////

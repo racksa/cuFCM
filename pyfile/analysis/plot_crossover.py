@@ -25,8 +25,8 @@ def N_from_al_and_phi(al, phi):
 # aL_array = np.array([0.004, 0.0049, 0.0059, 0.0068, 0.0078, 0.0088, 0.0097, 0.0107, 0.0116, 0.0126, 0.0135])
 # crossover_array = np.array([0.180, 0.183, 0.160, 0.155, 0.139, 0.120, 0.131, 0.124, 0.103, 0.1075, 0.089])
 
-aL_array = np.linspace(0.004, 0.014, 11)
 # 10^-4
+aL_array = np.linspace(0.004, 0.014, 11)
 crossover_array = np.array([0.1796988332018473, 0.18341836874267936, 0.16029990375180314,
                             0.1555956484307304, 0.1393131236584624, 0.11949121802627433,
                             0.13161303422224319, 0.11153336982307753, 0.10390989284238716,
@@ -59,6 +59,7 @@ for sec in range(2):
     # theory_y.append(inv_f(x_array, p0[0]))
     theory_y.append(linear(x_array, p0[0][0], p0[0][1]))
 
+
 fig = plt.figure(figsize=(4.8, 3.6))
 ax = fig.add_subplot(1,1,1)
 for sec in range(2):
@@ -83,7 +84,7 @@ ax.set_ylim((0, 0.25))
 ax.legend()
 ax.annotate('FCM region', (0.004, 0.22), size=12)
 ax.annotate('FFCM region', (0.0015, 0.06), size=12)
-ax.annotate(r'fit: $y=-9.24x+0.22$', (0.008, 0.16), size=12)
+ax.annotate(rf'fit: $y={p0[0][0]:.2f}x+{p0[0][1]:.2f}$', (0.008, 0.16), size=12)
 
 plt.savefig('img/r_crossover.pdf', bbox_inches = 'tight', format='pdf')
 plt.show()

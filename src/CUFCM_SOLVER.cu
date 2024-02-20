@@ -88,15 +88,18 @@ void FCM_solver::init_fcm_var(){
         StokesMob = 1.0/(6.0*PI*rh);
         ModStokesMob = 1.0/(6.0*PI*SigmaGRID*sqrt(PI));
 
-        PDStokesMob = 2.0/pow(2.0*PI, 1.5);
-        PDStokesMob = PDStokesMob/pow(gammaGRID, 3.0);
-        PDStokesMob = PDStokesMob*pdmag/3.0;
+        // PDStokesMob = 2.0/pow(2.0*PI, 1.5);
+        // PDStokesMob = PDStokesMob/pow(gammaGRID, 3.0);
+        // PDStokesMob = PDStokesMob*pdmag/3.0;
+        PDStokesMob = pdmag/(12.0*pow(sqrt(PI)*SigmaGRID, 3.0));
 
-        BiLapMob = 1.0/pow(4.0*PI*SigmaGRID*SigmaGRID, 1.5);
-        BiLapMob = BiLapMob/(4.0*SigmaGRID*SigmaGRID)*pdmag*pdmag;
+        // BiLapMob = 1.0/pow(4.0*PI*SigmaGRID*SigmaGRID, 1.5);
+        // BiLapMob = BiLapMob/(4.0*SigmaGRID*SigmaGRID)*pdmag*pdmag;
+        BiLapMob = pdmag*pdmag/(32.0*pow(PI, 1.5)*pow(SigmaGRID,5));
 
         WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
-        WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3) ;
+        // WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3);
+        WT2Mob = 1.0/(48.0*PI*sqrt(PI)*pow(sigmaGRIDdip,3));
 
         // Rc = Real(-eta*pdmag);
 

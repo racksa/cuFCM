@@ -238,9 +238,9 @@ class SIM:
 
         self.pars['N']=          500000
         self.pars['rh']=         0.02609300415934458
-        self.pars['alpha']=      1.0
-        self.pars['beta']=       9.0
-        self.pars['eta']=        4.8
+        self.pars['alpha']=      1.2
+        self.pars['beta']=       12.0
+        self.pars['eta']=        5.8
         npts = 480  # Regular FCM
 
         self.pars['nx']=         npts
