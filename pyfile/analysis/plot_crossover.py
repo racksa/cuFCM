@@ -38,6 +38,8 @@ crossover_array = np.array([0.1930290404505306, 0.14157834543805098, 0.125872001
                             0.1233225491615936, 0.1052276484392654, 0.10186029460524607,
                             0.10437436862302342, 0.09806258691269104, 0.08517675667040094,
                             0.096326320026101, 0.09298367081611289])
+aL_array = aL_array
+crossover_array = crossover_array
 
 
 aL_domain, phic_domain = np.meshgrid(np.linspace(5e-4, 0.014, 100), np.linspace(0.001, 0.25, 100) )
@@ -54,7 +56,7 @@ for sec in range(2):
     if sec == 0:
         x_array = np.linspace(0, 0.016, 50)
     else:
-        x_array = np.linspace(0.004, 0.014, 50)
+        x_array = np.linspace(0.004, 0.0144, 50)
     theory_x.append(x_array)
     # theory_y.append(inv_f(x_array, p0[0]))
     theory_y.append(linear(x_array, p0[0][0], p0[0][1]))
@@ -68,7 +70,7 @@ for sec in range(2):
         label = 'Empirical fit'
     else:
         linestyle = 'dotted'
-        label = 'Prediction'
+        label = None
     ax.plot(theory_x[sec], theory_y[sec], linestyle=linestyle, color='black', label=label)
 ax.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
 ax.fill_between(theory_x[0], 0, theory_y[0], color='grey', alpha=0.5)
@@ -81,11 +83,13 @@ ax.set_ylabel(r'$\phi_c$')
 # ax.set_title(r"Crossover volume fraction vs. aspect ratio")
 ax.set_xlim((0, 0.016))
 ax.set_ylim((0, 0.25))
+
 ax.legend()
 ax.annotate('FCM region', (0.004, 0.22), size=12)
 ax.annotate('FFCM region', (0.0015, 0.06), size=12)
 ax.annotate(rf'fit: $y={p0[0][0]:.2f}x+{p0[0][1]:.2f}$', (0.008, 0.16), size=12)
 
+fig.tight_layout()
 plt.savefig('img/r_crossover.pdf', bbox_inches = 'tight', format='pdf')
 plt.show()
 

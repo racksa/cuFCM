@@ -99,7 +99,7 @@ void FCM_solver::init_fcm_var(){
 
         WT1Mob = 1.0/(8.0*PI)/pow(rh, 3) ;
         // WT2Mob = 1.0/(8.0*PI)/pow(sigmaGRIDdip*pow(6.0*sqrt(PI), 1.0/3.0), 3);
-        WT2Mob = 1.0/(48.0*PI*sqrt(PI)*pow(sigmaGRIDdip,3));
+        WT2Mob = 1.0/(48.0*pow(sqrt(PI)*SigmaGRID, 3.0));
 
         // Rc = Real(-eta*pdmag);
 
@@ -360,8 +360,72 @@ void FCM_solver::evaluate_mobility_cilia(){
 
 }
 
-
 /*  Cilia code end */
+
+/* Flow field code start*/
+__host__ 
+void FCM_solver::evaluate_flowfield(Real *Yf_device_input,
+                                     Real *F_device_input, Real *T_device_input, 
+                                     Real *V_device_input, Real *W_device_input){
+
+    Yf_device = Yf_device_input;
+    F_device = F_device_input;
+    T_device = T_device_input;
+    V_device = V_device_input;
+    W_device = W_device_input;
+
+    cudaError_t err = cudaGetLastError();
+
+    reset_grid();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error reset_grid: %s\n", cudaGetErrorString(err));
+    }
+
+    box_particle();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error box_particle: %s\n", cudaGetErrorString(err));
+    }
+
+    spatial_hashing();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error spatial_hashing: %s\n", cudaGetErrorString(err));
+    }
+
+    sort_particle();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error sort_particle: %s\n", cudaGetErrorString(err));
+    }
+
+    spread();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error spread: %s\n", cudaGetErrorString(err));
+    }
+    
+    fft_solve();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error fft_solve: %s\n", cudaGetErrorString(err));
+    }
+
+    correction_flowfield();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error correction: %s\n", cudaGetErrorString(err));
+    }
+
+
+    write_flowfield_call();
+
+    rept += 1;
+
+}
+
+/* Flow field code end*/
 
 __host__ 
 void FCM_solver::hydrodynamic_solver(Real *Yf_device_input,
@@ -723,5 +787,32 @@ void FCM_solver::check_overlap(){
     check_overlap_gpu<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yf_device, rh, N, Lx, Ly, Lz,
                       particle_cellhash_device, cell_start_device, cell_end_device, 
                       map_device, ncell, 0.5*Rcsq);
+}
+
+__host__
+void FCM_solver::correction_flowfield(){
+    ///////////////////////////////////////////////////////////////////////////////
+    // Correction
+    ///////////////////////////////////////////////////////////////////////////////
+    cudaDeviceSynchronize();	time_start = get_time();
+
+    #ifndef USE_REGULARFCM
+        
+        cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yf_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
+                            particle_cellhash_device, cell_start_device, cell_end_device,
+                            map_device,
+                            ncell, Rcsq,
+                            SigmaGRID,
+                            sigmaFCM,
+                            sigmaFCMdip);
+
+        cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
+                                StokesMob, ModStokesMob,
+                                PDStokesMob, BiLapMob,
+                                WT1Mob, WT2Mob);
+
+    #endif
+
+    cudaDeviceSynchronize();	time_correction_array[rept] = get_time() - time_start;
 }
 

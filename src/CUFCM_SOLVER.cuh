@@ -132,6 +132,11 @@ public:
     __host__
     void evaluate_mobility_cilia();
 
+    __host__
+    void evaluate_flowfield(Real *Yf_device_input,
+                                     Real *F_device_input, Real *T_device_input,
+                                     Real *V_device_input, Real *W_device_input);
+
     // __host__
     // void reform_data(Real *x_seg, Real *f_seg, Real *v_seg,
     //                  Real *x_blob, Real *f_blob, Real *v_blob, bool is_barrier);
@@ -224,5 +229,9 @@ public:
 
     __host__
     void check_overlap();
+
+
+    __host__
+    void correction_flowfield();
 
 };

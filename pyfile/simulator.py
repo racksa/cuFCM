@@ -11,6 +11,7 @@ import matplotlib.cm as cm
 import numpy as np
 from settings import *
 import util
+import configparser
 np.set_printoptions(threshold=sys.maxsize)
 
 class SIM:
@@ -238,16 +239,16 @@ class SIM:
 
         self.pars['N']=          500000
         self.pars['rh']=         0.02609300415934458
-        self.pars['alpha']=      1.2
-        self.pars['beta']=       12.0
-        self.pars['eta']=        5.8
+        self.pars['alpha']=      1.0
+        self.pars['beta']=       9.0
+        self.pars['eta']=        4.8
         npts = 480  # Regular FCM
 
         self.pars['nx']=         npts
         self.pars['ny']=         npts
         self.pars['nz']=         npts
         self.pars['Fref']=       1.0
-        self.pars['repeat']=     50
+        self.pars['repeat']=     1
         self.pars['prompt']=     10
         self.pars['boxsize']=    np.pi*2
 
@@ -327,7 +328,7 @@ class SIM:
                     if (sim_dict["Verror"] == -1 and sys.argv[1] == 'run'):
                         sim_dict["Verror"], sim_dict["Werror"] = self.compute_error()
 
-    def evaluate_flow_field(self):
+    def evaluate_flowfield(self):
         dir = './data/flow_data/'
         for file in os.listdir(dir):
             if file.endswith('flow_pos.dat'):
@@ -441,7 +442,119 @@ class SIM:
         plt.savefig('img/flow_field.eps', format='eps')
         plt.show()
 
+    def ffcm_flow_field(self):
+        sim = configparser.ConfigParser()
+        file_dir = './data/filsim_data/'
+        for file in os.listdir(file_dir):
+            if file.endswith('flow_pos.dat'):
+                self.datafiles['$posfile'] = file_dir + file
+            if file.endswith('flow_force.dat'):
+                self.datafiles['$forcefile'] = file_dir + file
+            if file.endswith('flow_torque.dat'):
+                self.datafiles['$torquefile'] = file_dir + file
 
+        sim.read(file_dir+"rules.ini")
+        
+        index = 0
+        nfil = [int(s) for s in sim["Parameter list"]['nfil'].split(', ')][index]
+        nseg = [int(s) for s in sim["Parameter list"]['nseg'].split(', ')][index]
+        nblob = [int(s) for s in sim["Parameter list"]['nblob'].split(', ')][index]
+        nx = [int(s) for s in sim["Parameter list"]['nx'].split(', ')][index]
+        ny = [int(s) for s in sim["Parameter list"]['ny'].split(', ')][index]
+        nz = [int(s) for s in sim["Parameter list"]['nz'].split(', ')][index]
+        boxsize = [int(s) for s in sim["Parameter list"]['boxsize'].split(', ')][index]
+        N = nfil*nseg + nblob
+
+        nx = 200
+        ny = nx
+        nz = nx
+
+
+        self.pars['checkerror'] = 0
+        self.pars['repeat']=     1
+        self.pars['prompt']=     10
+
+        self.pars['rh']=         1
+
+        self.pars['N']=          N
+        self.pars['beta']=       20
+        self.pars['nx']=         nx
+        self.pars['ny']=         ny
+        self.pars['nz']=         nz
+        self.pars['boxsize']=    boxsize
+
+        Lx = self.pars['boxsize']
+        Ly = Lx/self.pars['nx']*self.pars['ny']
+        Lz = Lx/self.pars['nx']*self.pars['nz']
+
+        util.execute([self.pars, self.datafiles], solver=2, mode=3)
+
+        flow_x_f = open('./data/simulation/flow_x.dat', "r")
+        flow_y_f = open('./data/simulation/flow_y.dat', "r")
+        flow_z_f = open('./data/simulation/flow_z.dat', "r")
+        pos_f = open(self.datafiles['$posfile'], "r")
+        pos = np.zeros((self.pars['N'], 3))
+        for i in range(self.pars['N']):
+            pos[i] = np.array(pos_f.readline().split(), dtype=float)
+        flow_x = np.array(flow_x_f.readline().split(), dtype=float)
+        flow_y = np.array(flow_y_f.readline().split(), dtype=float)
+        flow_z = np.array(flow_z_f.readline().split(), dtype=float)
+        
+        def reshape_func(flow):
+            return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx'])) # z-major
+        
+        sigma = float(self.pars['rh'])/np.pi**.5
+        def B(r):
+            return 1./(8*np.pi*r**3)*( (1-3*sigma**2/r**2)*erf(r/(sigma*2**.5)) + (6*sigma/r)*(2*np.pi)**(-0.5)*np.exp(-r**2/(2*sigma**2)) )
+
+        def A(r):
+            return 1./(8*np.pi*r)*( (1+sigma**2/r**2)*erf(r/(sigma*2**.5)) - (2*sigma/r)*(2*np.pi)**(-0.5)*np.exp(-r**2/(2*sigma**2)) )
+
+        def u(x):
+            x = np.array([x])
+            r = np.linalg.norm(x)
+            # return np.matmul( np.identity(3)/r + (x.transpose()@x)/r**3, np.array([1, 0, 0]))/(8*np.pi)
+            return np.matmul( A(r)*np.identity(3) + B(r)*(x.transpose()@x), np.array([1, 0, 0]))
+
+        flow_x = reshape_func(flow_x)
+        flow_y = reshape_func(flow_y)
+        flow_z = reshape_func(flow_z)
+
+        X = np.linspace(0, Lx, self.pars['nx'])
+        Y = np.linspace(0, Ly, self.pars['ny'])
+        Z = np.linspace(0, Lz, self.pars['nz'])
+
+        W = 0.0
+        dx = Lx/self.pars['nx']
+        nxh = int(self.pars['nx']/2)
+        nyh = int(self.pars['ny']/2)
+        nzh = int(self.pars['nz']/2)
+
+        x = nxh + int(np.floor(20/dx))
+        y = nyh + int(np.floor(20/dx))
+        z = nzh + int(np.floor(20/dx))
+        
+
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        ax.scatter(pos[:,1], pos[:,2], c='r')
+
+        # circle = plt.Circle((pos[:,0], pos[:,1]), self.pars['rh'], color='r')
+        # ax.add_patch(circle)
+        # ax.set_ylim((0,100))
+
+        # ax.streamplot(X, Y, flow_x[z]-W, flow_y[z])
+        ax.streamplot(Y, Z, flow_y[x]-W, flow_z[x])
+        # ax.streamplot(X, Y, flow_expression_x-W, flow_expression_y)
+
+        qfac = 10
+        # ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac]-W, flow_y[z,::qfac,::qfac])
+        ax.set_aspect('equal')
+        ax.set_xlabel('y')
+        ax.set_ylabel('z')
+        # plt.savefig('img/flow_field.eps', format='eps')
+        plt.show()
 
     def print_scalar(self, sim_dict):
         if(self.siminfo):

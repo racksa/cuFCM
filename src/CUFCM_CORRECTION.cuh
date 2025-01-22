@@ -69,6 +69,15 @@ void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
                                 Real PDStokesMob, Real BiLapMob,
                                 Real WT1Mob, Real WT2Mob);
 
+__global__
+void cufcm_flowfield_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real Lx, Real Ly, Real Lz,
+                    int *particle_cellindex, int *cell_start, int *cell_end,
+                    int *map,
+                    int ncell, Real Rrefsq,
+                    Real Sigma,
+                    Real sigmaFCM,
+                    Real sigmaFCMdip);
+
 // __global__
 // void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,
 //                     Real sigmaFCM, 

@@ -17,10 +17,13 @@
 #ifdef USE_REGULARFCM
 #endif
 
+#ifdef EVALUATE_FLOWFIELD
+#endif
+
 // Options
 #define FCM_THREADS_PER_BLOCK 32 // default value is 32
 
-#define ROTATION 1
+#define ROTATION 0
 // 0 = No rotation
 // 1 = Rotation     **default
 
