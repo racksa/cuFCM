@@ -13,6 +13,7 @@ from settings import *
 import util
 import configparser
 np.set_printoptions(threshold=sys.maxsize)
+import time
 
 class SIM:
 
@@ -454,6 +455,12 @@ class SIM:
                 self.datafiles['$torquefile'] = file_dir + file
 
         sim.read(file_dir+"rules.ini")
+        # ubody_f = open(file_dir+"flow_body_vels.dat")
+        ubody = np.loadtxt(file_dir+"flow_body_vels.dat", dtype=float)
+        ubody = ubody[:3]
+
+        # ubody = np.array(ubody_f.readlines().split(), dtype=float)
+        # print(ubody)
         
         index = 0
         nfil = [int(s) for s in sim["Parameter list"]['nfil'].split(', ')][index]
@@ -465,9 +472,12 @@ class SIM:
         boxsize = [int(s) for s in sim["Parameter list"]['boxsize'].split(', ')][index]
         N = nfil*nseg + nblob
 
-        nx = 200
-        ny = nx
-        nz = nx
+        yx_ratio = ny/nx
+        zx_ratio = nz/nx
+
+        nx = 32
+        ny = int(nx*yx_ratio)
+        nz = int(nx*zx_ratio)
 
 
         self.pars['checkerror'] = 0
@@ -489,19 +499,39 @@ class SIM:
 
         util.execute([self.pars, self.datafiles], solver=2, mode=3)
 
-        flow_x_f = open('./data/simulation/flow_x.dat', "r")
-        flow_y_f = open('./data/simulation/flow_y.dat', "r")
-        flow_z_f = open('./data/simulation/flow_z.dat', "r")
-        pos_f = open(self.datafiles['$posfile'], "r")
-        pos = np.zeros((self.pars['N'], 3))
-        for i in range(self.pars['N']):
-            pos[i] = np.array(pos_f.readline().split(), dtype=float)
-        flow_x = np.array(flow_x_f.readline().split(), dtype=float)
-        flow_y = np.array(flow_y_f.readline().split(), dtype=float)
-        flow_z = np.array(flow_z_f.readline().split(), dtype=float)
-        
+        start_time = time.time()
+        # Define file paths
+        flow_x_path = './data/simulation/flow_x.dat'
+        flow_y_path = './data/simulation/flow_y.dat'
+        flow_z_path = './data/simulation/flow_z.dat'
+        pos_path = self.datafiles['$posfile']
+
+        # Load position data
+        pos = np.loadtxt(pos_path, dtype=float, max_rows=self.pars['N'])
+
+
+        # Load flow data
+        with open(flow_x_path, "r") as flow_x_f, open(flow_y_path, "r") as flow_y_f, open(flow_z_path, "r") as flow_z_f:
+            flow_x = np.array(flow_x_f.readline().split(), dtype=float)
+            flow_y = np.array(flow_y_f.readline().split(), dtype=float)
+            flow_z = np.array(flow_z_f.readline().split(), dtype=float)
+
+        print(f"elapsed time = {time.time() - start_time}")
+
+        # flow_x_f = open('./data/simulation/flow_x.dat', "r")
+        # flow_y_f = open('./data/simulation/flow_y.dat', "r")
+        # flow_z_f = open('./data/simulation/flow_z.dat', "r")
+        # pos_f = open(self.datafiles['$posfile'], "r")
+        # pos = np.zeros((self.pars['N'], 3))
+        # for i in range(self.pars['N']):
+        #     pos[i] = np.array(pos_f.readline().split(), dtype=float)
+        # flow_x = np.array(flow_x_f.readline().split(), dtype=float)
+        # flow_y = np.array(flow_y_f.readline().split(), dtype=float)
+        # flow_z = np.array(flow_z_f.readline().split(), dtype=float)
+
+
         def reshape_func(flow):
-            return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx'])) # z-major
+            return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx']), order='C') # z-major
         
         sigma = float(self.pars['rh'])/np.pi**.5
         def B(r):
@@ -516,9 +546,18 @@ class SIM:
             # return np.matmul( np.identity(3)/r + (x.transpose()@x)/r**3, np.array([1, 0, 0]))/(8*np.pi)
             return np.matmul( A(r)*np.identity(3) + B(r)*(x.transpose()@x), np.array([1, 0, 0]))
 
+        start_time = time.time()
         flow_x = reshape_func(flow_x)
         flow_y = reshape_func(flow_y)
         flow_z = reshape_func(flow_z)
+
+        print(np.shape(flow_x))
+        print(ubody)
+        print(np.max(flow_x), np.max(flow_y), np.max(flow_z))
+        # flow_x -= ubody[0]
+        # flow_y -= ubody[1]
+        # flow_z -= ubody[2]
+        
 
         X = np.linspace(0, Lx, self.pars['nx'])
         Y = np.linspace(0, Ly, self.pars['ny'])
@@ -530,12 +569,21 @@ class SIM:
         nyh = int(self.pars['ny']/2)
         nzh = int(self.pars['nz']/2)
 
-        x = nxh + int(np.floor(20/dx))
-        y = nyh + int(np.floor(20/dx))
-        z = nzh + int(np.floor(20/dx))
-        
+        x = nxh
+        y = nyh
+        z = nzh
 
+        vel = np.sqrt(flow_x[:,:,x]**2 + flow_y[:,:,x]**2 + flow_z[:,:,x]**2)
 
+        print(np.shape(vel))
+        print(np.mean(vel[:,0]))
+        print(np.mean(vel[:,z]))
+        print(np.mean(vel[:,-1]))
+        speed_limit = np.max(vel)/4
+
+        print(f"elapsed time = {time.time() - start_time}")
+
+        start_time = time.time()
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
         ax.scatter(pos[:,1], pos[:,2], c='r')
@@ -544,16 +592,26 @@ class SIM:
         # ax.add_patch(circle)
         # ax.set_ylim((0,100))
 
+        # print(np.shape(Y), np.shape(Z), np.shape(flow_y[x]), np.shape(flow_z[x]))
+
         # ax.streamplot(X, Y, flow_x[z]-W, flow_y[z])
-        ax.streamplot(Y, Z, flow_y[x]-W, flow_z[x])
+        ax.streamplot(Y, Z, flow_y[:,:,x], flow_z[:,:,x])
         # ax.streamplot(X, Y, flow_expression_x-W, flow_expression_y)
+
+        y_lower, y_upper, z_lower, z_upper = 0, boxsize*yx_ratio, 0, boxsize*zx_ratio
+
+        cmap_name2= 'Reds'
+        phi_var_plot = ax.imshow(vel, cmap=cmap_name2, origin='lower', extent=[y_lower, y_upper, z_lower, z_upper], vmax = speed_limit, vmin=0)            
+
+
+        print(f"elapsed time = {time.time() - start_time}")
 
         qfac = 10
         # ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac]-W, flow_y[z,::qfac,::qfac])
         ax.set_aspect('equal')
         ax.set_xlabel('y')
         ax.set_ylabel('z')
-        # plt.savefig('img/flow_field.eps', format='eps')
+        plt.savefig('img/flow_field.pdf', format='pdf')
         plt.show()
 
     def print_scalar(self, sim_dict):

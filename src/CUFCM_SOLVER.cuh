@@ -232,6 +232,6 @@ public:
 
 
     __host__
-    void correction_flowfield();
+    void flowfield_correction();
 
 };

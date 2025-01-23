@@ -412,7 +412,7 @@ void FCM_solver::evaluate_flowfield(Real *Yf_device_input,
         fprintf(stderr, "CUDA error fft_solve: %s\n", cudaGetErrorString(err));
     }
 
-    correction_flowfield();
+    flowfield_correction();
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         fprintf(stderr, "CUDA error correction: %s\n", cudaGetErrorString(err));
@@ -790,7 +790,7 @@ void FCM_solver::check_overlap(){
 }
 
 __host__
-void FCM_solver::correction_flowfield(){
+void FCM_solver::flowfield_correction(){
     ///////////////////////////////////////////////////////////////////////////////
     // Correction
     ///////////////////////////////////////////////////////////////////////////////
