@@ -45,7 +45,7 @@ if(sys.argv[1] == 'flow_field'):
     sim.evaluate_flow_field()
 
 if(sys.argv[1] == 'ffcm_flowfield'):
-    sim.ffcm_flow_field()
+    sim.ffcm_flowfield()
 
 # Parameter explanation:
 # Alpha:    Sigma/dx

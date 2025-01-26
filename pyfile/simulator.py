@@ -443,25 +443,24 @@ class SIM:
         plt.savefig('img/flow_field.eps', format='eps')
         plt.show()
 
-    def ffcm_flow_field(self):
+    def ffcm_flowfield(self):
+        frame = 21
         sim = configparser.ConfigParser()
         file_dir = './data/filsim_data/'
         for file in os.listdir(file_dir):
-            if file.endswith('flow_pos.dat'):
+            if f'flow_pos{frame}' in file:
                 self.datafiles['$posfile'] = file_dir + file
-            if file.endswith('flow_force.dat'):
+            if f'flow_force{frame}' in file:
                 self.datafiles['$forcefile'] = file_dir + file
-            if file.endswith('flow_torque.dat'):
+            if f'flow_torque{frame}' in file:
                 self.datafiles['$torquefile'] = file_dir + file
 
         sim.read(file_dir+"rules.ini")
-        # ubody_f = open(file_dir+"flow_body_vels.dat")
-        ubody = np.loadtxt(file_dir+"flow_body_vels.dat", dtype=float)
+        ubody = np.loadtxt(f"{file_dir}flow_body_vels{frame}.dat", dtype=float)
         ubody = ubody[:3]
 
         # ubody = np.array(ubody_f.readlines().split(), dtype=float)
         # print(ubody)
-        
         index = 0
         nfil = [int(s) for s in sim["Parameter list"]['nfil'].split(', ')][index]
         nseg = [int(s) for s in sim["Parameter list"]['nseg'].split(', ')][index]
@@ -499,11 +498,15 @@ class SIM:
 
         util.execute([self.pars, self.datafiles], solver=2, mode=3)
 
+        os.system(f'mv data/simulation/flow_x.dat data/filsim_data/flow_x{frame}.dat')
+        os.system(f'mv data/simulation/flow_y.dat data/filsim_data/flow_y{frame}.dat')
+        os.system(f'mv data/simulation/flow_z.dat data/filsim_data/flow_z{frame}.dat')
+
         start_time = time.time()
         # Define file paths
-        flow_x_path = './data/simulation/flow_x.dat'
-        flow_y_path = './data/simulation/flow_y.dat'
-        flow_z_path = './data/simulation/flow_z.dat'
+        flow_x_path = f'./data/filsim_data/flow_x{frame}.dat'
+        flow_y_path = f'./data/filsim_data/flow_y{frame}.dat'
+        flow_z_path = f'./data/filsim_data/flow_z{frame}.dat'
         pos_path = self.datafiles['$posfile']
 
         # Load position data
@@ -552,11 +555,10 @@ class SIM:
         flow_z = reshape_func(flow_z)
 
         print(np.shape(flow_x))
-        print(ubody)
-        print(np.max(flow_x), np.max(flow_y), np.max(flow_z))
-        # flow_x -= ubody[0]
-        # flow_y -= ubody[1]
-        # flow_z -= ubody[2]
+        print(f"ubody = {ubody}")
+        flow_x -= ubody[0]
+        flow_y -= ubody[1]
+        flow_z -= ubody[2]
         
 
         X = np.linspace(0, Lx, self.pars['nx'])
@@ -576,9 +578,9 @@ class SIM:
         vel = np.sqrt(flow_x[:,:,x]**2 + flow_y[:,:,x]**2 + flow_z[:,:,x]**2)
 
         print(np.shape(vel))
-        print(np.mean(vel[:,0]))
-        print(np.mean(vel[:,z]))
-        print(np.mean(vel[:,-1]))
+        print(np.mean(vel[0]))
+        print(np.mean(vel[z]))
+        print(np.mean(vel[-1]))
         speed_limit = np.max(vel)/4
 
         print(f"elapsed time = {time.time() - start_time}")
