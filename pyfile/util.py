@@ -460,6 +460,9 @@ def percentage_error_magnitude(x, xref):
 def modulus(vec):
     return np.sqrt(np.sum(vec*vec, 0))
 
+def box(x, box_size):
+    return x - np.floor(x/box_size)*box_size
+
 color_codex = {0: 'r',
                1: 'b',
                2: 'g',

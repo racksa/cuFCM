@@ -14,6 +14,7 @@ import util
 import configparser
 np.set_printoptions(threshold=sys.maxsize)
 import time
+import matplotlib.animation as animation
 
 class SIM:
 
@@ -444,177 +445,173 @@ class SIM:
         plt.show()
 
     def ffcm_flowfield(self):
-        frame = 21
-        sim = configparser.ConfigParser()
-        file_dir = './data/filsim_data/'
-        for file in os.listdir(file_dir):
-            if f'flow_pos{frame}' in file:
-                self.datafiles['$posfile'] = file_dir + file
-            if f'flow_force{frame}' in file:
-                self.datafiles['$forcefile'] = file_dir + file
-            if f'flow_torque{frame}' in file:
-                self.datafiles['$torquefile'] = file_dir + file
-
-        sim.read(file_dir+"rules.ini")
-        ubody = np.loadtxt(f"{file_dir}flow_body_vels{frame}.dat", dtype=float)
-        ubody = ubody[:3]
-
-        # ubody = np.array(ubody_f.readlines().split(), dtype=float)
-        # print(ubody)
-        index = 0
-        nfil = [int(s) for s in sim["Parameter list"]['nfil'].split(', ')][index]
-        nseg = [int(s) for s in sim["Parameter list"]['nseg'].split(', ')][index]
-        nblob = [int(s) for s in sim["Parameter list"]['nblob'].split(', ')][index]
-        nx = [int(s) for s in sim["Parameter list"]['nx'].split(', ')][index]
-        ny = [int(s) for s in sim["Parameter list"]['ny'].split(', ')][index]
-        nz = [int(s) for s in sim["Parameter list"]['nz'].split(', ')][index]
-        boxsize = [int(s) for s in sim["Parameter list"]['boxsize'].split(', ')][index]
-        N = nfil*nseg + nblob
-
-        yx_ratio = ny/nx
-        zx_ratio = nz/nx
-
-        nx = 32
-        ny = int(nx*yx_ratio)
-        nz = int(nx*zx_ratio)
-
-
-        self.pars['checkerror'] = 0
-        self.pars['repeat']=     1
-        self.pars['prompt']=     10
-
-        self.pars['rh']=         1
-
-        self.pars['N']=          N
-        self.pars['beta']=       20
-        self.pars['nx']=         nx
-        self.pars['ny']=         ny
-        self.pars['nz']=         nz
-        self.pars['boxsize']=    boxsize
-
-        Lx = self.pars['boxsize']
-        Ly = Lx/self.pars['nx']*self.pars['ny']
-        Lz = Lx/self.pars['nx']*self.pars['nz']
-
-        util.execute([self.pars, self.datafiles], solver=2, mode=3)
-
-        os.system(f'mv data/simulation/flow_x.dat data/filsim_data/flow_x{frame}.dat')
-        os.system(f'mv data/simulation/flow_y.dat data/filsim_data/flow_y{frame}.dat')
-        os.system(f'mv data/simulation/flow_z.dat data/filsim_data/flow_z{frame}.dat')
-
-        start_time = time.time()
-        # Define file paths
-        flow_x_path = f'./data/filsim_data/flow_x{frame}.dat'
-        flow_y_path = f'./data/filsim_data/flow_y{frame}.dat'
-        flow_z_path = f'./data/filsim_data/flow_z{frame}.dat'
-        pos_path = self.datafiles['$posfile']
-
-        # Load position data
-        pos = np.loadtxt(pos_path, dtype=float, max_rows=self.pars['N'])
-
-
-        # Load flow data
-        with open(flow_x_path, "r") as flow_x_f, open(flow_y_path, "r") as flow_y_f, open(flow_z_path, "r") as flow_z_f:
-            flow_x = np.array(flow_x_f.readline().split(), dtype=float)
-            flow_y = np.array(flow_y_f.readline().split(), dtype=float)
-            flow_z = np.array(flow_z_f.readline().split(), dtype=float)
-
-        print(f"elapsed time = {time.time() - start_time}")
-
-        # flow_x_f = open('./data/simulation/flow_x.dat', "r")
-        # flow_y_f = open('./data/simulation/flow_y.dat', "r")
-        # flow_z_f = open('./data/simulation/flow_z.dat', "r")
-        # pos_f = open(self.datafiles['$posfile'], "r")
-        # pos = np.zeros((self.pars['N'], 3))
-        # for i in range(self.pars['N']):
-        #     pos[i] = np.array(pos_f.readline().split(), dtype=float)
-        # flow_x = np.array(flow_x_f.readline().split(), dtype=float)
-        # flow_y = np.array(flow_y_f.readline().split(), dtype=float)
-        # flow_z = np.array(flow_z_f.readline().split(), dtype=float)
-
+        video = True
+        plot_end_frame = 30
+        frame = 2
 
         def reshape_func(flow):
             return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx']), order='C') # z-major
         
-        sigma = float(self.pars['rh'])/np.pi**.5
-        def B(r):
-            return 1./(8*np.pi*r**3)*( (1-3*sigma**2/r**2)*erf(r/(sigma*2**.5)) + (6*sigma/r)*(2*np.pi)**(-0.5)*np.exp(-r**2/(2*sigma**2)) )
-
-        def A(r):
-            return 1./(8*np.pi*r)*( (1+sigma**2/r**2)*erf(r/(sigma*2**.5)) - (2*sigma/r)*(2*np.pi)**(-0.5)*np.exp(-r**2/(2*sigma**2)) )
-
-        def u(x):
-            x = np.array([x])
-            r = np.linalg.norm(x)
-            # return np.matmul( np.identity(3)/r + (x.transpose()@x)/r**3, np.array([1, 0, 0]))/(8*np.pi)
-            return np.matmul( A(r)*np.identity(3) + B(r)*(x.transpose()@x), np.array([1, 0, 0]))
-
-        start_time = time.time()
-        flow_x = reshape_func(flow_x)
-        flow_y = reshape_func(flow_y)
-        flow_z = reshape_func(flow_z)
-
-        print(np.shape(flow_x))
-        print(f"ubody = {ubody}")
-        flow_x -= ubody[0]
-        flow_y -= ubody[1]
-        flow_z -= ubody[2]
-        
-
-        X = np.linspace(0, Lx, self.pars['nx'])
-        Y = np.linspace(0, Ly, self.pars['ny'])
-        Z = np.linspace(0, Lz, self.pars['nz'])
-
-        W = 0.0
-        dx = Lx/self.pars['nx']
-        nxh = int(self.pars['nx']/2)
-        nyh = int(self.pars['ny']/2)
-        nzh = int(self.pars['nz']/2)
-
-        x = nxh
-        y = nyh
-        z = nzh
-
-        vel = np.sqrt(flow_x[:,:,x]**2 + flow_y[:,:,x]**2 + flow_z[:,:,x]**2)
-
-        print(np.shape(vel))
-        print(np.mean(vel[0]))
-        print(np.mean(vel[z]))
-        print(np.mean(vel[-1]))
-        speed_limit = np.max(vel)/4
-
-        print(f"elapsed time = {time.time() - start_time}")
-
-        start_time = time.time()
         fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
-        ax.scatter(pos[:,1], pos[:,2], c='r')
+        ax = fig.add_subplot()
 
-        # circle = plt.Circle((pos[:,0], pos[:,1]), self.pars['rh'], color='r')
-        # ax.add_patch(circle)
-        # ax.set_ylim((0,100))
+        def animation_func(frame):
+            ax.cla()
+            sim = configparser.ConfigParser()
+            file_dir = './data/filsim_data/'
+            for file in os.listdir(file_dir):
+                if f'flow_pos{frame+2}' in file:
+                    self.datafiles['$posfile'] = file_dir + file
+                if f'flow_force{frame+2}' in file:
+                    self.datafiles['$forcefile'] = file_dir + file
+                if f'flow_torque{frame+2}' in file:
+                    self.datafiles['$torquefile'] = file_dir + file
 
-        # print(np.shape(Y), np.shape(Z), np.shape(flow_y[x]), np.shape(flow_z[x]))
+            sim.read(file_dir+"rules.ini")
+            ubody = np.loadtxt(f"{file_dir}flow_body_vels{frame+2}.dat", dtype=float)
+            ubody = ubody[:3]
 
-        # ax.streamplot(X, Y, flow_x[z]-W, flow_y[z])
-        ax.streamplot(Y, Z, flow_y[:,:,x], flow_z[:,:,x])
-        # ax.streamplot(X, Y, flow_expression_x-W, flow_expression_y)
+            # ubody = np.array(ubody_f.readlines().split(), dtype=float)
+            # print(ubody)
+            index = 0
+            nfil = [int(s) for s in sim["Parameter list"]['nfil'].split(', ')][index]
+            nseg = [int(s) for s in sim["Parameter list"]['nseg'].split(', ')][index]
+            nblob = [int(s) for s in sim["Parameter list"]['nblob'].split(', ')][index]
+            nx = [int(s) for s in sim["Parameter list"]['nx'].split(', ')][index]
+            ny = [int(s) for s in sim["Parameter list"]['ny'].split(', ')][index]
+            nz = [int(s) for s in sim["Parameter list"]['nz'].split(', ')][index]
+            boxsize = [int(s) for s in sim["Parameter list"]['boxsize'].split(', ')][index]
+            N = nfil*nseg + nblob
 
-        y_lower, y_upper, z_lower, z_upper = 0, boxsize*yx_ratio, 0, boxsize*zx_ratio
+            yx_ratio = ny/nx
+            zx_ratio = nz/nx
 
-        cmap_name2= 'Reds'
-        phi_var_plot = ax.imshow(vel, cmap=cmap_name2, origin='lower', extent=[y_lower, y_upper, z_lower, z_upper], vmax = speed_limit, vmin=0)            
+            nx = 32
+            ny = int(nx*yx_ratio)
+            nz = int(nx*zx_ratio)
 
 
-        print(f"elapsed time = {time.time() - start_time}")
+            self.pars['checkerror'] = 0
+            self.pars['repeat']=     1
+            self.pars['prompt']=     10
 
-        qfac = 10
-        # ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac]-W, flow_y[z,::qfac,::qfac])
-        ax.set_aspect('equal')
-        ax.set_xlabel('y')
-        ax.set_ylabel('z')
-        plt.savefig('img/flow_field.pdf', format='pdf')
-        plt.show()
+            self.pars['rh']=         1
+
+            self.pars['N']=          N
+            self.pars['beta']=       20
+            self.pars['nx']=         nx
+            self.pars['ny']=         ny
+            self.pars['nz']=         nz
+            self.pars['boxsize']=    boxsize
+
+            Lx = self.pars['boxsize']
+            Ly = Lx/self.pars['nx']*self.pars['ny']
+            Lz = Lx/self.pars['nx']*self.pars['nz']
+
+            util.execute([self.pars, self.datafiles], solver=2, mode=3)
+
+            os.system(f'mv data/simulation/flow_x.dat data/filsim_data/flow_x{frame+2}.dat')
+            os.system(f'mv data/simulation/flow_y.dat data/filsim_data/flow_y{frame+2}.dat')
+            os.system(f'mv data/simulation/flow_z.dat data/filsim_data/flow_z{frame+2}.dat')
+
+            start_time = time.time()
+            # Define file paths
+            flow_x_path = f'./data/filsim_data/flow_x{frame+2}.dat'
+            flow_y_path = f'./data/filsim_data/flow_y{frame+2}.dat'
+            flow_z_path = f'./data/filsim_data/flow_z{frame+2}.dat'
+            pos_path = self.datafiles['$posfile']
+
+            # Load position data
+            pos = np.loadtxt(pos_path, dtype=float, max_rows=self.pars['N'])
+
+
+            # Load flow data
+            with open(flow_x_path, "r") as flow_x_f, open(flow_y_path, "r") as flow_y_f, open(flow_z_path, "r") as flow_z_f:
+                flow_x = np.array(flow_x_f.readline().split(), dtype=float)
+                flow_y = np.array(flow_y_f.readline().split(), dtype=float)
+                flow_z = np.array(flow_z_f.readline().split(), dtype=float)
+
+            print(f"elapsed time = {time.time() - start_time}")
+
+
+            
+            sigma = float(self.pars['rh'])/np.pi**.5
+
+            start_time = time.time()
+            flow_x = reshape_func(flow_x)
+            flow_y = reshape_func(flow_y)
+            flow_z = reshape_func(flow_z)
+
+            print(np.shape(flow_x))
+            print(f"ubody = {ubody}")
+            flow_x -= ubody[0]
+            flow_y -= ubody[1]
+            flow_z -= ubody[2]
+            
+
+            X = np.linspace(0, Lx, self.pars['nx'])
+            Y = np.linspace(0, Ly, self.pars['ny'])
+            Z = np.linspace(0, Lz, self.pars['nz'])
+
+            W = 0.0
+            dx = Lx/self.pars['nx']
+            nxh = int(self.pars['nx']/2)
+            nyh = int(self.pars['ny']/2)
+            nzh = int(self.pars['nz']/2)
+
+            x = nxh
+            y = nyh
+            z = nzh
+
+            vel = np.sqrt(flow_x[:,:,x]**2 + flow_y[:,:,x]**2 + flow_z[:,:,x]**2)
+
+            print(np.shape(vel))
+            print(np.mean(vel[0]))
+            print(np.mean(vel[z]))
+            print(np.mean(vel[-1]))
+            speed_limit = np.max(vel)*0.7
+
+            print(f"elapsed time = {time.time() - start_time}")
+
+            start_time = time.time()
+
+            ax.scatter(util.box(pos[:,1], Ly), util.box(pos[:,2], Lz), c='r')
+
+
+            # ax.streamplot(X, Y, flow_x[z]-W, flow_y[z])
+            ax.streamplot(Y, Z, flow_y[:,:,x], flow_z[:,:,x])
+            # ax.streamplot(X, Y, flow_expression_x-W, flow_expression_y)
+
+            y_lower, y_upper, z_lower, z_upper = 0, boxsize*yx_ratio, 0, boxsize*zx_ratio
+
+            cmap_name2= 'Reds'
+            phi_var_plot = ax.imshow(vel, cmap=cmap_name2, origin='lower', extent=[y_lower, y_upper, z_lower, z_upper], vmax = speed_limit, vmin=0)            
+
+
+            print(f"elapsed time = {time.time() - start_time}")
+
+            qfac = 10
+            # ax.quiver(X[::qfac], Y[::qfac], flow_x[z, ::qfac,::qfac]-W, flow_y[z,::qfac,::qfac])
+            ax.set_aspect('equal')
+            ax.set_xlabel('y')
+            ax.set_ylabel('z')
+
+
+        if(video):
+            for i in range(2, plot_end_frame):
+                print(" frame ", i, "/", plot_end_frame, "          ", end="\r")
+                plt.rcParams['animation.ffmpeg_path'] = '/usr/bin/ffmpeg'
+                ani = animation.FuncAnimation(fig, animation_func, frames=plot_end_frame, interval=10, repeat=False)
+
+            FFwriter = animation.FFMpegWriter(fps=10)
+            ani.save(f'img/ciliate_fil_anim.mp4', writer=FFwriter)
+        else:
+            animation_func(frame)
+
+            ax.set_aspect('equal')
+            # plt.savefig(f'fig/ciliate_{self.nfil}fil_frame{self.plot_end_frame}.pdf', bbox_inches = 'tight', format='pdf')
+            plt.show()
+
 
     def print_scalar(self, sim_dict):
         if(self.siminfo):
