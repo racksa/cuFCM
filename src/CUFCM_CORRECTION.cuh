@@ -70,13 +70,13 @@ void cufcm_self_correction(Real* V, Real* W, Real* F, Real* T, int N,
                                 Real WT1Mob, Real WT2Mob);
 
 __global__
-void cufcm_flowfield_correction(Real* Y, Real* V, Real* W, Real* F, Real* T, int N, Real Lx, Real Ly, Real Lz,
-                    int *particle_cellindex, int *cell_start, int *cell_end,
-                    int *map,
-                    int ncell, Real Rrefsq,
-                    Real Sigma,
-                    Real sigmaFCM,
-                    Real sigmaFCMdip);
+void cufcm_flowfield_correction(myCufftReal *fx, myCufftReal *fy, myCufftReal *fz,
+              Real *Y, Real *T, Real *F,
+              int N, int ngd, 
+              Real sigma, Real sigmadip, Real Sigma,
+              Real dx, int nx, int ny, int nz,
+              int *particle_index, int start, int end,
+              int rotation);
 
 // __global__
 // void cufcm_compute_formula(Real* Y, Real* V, Real* W, Real* F, Real* T, int N,

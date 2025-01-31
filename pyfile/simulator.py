@@ -458,7 +458,7 @@ class SIM:
         def animation_func(frame):
             ax.cla()
             sim = configparser.ConfigParser()
-            file_dir = './data/filsim_data/'
+            file_dir = './data/filsim_data/ffcm/'
             for file in os.listdir(file_dir):
                 if f'flow_pos{frame+2}' in file:
                     self.datafiles['$posfile'] = file_dir + file
@@ -510,15 +510,15 @@ class SIM:
 
             util.execute([self.pars, self.datafiles], solver=2, mode=3)
 
-            os.system(f'mv data/simulation/flow_x.dat data/filsim_data/flow_x{frame+2}.dat')
-            os.system(f'mv data/simulation/flow_y.dat data/filsim_data/flow_y{frame+2}.dat')
-            os.system(f'mv data/simulation/flow_z.dat data/filsim_data/flow_z{frame+2}.dat')
+            os.system(f'mv data/simulation/flow_x.dat {file_dir}flow_x{frame+2}.dat')
+            os.system(f'mv data/simulation/flow_y.dat {file_dir}flow_y{frame+2}.dat')
+            os.system(f'mv data/simulation/flow_z.dat {file_dir}flow_z{frame+2}.dat')
 
             start_time = time.time()
             # Define file paths
-            flow_x_path = f'./data/filsim_data/flow_x{frame+2}.dat'
-            flow_y_path = f'./data/filsim_data/flow_y{frame+2}.dat'
-            flow_z_path = f'./data/filsim_data/flow_z{frame+2}.dat'
+            flow_x_path = f'{file_dir}flow_x{frame+2}.dat'
+            flow_y_path = f'{file_dir}flow_y{frame+2}.dat'
+            flow_z_path = f'{file_dir}flow_z{frame+2}.dat'
             pos_path = self.datafiles['$posfile']
 
             # Load position data
