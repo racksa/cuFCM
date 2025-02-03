@@ -47,6 +47,9 @@ if(sys.argv[1] == 'flow_field'):
 if(sys.argv[1] == 'ffcm_flowfield'):
     sim.ffcm_flowfield()
 
+if(sys.argv[1] == 'compare_flowfields'):
+    sim.compare_flowfields()
+
 # Parameter explanation:
 # Alpha:    Sigma/dx
 # Beta:     (ngd*dx)/Sigma

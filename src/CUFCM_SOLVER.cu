@@ -797,19 +797,16 @@ void FCM_solver::flowfield_correction(){
     cudaDeviceSynchronize();	time_start = get_time();
 
     #ifndef USE_REGULARFCM
-        
-        cufcm_pair_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(Yf_device, V_device, W_device, F_device, T_device, N, Lx, Ly, Lz,
-                            particle_cellhash_device, cell_start_device, cell_end_device,
-                            map_device,
-                            ncell, Rcsq,
-                            SigmaGRID,
-                            sigmaFCM,
-                            sigmaFCMdip);
 
-        cufcm_self_correction<<<num_thread_blocks_N, FCM_THREADS_PER_BLOCK>>>(V_device, W_device, F_device, T_device, N,
-                                StokesMob, ModStokesMob,
-                                PDStokesMob, BiLapMob,
-                                WT1Mob, WT2Mob);
+        long shared_size = 3*ngd*sizeof(Integer)+(9*ngd+15)*sizeof(Real);
+
+        cufcm_flowfield_correction<<<N, FCM_THREADS_PER_BLOCK, shared_size>>>(hx_device, hy_device, hz_device, 
+              Yf_device, T_device, F_device,
+              N, ngd, 
+              sigmaFCM, sigmaFCMdip, SigmaGRID,
+              dx, nx, ny, nz,
+              particle_index_device, 0, N,
+             ROTATION);
 
     #endif
 

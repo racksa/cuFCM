@@ -376,7 +376,6 @@ void cufcm_flowfield_correction(myCufftReal *fx, myCufftReal *fy, myCufftReal *f
     Real *ydis_shared = (Real*)&xdis_shared[ngd];
     Real *zdis_shared = (Real*)&ydis_shared[ngd];
     Real *grad_gaussx_dip_shared = (Real*)&zdis_shared[ngd];
-
     Real *grad_gaussy_dip_shared = (Real*)&grad_gaussx_dip_shared[ngd];
     Real *grad_gaussz_dip_shared = (Real*)&grad_gaussy_dip_shared[ngd];
 
@@ -385,13 +384,13 @@ void cufcm_flowfield_correction(myCufftReal *fx, myCufftReal *fy, myCufftReal *f
     Real *g_shared = (Real*)&F_shared[3];
 
     Real Sigmasq = Sigma*Sigma;
-    Real sigmasq = sigmasq*sigmasq;
+    Real sigmasq = sigma*sigma;
     Real Sigmadipsq = 0;
     if(rotation==1){
         Sigmadipsq = Sigmasq;
     }
     Real Anorm = Real(1.0)/my_sqrt(Real(PI2)*Sigmasq);
-    Real pdmag = sigma*sigma - Sigmasq;
+    Real pdmag = sigmasq - Sigmasq;
     
 
     for(int np = blockIdx.x; (np < N) && (particle_index[np] >= start && particle_index[np] < end); np += gridDim.x){
@@ -462,36 +461,13 @@ void cufcm_flowfield_correction(myCufftReal *fx, myCufftReal *fy, myCufftReal *f
             const int j = (t - k*ngd*ngd)/ngd;
             const int i = t - k*ngd*ngd - j*ngd;
 
-            Real gradx = 0, grady = 0, gradz = 0;
-            if(rotation==1){
-                gradx = grad_gaussx_dip_shared[i];
-                grady = grad_gaussy_dip_shared[j];
-                gradz = grad_gaussz_dip_shared[k];
-            }
 
             int ind = indx_shared[i] + indy_shared[j]*nx + indz_shared[k]*nx*ny;
 
             Real r2 = xdis_shared[i]*xdis_shared[i] + ydis_shared[j]*ydis_shared[j] + zdis_shared[k]*zdis_shared[k];
             Real r = my_sqrt(r2);
-            Real temp1 = gaussx_shared[i]*gaussy_shared[j]*gaussz_shared[k];
-            Real temp2 = Real(0.5) * pdmag / Sigmasq;
-            Real temp3 = temp2 / Sigmasq;
-            Real temp4 = Real(3.0)*temp2;
-            Real temp = temp1*( Real(1.0) + temp3*r2 - temp4);
-            Real tempdip = 0;
-            if(rotation==1){
-                tempdip = temp1;
-            }
-
-            Real dipole_x = 0;
-            Real dipole_y = 0;
-            Real dipole_z = 0;
-
-            if(rotation==1){
-               dipole_x = (g_shared[0]*gradx + g_shared[3]*grady + g_shared[5]*gradz)*tempdip;
-               dipole_y = (g_shared[4]*gradx + g_shared[1]*grady + g_shared[7]*gradz)*tempdip;
-               dipole_z = (g_shared[6]*gradx + g_shared[8]*grady + g_shared[2]*gradz)*tempdip;
-            }
+    
+            Real Fidotx = xdis_shared[i]*F_shared[0] + ydis_shared[j]*F_shared[1] + zdis_shared[k]*F_shared[2];
 
             Real erfS_VF_FCM = erf(r/(my_sqrt(Real(2.0))*sigma));
             Real gaussgam_VF_FCM = exp(-Real(0.5)*r2/(sigmasq))/pow(Real(PI2)*sigmasq, Real(1.5));
@@ -501,15 +477,17 @@ void cufcm_flowfield_correction(myCufftReal *fx, myCufftReal *fy, myCufftReal *f
             
             Real AFCMtemp = S_I(r, r2, sigma, sigmasq, gaussgam_VF_FCM, erfS_VF_FCM);
             Real BFCMtemp = S_xx(r, r2, sigma, sigmasq, gaussgam_VF_FCM, erfS_VF_FCM);
-            Real Atemp = S_I(r, r2, sigma, sigmasq, gaussgam, erfS);
-            Real Btemp = S_xx(r, r2, sigmasq, sigmasq, gaussgam, erfS);
+            Real Atemp = S_I(r, r2, Sigma, Sigmasq, gaussgam, erfS);
+            Real Btemp = S_xx(r, r2, Sigmasq, Sigmasq, gaussgam, erfS);
+            Real Ctemp = Q_I(r, r2, Sigma, Sigmasq, gaussgam, erfS)*pdmag*0.5;
+            Real Dtemp = Q_xx(r, r2, Sigma, Sigmasq, gaussgam, erfS)*pdmag*0.5;
                     
-            Real temp1VF = (AFCMtemp - Atemp);
-            Real temp2VF = (BFCMtemp - Btemp);
+            Real temp1VF = (AFCMtemp - Atemp - Ctemp);
+            Real temp2VF = (BFCMtemp - Btemp - Dtemp);
 
-            atomicAdd(&fx[ind], F_shared[0]*temp + dipole_x);
-            atomicAdd(&fy[ind], F_shared[1]*temp + dipole_y);
-            atomicAdd(&fz[ind], F_shared[2]*temp + dipole_z);
+            atomicAdd(&fx[ind], temp1VF*F_shared[0] + temp2VF*xdis_shared[i]*Fidotx);
+            atomicAdd(&fy[ind], temp1VF*F_shared[1] + temp2VF*ydis_shared[j]*Fidotx);
+            atomicAdd(&fz[ind], temp1VF*F_shared[2] + temp2VF*zdis_shared[k]*Fidotx);
         }
     }
 }

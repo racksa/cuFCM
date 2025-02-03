@@ -445,9 +445,9 @@ class SIM:
         plt.show()
 
     def ffcm_flowfield(self):
-        video = True
+        video = False
         plot_end_frame = 30
-        frame = 2
+        frame = 0
 
         def reshape_func(flow):
             return np.reshape(flow, (self.pars['nz'], self.pars['ny'], self.pars['nx']), order='C') # z-major
@@ -486,7 +486,7 @@ class SIM:
             yx_ratio = ny/nx
             zx_ratio = nz/nx
 
-            nx = 32
+            nx = 8
             ny = int(nx*yx_ratio)
             nz = int(nx*zx_ratio)
 
@@ -524,7 +524,6 @@ class SIM:
             # Load position data
             pos = np.loadtxt(pos_path, dtype=float, max_rows=self.pars['N'])
 
-
             # Load flow data
             with open(flow_x_path, "r") as flow_x_f, open(flow_y_path, "r") as flow_y_f, open(flow_z_path, "r") as flow_z_f:
                 flow_x = np.array(flow_x_f.readline().split(), dtype=float)
@@ -532,8 +531,6 @@ class SIM:
                 flow_z = np.array(flow_z_f.readline().split(), dtype=float)
 
             print(f"elapsed time = {time.time() - start_time}")
-
-
             
             sigma = float(self.pars['rh'])/np.pi**.5
 
@@ -547,6 +544,8 @@ class SIM:
             flow_x -= ubody[0]
             flow_y -= ubody[1]
             flow_z -= ubody[2]
+
+            print(f"net_flow=({np.mean(flow_x)}, {np.mean(flow_y)}, {np.mean(flow_z)})")
             
 
             X = np.linspace(0, Lx, self.pars['nx'])
@@ -565,10 +564,6 @@ class SIM:
 
             vel = np.sqrt(flow_x[:,:,x]**2 + flow_y[:,:,x]**2 + flow_z[:,:,x]**2)
 
-            print(np.shape(vel))
-            print(np.mean(vel[0]))
-            print(np.mean(vel[z]))
-            print(np.mean(vel[-1]))
             speed_limit = np.max(vel)*0.7
 
             print(f"elapsed time = {time.time() - start_time}")
@@ -611,6 +606,76 @@ class SIM:
             ax.set_aspect('equal')
             # plt.savefig(f'fig/ciliate_{self.nfil}fil_frame{self.plot_end_frame}.pdf', bbox_inches = 'tight', format='pdf')
             plt.show()
+
+    def compare_flowfields(self):
+        def reshape_func(flow, new_nx, new_ny, new_nz):
+            return np.reshape(flow, (new_nz, new_ny, new_nx), order='C') # z-major
+
+        frame = 0
+        index = 0
+        file_dir1 = './data/filsim_data/fcm/'
+        file_dir2 = './data/filsim_data/ffcm/'
+
+        sim = configparser.ConfigParser()
+        sim.read(file_dir1+"rules.ini")
+        nx = [int(s) for s in sim["Parameter list"]['nx'].split(', ')][index]
+        ny = [int(s) for s in sim["Parameter list"]['ny'].split(', ')][index]
+        nz = [int(s) for s in sim["Parameter list"]['nz'].split(', ')][index]
+        boxsize = [int(s) for s in sim["Parameter list"]['boxsize'].split(', ')][index]
+
+        flow_x_path1 = f'{file_dir1}flow_x{frame+2}.dat'
+        flow_y_path1 = f'{file_dir1}flow_y{frame+2}.dat'
+        flow_z_path1 = f'{file_dir1}flow_z{frame+2}.dat'
+
+        flow_x_path2 = f'{file_dir2}flow_x{frame+2}.dat'
+        flow_y_path2 = f'{file_dir2}flow_y{frame+2}.dat'
+        flow_z_path2 = f'{file_dir2}flow_z{frame+2}.dat'
+        
+        # Load flow data1
+        with open(flow_x_path1, "r") as flow_x_f, open(flow_y_path1, "r") as flow_y_f, open(flow_z_path1, "r") as flow_z_f:
+            flow_x1 = np.array(flow_x_f.readline().split(), dtype=float)
+            flow_y1 = np.array(flow_y_f.readline().split(), dtype=float)
+            flow_z1 = np.array(flow_z_f.readline().split(), dtype=float)
+
+        # Load flow data2
+        with open(flow_x_path2, "r") as flow_x_f, open(flow_y_path2, "r") as flow_y_f, open(flow_z_path2, "r") as flow_z_f:
+            flow_x2 = np.array(flow_x_f.readline().split(), dtype=float)
+            flow_y2 = np.array(flow_y_f.readline().split(), dtype=float)
+            flow_z2 = np.array(flow_z_f.readline().split(), dtype=float)
+
+        sim_grid_points = nx*ny*nz
+        flow_grid_points1 = np.shape(flow_x1)[0]
+        nx1 = int(nx*flow_grid_points1/sim_grid_points)
+        ny1 = int(ny*flow_grid_points1/sim_grid_points)
+        nz1 = int(nz*flow_grid_points1/sim_grid_points)
+
+        flow_grid_points2 = np.shape(flow_x2)[0]
+        nx2 = int(nx*(flow_grid_points2/sim_grid_points)**(1./3))
+        ny2 = int(ny*(flow_grid_points2/sim_grid_points)**(1./3))
+        nz2 = int(nz*(flow_grid_points2/sim_grid_points)**(1./3))
+
+        grid_points_ratio = int(nx1/nx2)
+
+        print(nx1, ny1, nz1, flow_grid_points1)
+        print(nx2, ny2, nz2, flow_grid_points2)
+
+        flow_x1 = reshape_func(flow_x1, nx1, ny1, nz1)
+        flow_y1 = reshape_func(flow_y1, nx1, ny1, nz1)
+        flow_z1 = reshape_func(flow_z1, nx1, ny1, nz1)
+
+        flow_x2 = reshape_func(flow_x2, nx2, ny2, nz2)
+        flow_y2 = reshape_func(flow_y2, nx2, ny2, nz2)
+        flow_z2 = reshape_func(flow_z2, nx2, ny2, nz2)
+
+        flow_x1_overlap = flow_x1[::grid_points_ratio, ::grid_points_ratio, ::grid_points_ratio]
+        flow_y1_overlap = flow_x1[::grid_points_ratio, ::grid_points_ratio, ::grid_points_ratio]
+        flow_z1_overlap = flow_x1[::grid_points_ratio, ::grid_points_ratio, ::grid_points_ratio]
+
+        print(f"({nx1}, {ny1}, {nz1})  ({nx2}, {ny2}, {nz2})")
+
+        print(np.shape(flow_x1_overlap), np.shape(flow_x2))
+
+        print(np.mean(np.abs(flow_x2 - flow_x1_overlap)))
 
 
     def print_scalar(self, sim_dict):
