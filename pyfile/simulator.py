@@ -446,7 +446,7 @@ class SIM:
 
     def ffcm_flowfield(self):
         video = False
-        plot_end_frame = 30
+        plot_end_frame = 300000
         frame = 0
 
         def reshape_func(flow):
@@ -458,7 +458,7 @@ class SIM:
         def animation_func(frame):
             ax.cla()
             sim = configparser.ConfigParser()
-            file_dir = './data/filsim_data/ffcm/'
+            file_dir = './data/filsim_data/ciliate/'
             for file in os.listdir(file_dir):
                 if f'flow_pos{frame+2}' in file:
                     self.datafiles['$posfile'] = file_dir + file
@@ -481,12 +481,16 @@ class SIM:
             ny = [int(s) for s in sim["Parameter list"]['ny'].split(', ')][index]
             nz = [int(s) for s in sim["Parameter list"]['nz'].split(', ')][index]
             boxsize = [int(s) for s in sim["Parameter list"]['boxsize'].split(', ')][index]
+            ar = [float(s) for s in sim["Parameter list"]['ar'].split(', ')][index]
             N = nfil*nseg + nblob
+
+            radius = 2.6*(nseg-1)*ar*0.5
+            print(radius)
 
             yx_ratio = ny/nx
             zx_ratio = nz/nx
 
-            nx = 8
+            nx = 128
             ny = int(nx*yx_ratio)
             nz = int(nx*zx_ratio)
 
@@ -564,22 +568,24 @@ class SIM:
 
             vel = np.sqrt(flow_x[:,:,x]**2 + flow_y[:,:,x]**2 + flow_z[:,:,x]**2)
 
-            speed_limit = np.max(vel)*0.7
+            speed_limit = np.max(vel)*0.5
 
             print(f"elapsed time = {time.time() - start_time}")
 
             start_time = time.time()
 
-            ax.scatter(util.box(pos[:,1], Ly), util.box(pos[:,2], Lz), c='r')
+            ax.scatter(util.box(pos[:,1], Ly), util.box(pos[:,2], Lz), c='grey', alpha=0.5)
 
 
             # ax.streamplot(X, Y, flow_x[z]-W, flow_y[z])
-            ax.streamplot(Y, Z, flow_y[:,:,x], flow_z[:,:,x])
+            ax.streamplot(Y, Z, flow_y[:,:,x], flow_z[:,:,x], color='black')
             # ax.streamplot(X, Y, flow_expression_x-W, flow_expression_y)
 
             y_lower, y_upper, z_lower, z_upper = 0, boxsize*yx_ratio, 0, boxsize*zx_ratio
 
             cmap_name2= 'Reds'
+
+            # Shift image up
             phi_var_plot = ax.imshow(vel, cmap=cmap_name2, origin='lower', extent=[y_lower, y_upper, z_lower, z_upper], vmax = speed_limit, vmin=0)            
 
 
